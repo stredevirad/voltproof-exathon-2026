@@ -1,0 +1,70 @@
+# VoltProof analytical method parameters.
+# Every threshold cites its source. Values marked `provisional: true` are project choices still to be
+# confirmed against the real data in G1/G3. Their rationale is recorded here and in docs/DECISIONS.md.
+# The SQL pipeline reads these values through the PARAMS table (loaded by pipeline/run_sql.py); no
+# number is hard-coded in SQL.
+
+method_version: "0.1.0"
+profile: prayas_esmi
+
+classification:
+  # Prayas (Energy Group), "How does ESMI work?", https://energy.prayaspune.org/how-does-esmi-work
+  # retrieved 2026-10-11. Quote: "a broad voltage range of 205 to 270 V ... is marked as 'Normal'.
+  # Voltage from 204 V and upto 131 V is shown as 'Low' voltage and voltage above 271 V is marked as
+  # 'High' voltage. Voltage below 131 (i.e. 130 and less) is considered as no supply (or zero voltage)".
+  # The UP article uses "high voltage (>270 volts)". Boundaries are applied to the recorded value v:
+  #   OUTAGE  v <= 130
+  #   LOW     130 < v < 205
+  #   NORMAL  205 <= v <= 270
+  #   HIGH    v > 270
+  outage_max_v: 130
+  normal_min_v: 205
+  normal_max_v: 270
+  source_url: https://energy.prayaspune.org/how-does-esmi-work
+  retrieved_on: "2026-10-11"
+
+data_quality:
+  # Prayas (Dataverse description): "Missing data should be interpreted as unavailable data and not as
+  # interruption." Missing minutes become NO_DATA, never OUTAGE.
+  # Physical plausibility: Dataverse DDI summary stats for the 2018 June-Aug file show min 0.0 and
+  # max 350.0 for every minute column. Values outside [min_valid_v, max_valid_v] are quarantined with a
+  # reason code, never silently dropped.
+  min_valid_v: 0
+  max_valid_v: 350          # provisional: observed ceiling; confirm against all files in G1/G3
+  provisional: true
+
+coverage:
+  # Prayas, "ESMI in Uttar Pradesh" (07 Aug 2019): "Data from a location was considered for months only
+  # where more than 90% of data was available."
+  comparable_month_min_coverage_exclusive: 0.90
+  source_url: https://energy.prayaspune.org/our-work/article-and-blog/esmi-in-uttar-pradesh
+  retrieved_on: "2026-10-11"
+
+events:
+  # Minimum length (minutes) for an outage island to count as an "interruption" in counts. ESMI's
+  # interruption bands start at 2 minutes ("A short interruption ... lasts between 2-15 minutes"), but the
+  # UP article does not state the counting rule. Validation reports both 1 and 2.
+  interruption_min_minutes: 1
+  interruption_min_minutes_alternative: 2
+  # Gap bridging: OUTAGE, then NO_DATA of at most G minutes, then OUTAGE may be bridged into one event.
+  # The bridged minutes are recorded and never counted in the lower bound. ESMI gaps are whole missing
+  # location-hours (DDI: no blank minute cells), so G < 60 bridges nothing. 0 = never bridge.
+  gap_bridge_max_minutes: 0         # provisional
+  # Cap on the extra minutes the upper bound may claim at an edge that borders NO_DATA.
+  max_uncertain_extension_minutes: 60   # provisional
+  provisional: true
+
+windows:
+  # Prayas UP article: "six hours of evening supply between 5 and 11pm"
+  evening_start_hour: 17
+  evening_end_hour_exclusive: 23
+  timezone: Asia/Kolkata   # ESMI dates/hours are local; to be confirmed in G1 (VERIFICATION_LOG)
+
+coincidence:
+  # G4 parameters (provisional until G4)
+  group_by: district
+  max_start_offset_minutes: 2
+  min_overlap_minutes: 1
+  baseline_method: circular_day_shift
+  baseline_shifts: 20
+  provisional: true

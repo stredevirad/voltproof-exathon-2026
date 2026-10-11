@@ -1,0 +1,82 @@
+# --- Secrets and local config ---
+.env
+.env.*
+!.env.example
+secrets.json
+**/secrets.json
+*.pem
+*.key
+
+# --- Private documents (never published) ---
+docs/private/
+
+# --- Data and caches (raw data is downloaded by scripts/get-data.ps1, never committed) ---
+/data/
+/.cache/
+/.tools/
+
+# --- Exasol deployment state (lives outside the repo, but guard anyway) ---
+ExasolDeployments/
+.exasol/
+**/deployments/**/terraform*
+*.tfstate
+*.tfstate.*
+
+# --- Large data files anywhere ---
+*.csv
+*.tab
+*.tsv
+*.parquet
+*.zip
+*.gz
+*.7z
+*.tar
+# Hand-written synthetic test fixtures are small and allowed
+!tests/fixtures/**/*.csv
+
+# --- PDFs only inside docs/deliverables ---
+*.pdf
+!docs/deliverables/*.pdf
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Node / frontend ---
+node_modules/
+app/web/dist/
+app/api/static/
+*.tsbuildinfo
+
+# --- Test artifacts ---
+test-results/
+playwright-report/
+blob-report/
+/reports/
+*.trace.zip
+*.webm
+!docs/deliverables/**/*.webm
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Stray files from Windows tools that treat the NUL device as a filename (e.g. ssh known_hosts) ---
+NUL
+nul
+
+# --- Claude Code local-only settings ---
+.claude/settings.local.json
