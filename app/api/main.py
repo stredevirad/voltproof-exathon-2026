@@ -1,0 +1,134 @@
+"""VoltProof web API + static web app (one process).
+
+    .venv\\Scripts\\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+
+All analytical numbers come from tables materialised by the SQL pipeline inside Exasol. This API only reads
+them, and renders evidence reports from them.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from app.api import report, service
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+WEB_DIST = REPO_ROOT / "app" / "web" / "dist"
+
+app = FastAPI(title="VoltProof", version="0.1.0",
+              description="Traceable evidence of power cuts and poor supply from ESMI minute-wise voltage data.")
+
+MONTH = re.compile(r"^\d{4}-\d{2}$")
+DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+EVENT_KEY = re.compile(r"^\d{1,9}-\d{12}$")
+
+
+def _404(what: str):
+    raise HTTPException(status_code=404, detail=f"{what} not found")
+
+
+@app.get("/api/health")
+def health():
+    try:
+        return service.health()
+    except Exception as e:  # plain-language error with a next step
+        return JSONResponse(status_code=503, content={
+            "database": "unavailable",
+            "detail": "Cannot read the VoltProof tables in Exasol. Start the database with scripts\\exa.ps1 start "
+                      "and build the data with scripts\\load.ps1.",
+            "error": str(getattr(e, "message", e)).splitlines()[0][:200]})
+
+
+@app.get("/api/meta")
+def meta():
+    return service.meta()
+
+
+@app.get("/api/states")
+def states():
+    return service.states()
+
+
+@app.get("/api/locations")
+def locations(state: str | None = None, district: str | None = None, q: str | None = Query(None, max_length=80)):
+    return service.locations(state, district, q)
+
+
+@app.get("/api/locations/{location_id}")
+def location(location_id: int):
+    return service.location(location_id) or _404("location")
+
+
+@app.get("/api/locations/{location_id}/months/{month_key}")
+def month(location_id: int, month_key: str):
+    if not MONTH.match(month_key):
+        raise HTTPException(status_code=400, detail="month must look like 2018-07")
+    return service.month(location_id, month_key) or _404("location-month")
+
+
+@app.get("/api/locations/{location_id}/days/{day}")
+def day(location_id: int, day: str):
+    if not DAY.match(day):
+        raise HTTPException(status_code=400, detail="day must look like 2018-07-25")
+    return service.day(location_id, day)
+
+
+@app.get("/api/events/{event_key}")
+def event(event_key: str):
+    if not EVENT_KEY.match(event_key):
+        raise HTTPException(status_code=400, detail="event key must look like 123-201807251827")
+    return service.event(event_key) or _404("event")
+
+
+@app.get("/api/groups/{group_key:path}")
+def group(group_key: str):
+    return service.group(group_key) or _404("potential shared supply event")
+
+
+@app.get("/api/demo")
+def demo():
+    return service.demo() or _404("demo preset (build the 2018 June-August data first)")
+
+
+class ReportRequest(BaseModel):
+    location_id: int
+    month: str
+
+
+@app.post("/api/reports")
+def create_report(req: ReportRequest):
+    if not MONTH.match(req.month):
+        raise HTTPException(status_code=400, detail="month must look like 2018-07")
+    data = service.month(req.location_id, req.month)
+    if not data:
+        _404("location-month")
+    return report.generate(req.location_id, req.month)
+
+
+@app.get("/api/reports/{report_id}.{ext}")
+def get_report(report_id: str, ext: str):
+    path = report.path_for(report_id, ext)
+    if path is None or not path.exists():
+        _404("report")
+    media = {"pdf": "application/pdf", "html": "text/html", "json": "application/json"}[ext]
+    return FileResponse(path, media_type=media, filename=path.name if ext == "pdf" else None)
+
+
+# Static single-page app (built by `npm run build` in app/web). Unknown non-API paths fall back to index.html.
+if WEB_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        if path.startswith("api/"):
+            _404("API route")
+        candidate = WEB_DIST / path
+        if path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(WEB_DIST / "index.html")

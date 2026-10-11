@@ -1,0 +1,234 @@
+"""Read-only data services behind the API. All analysis was done by the SQL pipeline inside Exasol; these
+functions only SELECT from the materialised tables (schema VOLTPROOF by default)."""
+
+from __future__ import annotations
+
+import datetime as dt
+import json
+import subprocess
+from functools import lru_cache
+from pathlib import Path
+
+from app.api.db import SCHEMA, query, query_one
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+S = SCHEMA
+
+DATA_CITATION = ('Prayas, Energy Group, 2019, "Minute-wise voltage data collected in Electricity Supply Monitoring '
+                 'Initiative", https://doi.org/10.7910/DVN/CLLZZM, Harvard Dataverse, V2, '
+                 'UNF:6:CQzM5yPH9GilZHSqyRRyEQ== [fileUNF]')
+ATTRIBUTION = "Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI), CC0 1.0."
+
+# Guided demo selection rule (documented in docs/DEMO_SCRIPT.md). Restricted to 2018 June-August, the file in
+# the smallest download set, so the demo works for anyone who downloads only that set:
+#   1. the evening (17:00-22:59) potential shared supply event with the most distinct locations
+#      (ties: earliest start);
+#   2. within it, a member at a location whose month is comparable, earliest start, then lowest LOCATION_ID.
+DEMO_RULE = (
+    "Within June-August 2018: the evening (17:00-22:59) potential shared supply event with the most distinct "
+    "monitors (ties: earliest); within it, the earliest member whose location-month is comparable "
+    "(ties: lowest location id). One example chosen by this rule, not a typical month."
+)
+
+
+@lru_cache(maxsize=1)
+def git_commit() -> str | None:
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short=12", "HEAD"], cwd=REPO_ROOT, capture_output=True,
+                             text=True, timeout=10)
+        return out.stdout.strip() or None
+    except OSError:
+        return None
+
+
+def method_version() -> str:
+    row = query_one(f"SELECT STR_VALUE FROM {S}.PARAMS WHERE NAME = 'method_version'")
+    return row["str_value"] if row else "unknown"
+
+
+def health() -> dict:
+    row = query_one(f"SELECT (SELECT COUNT(*) FROM {S}.EVENT) AS EVENTS, (SELECT COUNT(*) FROM {S}.QUALITY_LOCATION)"
+                    f" AS LOCATIONS, (SELECT MAX(FINISHED_AT) FROM {S}.RUN_LOG) AS LAST_RUN")
+    return {"database": "ok", "schema": S, **row, "git_commit": git_commit()}
+
+
+def meta() -> dict:
+    params = query(f"SELECT NAME, NUM_VALUE, STR_VALUE FROM {S}.PARAMS ORDER BY NAME")
+    files = query(f"""SELECT FILE_ID, FILE_NAME, FILE_KIND, ROWS_LOADED, PERIOD_FROM, PERIOD_TO, EXCLUDE_REASON,
+                             DATE_FORMAT, ROWS_QUARANTINED, VALUES_QUARANTINED, MINUTES_IN_SCOPE
+                      FROM {S}.QUALITY_FILE ORDER BY FILE_ID""")
+    checks = {r["file_id"]: r for r in query(f"SELECT FILE_ID, MD5, SHA256, BYTES FROM {S}.SOURCE_FILE")}
+    for f in files:
+        f.update({k: checks.get(f["file_id"], {}).get(k) for k in ("md5", "sha256", "bytes")})
+    last = query_one(f"""SELECT RUN_ID, MAX(FINISHED_AT) AS FINISHED_AT, MAX(DATA_MANIFEST_SHA256) AS MANIFEST,
+                                MAX(APP_GIT_COMMIT) AS PIPELINE_COMMIT
+                         FROM {S}.RUN_LOG GROUP BY RUN_ID ORDER BY 2 DESC LIMIT 1""")
+    totals = query_one(f"""SELECT COUNT(*) AS LOCATIONS, SUM(READINGS_CLEAN) AS MINUTES,
+                                  MIN(FIRST_TS) AS FIRST_TS, MAX(LAST_TS) AS LAST_TS FROM {S}.QUALITY_LOCATION""")
+    return {
+        "method_version": method_version(), "git_commit": git_commit(), "params": params, "files": files,
+        "last_run": last, "totals": totals, "citation": DATA_CITATION, "attribution": ATTRIBUTION,
+        "licence": "CC0 1.0 (dataset metadata); Prayas terms of use: non-commercial, academic and research use "
+                   "with acknowledgement (see docs/data/SOURCE_TERMS.md)",
+    }
+
+
+def states() -> list[dict]:
+    return query(f"""SELECT STATE_NAME, COUNT(*) AS LOCATIONS, COUNT(DISTINCT DISTRICT) AS DISTRICTS
+                     FROM {S}.QUALITY_LOCATION GROUP BY STATE_NAME ORDER BY STATE_NAME""")
+
+
+def locations(state: str | None = None, district: str | None = None, q: str | None = None) -> list[dict]:
+    where, p = ["1 = 1"], {}
+    if state:
+        where.append("STATE_NAME = {state}")
+        p["state"] = state
+    if district:
+        where.append("DISTRICT = {district}")
+        p["district"] = district
+    if q:
+        where.append("LOWER(DISPLAY_NAME) LIKE {q}")
+        p["q"] = f"%{q.lower()}%"
+    return query(f"""SELECT LOCATION_ID, DISPLAY_NAME, SOURCE_NAME, IS_OFFLINE, DISTRICT, STATE_NAME, SOURCE_CATEGORY,
+                            CONNECTION_TYPE, FIRST_TS, LAST_TS, COVERAGE_WINDOW, MONTHS_IN_WINDOW, COMPARABLE_MONTHS,
+                            OUTAGE_MINUTES
+                     FROM {S}.QUALITY_LOCATION WHERE {' AND '.join(where)}
+                     ORDER BY DISTRICT, DISPLAY_NAME""", p)
+
+
+def location(location_id: int) -> dict | None:
+    loc = query_one(f"SELECT * FROM {S}.QUALITY_LOCATION WHERE LOCATION_ID = {{id!d}}", {"id": location_id})
+    if not loc:
+        return None
+    loc["months"] = query(f"""SELECT MONTH_KEY, OUTAGE_MIN_LOWER, OUTAGE_MIN_UPPER, INTERRUPTIONS, COVERAGE_CALENDAR,
+                                     IS_COMPARABLE FROM {S}.MONTHLY WHERE LOCATION_ID = {{id!d}} ORDER BY MONTH_KEY""",
+                          {"id": location_id})
+    return loc
+
+
+def month(location_id: int, month_key: str) -> dict | None:
+    m = query_one(f"SELECT * FROM {S}.MONTHLY WHERE LOCATION_ID = {{id!d}} AND MONTH_KEY = {{m}}",
+                  {"id": location_id, "m": month_key})
+    if not m:
+        return None
+    loc = query_one(f"""SELECT LOCATION_ID, DISPLAY_NAME, SOURCE_NAME, IS_OFFLINE, DISTRICT, STATE_NAME, SOURCE_CATEGORY,
+                               CONNECTION_TYPE FROM {S}.LOCATION WHERE LOCATION_ID = {{id!d}}""", {"id": location_id})
+    days = query(f"""SELECT CAL_DAY, EXPECTED_MINUTES, OBSERVED_MINUTES, OUTAGE_MIN_LOWER, OUTAGE_MIN_UPPER,
+                            OUTAGE_ZERO_MINUTES, LOW_MINUTES, HIGH_MINUTES, EVENING_OUTAGE_LOWER, EVENING_OUTAGE_UPPER,
+                            INTERRUPTIONS, LONGEST_INTERRUPTION
+                     FROM {S}.DAILY WHERE LOCATION_ID = {{id!d}} AND TO_CHAR(CAL_DAY, 'YYYY-MM') = {{m}}
+                     ORDER BY CAL_DAY""", {"id": location_id, "m": month_key})
+    events = query(f"""SELECT e.EVENT_KEY, e.START_TS, e.END_TS, e.MIN_DURATION, e.MAX_DURATION, e.BRIDGED_MINUTES,
+                              e.ZERO_MINUTES, e.START_CERTAINTY, e.END_CERTAINTY, e.IS_INTERRUPTION, m.GROUP_KEY
+                       FROM {S}.EVENT e
+                       LEFT JOIN {S}.POTENTIAL_SHARED_MEMBER m ON m.EVENT_ID = e.EVENT_ID
+                       WHERE e.LOCATION_ID = {{id!d}} AND TO_CHAR(e.START_TS, 'YYYY-MM') = {{m}}
+                       ORDER BY e.START_TS""", {"id": location_id, "m": month_key})
+    baseline = query_one(f"SELECT * FROM {S}.COINCIDENCE_BASELINE WHERE DISTRICT = {{d}} AND MONTH_KEY = {{m}}",
+                         {"d": loc["district"], "m": month_key})
+    return {"location": loc, "month": m, "days": days, "events": events, "baseline": baseline}
+
+
+def day(location_id: int, day_str: str) -> dict:
+    d0 = dt.date.fromisoformat(day_str)
+    start = f"{d0:%Y-%m-%d} 00:00:00"
+    end = f"{d0 + dt.timedelta(days=1):%Y-%m-%d} 00:00:00"
+    p = {"id": location_id, "s": start, "e": end}
+    readings = query(f"""SELECT TS, VOLTAGE, SUPPLY_STATE FROM {S}.READING_STATE
+                         WHERE LOCATION_ID = {{id!d}} AND TS >= CAST({{s}} AS TIMESTAMP) AND TS < CAST({{e}} AS TIMESTAMP)
+                         ORDER BY TS""", p)
+    segments = query(f"""SELECT SEG_NO, SUPPLY_STATE, START_TS, END_TS, MINUTES FROM {S}.SEGMENT
+                         WHERE LOCATION_ID = {{id!d}} AND START_TS < CAST({{e}} AS TIMESTAMP)
+                           AND END_TS >= CAST({{s}} AS TIMESTAMP) ORDER BY SEG_NO""", p)
+    claims = query(f"""SELECT CLAIM_START, CLAIM_END, CLAIM_MINUTES, SIDE FROM {S}.UNCERTAIN_CLAIM
+                       WHERE LOCATION_ID = {{id!d}} AND CLAIM_START < CAST({{e}} AS TIMESTAMP)
+                         AND CLAIM_END >= CAST({{s}} AS TIMESTAMP) ORDER BY CLAIM_START""", p)
+    events = query(f"""SELECT e.EVENT_KEY, e.START_TS, e.END_TS, e.MIN_DURATION, e.MAX_DURATION, e.START_CERTAINTY,
+                              e.END_CERTAINTY, e.IS_INTERRUPTION, m.GROUP_KEY
+                       FROM {S}.EVENT e LEFT JOIN {S}.POTENTIAL_SHARED_MEMBER m ON m.EVENT_ID = e.EVENT_ID
+                       WHERE e.LOCATION_ID = {{id!d}} AND e.START_TS < CAST({{e}} AS TIMESTAMP)
+                         AND e.END_TS >= CAST({{s}} AS TIMESTAMP) ORDER BY e.START_TS""", p)
+    daily = query_one(f"SELECT * FROM {S}.DAILY WHERE LOCATION_ID = {{id!d}} AND CAL_DAY = CAST({{d}} AS DATE)",
+                      {"id": location_id, "d": day_str})
+    loc = query_one(f"SELECT LOCATION_ID, DISPLAY_NAME, DISTRICT, STATE_NAME FROM {S}.LOCATION "
+                    f"WHERE LOCATION_ID = {{id!d}}", {"id": location_id})
+    return {"location": loc, "day": day_str, "daily": daily, "readings": readings, "segments": segments,
+            "claims": claims, "events": events}
+
+
+def event(event_key: str) -> dict | None:
+    e = query_one(f"""SELECT e.*, l.DISPLAY_NAME, l.SOURCE_NAME, l.DISTRICT, l.STATE_NAME
+                      FROM {S}.EVENT e JOIN {S}.LOCATION l ON l.LOCATION_ID = e.LOCATION_ID
+                      WHERE e.EVENT_KEY = {{k}}""", {"k": event_key})
+    if not e:
+        return None
+    lid = e["location_id"]
+    e["before"] = query_one(f"SELECT SUPPLY_STATE, START_TS, END_TS, MINUTES FROM {S}.SEGMENT "
+                            f"WHERE LOCATION_ID = {{id!d}} AND SEG_NO = {{n!d}}", {"id": lid, "n": e["first_seg"] - 1})
+    e["after"] = query_one(f"SELECT SUPPLY_STATE, START_TS, END_TS, MINUTES FROM {S}.SEGMENT "
+                           f"WHERE LOCATION_ID = {{id!d}} AND SEG_NO = {{n!d}}", {"id": lid, "n": e["last_seg"] + 1})
+    e["source_lines"] = query(
+        f"""SELECT r.TS, r.VOLTAGE, r.FILE_ID, r.LINE_NO, f.FILE_NAME
+            FROM {S}.READING_CLEAN r JOIN {S}.SOURCE_FILE f ON f.FILE_ID = r.FILE_ID
+            WHERE r.LOCATION_ID = {{id!d}} AND r.TS IN (CAST({{a}} AS TIMESTAMP), CAST({{b}} AS TIMESTAMP))
+            ORDER BY r.TS""",
+        {"id": lid, "a": e["start_ts"].replace("T", " ") + ":00", "b": e["end_ts"].replace("T", " ") + ":00"})
+    e["provenance"] = provenance(["060_events.sql", "050_segments.sql", "030_unpivot.sql"])
+    member = query_one(f"SELECT GROUP_KEY FROM {S}.POTENTIAL_SHARED_MEMBER WHERE EVENT_KEY = {{k}}", {"k": event_key})
+    e["group"] = group(member["group_key"]) if member else None
+    e["baseline"] = query_one(f"SELECT * FROM {S}.COINCIDENCE_BASELINE WHERE DISTRICT = {{d}} AND MONTH_KEY = {{m}}",
+                              {"d": e["district"], "m": e["start_ts"][:7]})
+    return e
+
+
+def group(group_key: str) -> dict | None:
+    g = query_one(f"SELECT * FROM {S}.POTENTIAL_SHARED_EVENT WHERE GROUP_KEY = {{k}}", {"k": group_key})
+    if not g:
+        return None
+    g["members"] = query(f"""SELECT m.EVENT_KEY, m.LOCATION_ID, l.DISPLAY_NAME, m.START_TS, m.END_TS,
+                                   m.OFFSET_FROM_GROUP_START_MIN, e.MIN_DURATION, e.MAX_DURATION
+                            FROM {S}.POTENTIAL_SHARED_MEMBER m
+                            JOIN {S}.LOCATION l ON l.LOCATION_ID = m.LOCATION_ID
+                            JOIN {S}.EVENT e ON e.EVENT_ID = m.EVENT_ID
+                            WHERE m.GROUP_KEY = {{k}} ORDER BY m.START_TS, l.DISPLAY_NAME""", {"k": group_key})
+    g["district_locations_with_interruptions"] = query_one(
+        f"""SELECT COUNT(DISTINCT LOCATION_ID) AS N FROM {S}.INTERRUPTION
+            WHERE DISTRICT = {{d}} AND TO_CHAR(START_TS, 'YYYY-MM') = {{m}}""",
+        {"d": g["district"], "m": g["start_ts"][:7]})["n"]
+    g["baseline"] = query_one(f"SELECT * FROM {S}.COINCIDENCE_BASELINE WHERE DISTRICT = {{d}} AND MONTH_KEY = {{m}}",
+                              {"d": g["district"], "m": g["start_ts"][:7]})
+    return g
+
+
+def provenance(steps: list[str]) -> list[dict]:
+    """Latest run's statements for the given SQL steps: file hash, statement hash, Exasol session/statement ids."""
+    return query(f"""SELECT STEP, STMT_INDEX, SQL_FILE_SHA256, STMT_SHA256, PARAMS_SHA256, EXA_SESSION_ID, EXA_STMT_ID,
+                            FINISHED_AT, APP_GIT_COMMIT, DATA_MANIFEST_SHA256, RUN_ID
+                     FROM {S}.RUN_LOG r
+                     WHERE STEP IN ({{steps}})
+                       AND RUN_ID = (SELECT MAX(RUN_ID) FROM {S}.RUN_LOG x WHERE x.STEP = r.STEP)
+                     ORDER BY STEP, STMT_INDEX""", {"steps": steps})
+
+
+def demo() -> dict | None:
+    row = query_one(f"""
+        WITH G AS (
+            SELECT GROUP_KEY, GROUP_ID, START_TS, N_LOCATIONS FROM {S}.POTENTIAL_SHARED_EVENT
+            WHERE START_TS >= TIMESTAMP '2018-06-01 00:00:00' AND START_TS < TIMESTAMP '2018-09-01 00:00:00'
+              AND HOUR(START_TS) BETWEEN 17 AND 22
+            ORDER BY N_LOCATIONS DESC, START_TS LIMIT 1
+        )
+        SELECT G.GROUP_KEY, m.EVENT_KEY, m.LOCATION_ID, m.START_TS
+        FROM G
+        JOIN {S}.POTENTIAL_SHARED_MEMBER m ON m.GROUP_ID = G.GROUP_ID
+        JOIN {S}.MONTHLY mo ON mo.LOCATION_ID = m.LOCATION_ID
+                           AND mo.MONTH_START = CAST(TRUNC(m.START_TS, 'MM') AS DATE) AND mo.IS_COMPARABLE
+        ORDER BY m.START_TS, m.LOCATION_ID LIMIT 1""")
+    if not row:
+        return None
+    return {"location_id": row["location_id"], "month": row["start_ts"][:7], "day": row["start_ts"][:10],
+            "event_key": row["event_key"], "group_key": row["group_key"], "rule": DEMO_RULE}
+
+
+def dumps(obj) -> str:
+    return json.dumps(obj, indent=1, default=str)

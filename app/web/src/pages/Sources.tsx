@@ -1,0 +1,44 @@
+import { api, fmtTs } from "../api";
+import { ErrorBox, Skeleton, useApi } from "../ui";
+
+export default function Sources() {
+  const { data, error, loading } = useApi(() => api.meta(), []);
+  if (loading && !data) return <Skeleton label="the sources" />;
+  if (error) return <ErrorBox error={error} what="the data sources" />;
+  const t = data.totals || {};
+  return (
+    <>
+      <h1>Data &amp; sources</h1>
+      <h2>Attribution</h2>
+      <p>{data.attribution}</p>
+      <p className="small"><b>Citation:</b> {data.citation}</p>
+      <p className="small"><b>Licence and terms:</b> {data.licence}. The VoltProof code is MIT-licensed; the data are not covered by that licence.
+        Raw data are never redistributed by this project; each user downloads them from Harvard Dataverse.</p>
+      <div className="note small">Prayas: "A '0' voltage reading means a power outage" · "Missing data should be interpreted as unavailable data and
+        not as interruption" · the monitor "measures and records voltage with an accuracy of +/- 4 V … for every minute".</div>
+      <h2>What is real, what is not</h2>
+      <ul>
+        <li><b>Real:</b> every number and chart in this app is computed from ESMI measurements ({t.locations} monitored locations in scope,
+          {" "}{Number(t.minutes || 0).toLocaleString("en-IN")} measured minutes, {t.first_ts && fmtTs(t.first_ts).slice(0, 10)} to {t.last_ts && fmtTs(t.last_ts).slice(0, 10)}).</li>
+        <li><b>Synthetic:</b> only the automated test fixtures in the repository (tests/fixtures), never shown here.</li>
+        <li><b>Illustrative:</b> nothing. If an illustrative element is ever added, it carries a visible "Illustrative" label.</li>
+        <li>No employer or proprietary data is used.</li>
+      </ul>
+      <h2>Source files</h2>
+      <div className="card scroll">
+        <table className="data" data-testid="files-table">
+          <thead><tr><th className="l">File</th><th>Rows</th><th className="l">Declared period</th><th className="l">Date format</th>
+            <th>Rows quarantined</th><th>Minutes analysed</th><th className="l">Status</th></tr></thead>
+          <tbody>{(data.files as any[]).filter((f) => f.file_kind === "readings").map((f) => (
+            <tr key={f.file_id}><td className="l">{f.file_name}<div className="mono muted">MD5 {f.md5}</div></td>
+              <td>{Number(f.rows_loaded).toLocaleString("en-IN")}</td>
+              <td className="l">{f.period_from} – {f.period_to}</td><td className="l">{f.date_format}</td>
+              <td>{Number(f.rows_quarantined).toLocaleString("en-IN")}</td><td>{Number(f.minutes_in_scope).toLocaleString("en-IN")}</td>
+              <td className="l small">{f.exclude_reason ? <><b>Excluded:</b> {f.exclude_reason}</> : "analysed (in-scope locations)"}</td></tr>))}</tbody>
+        </table>
+      </div>
+      <p className="small muted">Checksums are verified against the values Harvard Dataverse publishes before loading (scripts\get-data.ps1).
+        Pipeline run {data.last_run?.run_id}, data manifest {String(data.last_run?.manifest || "").slice(0, 16)}…</p>
+    </>
+  );
+}

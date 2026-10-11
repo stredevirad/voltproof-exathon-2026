@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VoltProof evidence report {{ d.report_id }}</title>
+<style>
+  :root { --ink:#1b1f24; --muted:#5b6470; --line:#d5dae0; --out:#b42318; --low:#b54708; --high:#6941c6;
+          --ok:#067647; --nodata:#98a2b3; --bg-soft:#f4f6f8; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; color: var(--ink);
+         font-size: 10.5px; line-height: 1.45; margin: 0; }
+  h1 { font-size: 18px; margin: 0 0 2px; }
+  h2 { font-size: 13px; margin: 18px 0 6px; padding-bottom: 3px; border-bottom: 1.5px solid var(--ink); }
+  h3 { font-size: 11px; margin: 10px 0 4px; }
+  .muted { color: var(--muted); }
+  .head { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--ink);
+          padding-bottom: 8px; }
+  .head dl { display: grid; grid-template-columns: auto auto; gap: 1px 10px; margin: 0; font-size: 9.5px; }
+  .head dt { color: var(--muted); } .head dd { margin: 0; font-family: Consolas, monospace; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+  .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; }
+  .kpi .v { font-size: 16px; font-weight: 700; } .kpi .r { color: var(--muted); font-size: 9px; }
+  .kpi .l { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .03em; }
+  table { border-collapse: collapse; width: 100%; font-size: 9.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 3px 5px; text-align: right; vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  td.l, th.l { text-align: left; }
+  tr.lowcov td { color: var(--nodata); }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; max-width: 420px; }
+  .cal div { border: 1px solid var(--line); border-radius: 4px; padding: 3px 4px; min-height: 36px; font-size: 8.5px; }
+  .cal .dow { border: none; min-height: auto; color: var(--muted); text-align: center; }
+  .b0 { background: #ecfdf3; } .b1 { background: #fef0c7; } .b2 { background: #fedf89; } .b3 { background: #fda29b; }
+  .b4 { background: #f97066; color: #fff; }
+  .nodata { background: repeating-linear-gradient(45deg, #f2f4f7, #f2f4f7 4px, #e4e7ec 4px, #e4e7ec 8px); color: var(--muted); }
+  .legend span { display: inline-block; margin-right: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--line); vertical-align: -1px; margin-right: 3px; }
+  .note { background: var(--bg-soft); border-left: 3px solid var(--ink); padding: 6px 9px; margin: 6px 0; }
+  .caveat { border-left-color: var(--low); }
+  code, .mono { font-family: Consolas, monospace; font-size: 8.5px; word-break: break-all; }
+  .pb { page-break-before: always; }
+  .tag { display: inline-block; padding: 0 4px; border-radius: 3px; font-size: 8.5px; border: 1px solid var(--line); }
+  .tag.bounded { border-color: var(--low); color: var(--low); } .tag.censored { border-color: var(--high); color: var(--high); }
+  ul { margin: 4px 0; padding-left: 16px; }
+  footer { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 6px; color: var(--muted); font-size: 9px; }
+</style>
+</head>
+<body>
+{% set s = d.summary %}
+<div class="head">
+  <div>
+    <h1>Evidence report: electricity supply at {{ d.location.display_name }}</h1>
+    <div>{{ d.location.district }} district, {{ d.location.state_name }} &middot; {{ d.location.source_category }} &middot;
+      {{ d.location.connection_type }} connection{% if d.location.is_offline %} &middot; monitoring later discontinued{% endif %}</div>
+    <div><strong>Period:</strong> <span data-metric="period.month">{{ d.period.month }}</span>
+      (local Indian time) &middot; independent minute-by-minute voltage monitor (ESMI)</div>
+  </div>
+  <dl>
+    <dt>Report ID</dt><dd data-metric="report_id">{{ d.report_id }}</dd>
+    <dt>Generated</dt><dd>{{ d.generated_at_ist }}</dd>
+    <dt>VoltProof</dt><dd>{{ d.provenance.app_commit or "unknown" }}</dd>
+    <dt>Method</dt><dd>v{{ d.method.version }}</dd>
+  </dl>
+</div>
+
+<h2>1. Summary in plain language</h2>
+<p>
+  The monitor <strong>measured</strong> voltage for <span data-metric="summary.observed_minutes">{{ s.observed_minutes | num }}</span>
+  of the <span data-metric="summary.calendar_minutes">{{ s.calendar_minutes | num }}</span> minutes in this month
+  (<span data-metric="summary.coverage_calendar">{{ s.coverage_calendar | pct }}</span> coverage;
+  {% if s.is_comparable %}<strong>comparable month</strong> (&gt; 90% coverage){% else %}<strong>not a comparable month</strong> (90% coverage or less, so it is not used for comparisons){% endif %}).
+  It recorded <strong><span data-metric="summary.interruptions">{{ s.interruptions }}</span> interruptions</strong>
+  and <strong>at least <span data-metric="summary.outage_minutes_lower">{{ s.outage_minutes_lower | num }}</span> minutes without usable supply</strong>
+  ({{ s.outage_minutes_lower | mins }}). Where outages border missing readings the true total could be up to
+  <span data-metric="summary.outage_minutes_upper">{{ s.outage_minutes_upper | num }}</span> minutes. That figure is an
+  <em>inferred</em> upper bound; missing readings are never counted as outage in the headline.
+</p>
+<div class="kpis">
+  <div class="kpi"><div class="l">Interruptions</div><div class="v">{{ s.interruptions }}</div><div class="r">counted on the day they start</div></div>
+  <div class="kpi"><div class="l">Outage time (lower bound)</div><div class="v">{{ s.outage_minutes_lower | mins }}</div>
+    <div class="r">range {{ s.outage_minutes_lower | num }}&ndash;{{ s.outage_minutes_upper | num }} min</div></div>
+  <div class="kpi"><div class="l">Longest interruption</div><div class="v" data-metric="summary.longest_interruption_minutes">{{ s.longest_interruption_minutes | num }}</div><div class="r">minutes (measured)</div></div>
+  <div class="kpi"><div class="l">Evening 17:00&ndash;23:00 outage</div><div class="v" data-metric="summary.evening_outage_minutes_lower">{{ s.evening_outage_minutes_lower | num }}</div>
+    <div class="r">min (lower bound; up to <span data-metric="summary.evening_outage_minutes_upper">{{ s.evening_outage_minutes_upper | num }}</span>)</div></div>
+</div>
+<p>
+  Of the outage minutes, <span data-metric="summary.outage_zero_volt_minutes">{{ s.outage_zero_volt_minutes | num }}</span> read exactly 0 V;
+  the rest read 1&ndash;130 V, which Prayas classes as "no supply" because appliances cannot run on it.
+  The monitor also recorded <span data-metric="summary.low_voltage_minutes">{{ s.low_voltage_minutes | num }}</span> minutes of
+  low voltage (131&ndash;204 V) and <span data-metric="summary.high_voltage_minutes">{{ s.high_voltage_minutes | num }}</span> minutes of
+  high voltage (above 270 V). <span data-metric="summary.events_bounded">{{ s.events_bounded }}</span> outage events border missing readings
+  (bounded edges) and <span data-metric="summary.events_censored">{{ s.events_censored }}</span> touch the start or end of monitoring.
+</p>
+
+<h2>2. Calendar and daily table</h2>
+<div class="legend muted">
+  <span><i class="b0"></i>no outage</span><span><i class="b1"></i>&lt; 1 h</span><span><i class="b2"></i>1&ndash;4 h</span>
+  <span><i class="b3"></i>4&ndash;8 h</span><span><i class="b4"></i>&gt; 8 h</span><span><i class="nodata"></i>no reading for most of the day (not counted as outage)</span>
+</div>
+{% set first = d.days[0].cal_day if d.days else None %}
+<div class="cal" style="margin-top:4px">
+  {% for w in ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}<div class="dow">{{ w }}</div>{% endfor %}
+  {% if d.days %}{% for _ in range(d.calendar_offset or 0) %}<div style="border:none"></div>{% endfor %}{% endif %}
+  {% for day in d.days %}
+    {% set lo = day.outage_min_lower %}
+    {% set cls = "nodata" if day.observed_minutes < 720 else ("b0" if lo == 0 else "b1" if lo < 60 else "b2" if lo < 240 else "b3" if lo < 480 else "b4") %}
+    <div class="{{ cls }}"><strong>{{ day.cal_day[8:] }}</strong><br>{% if day.observed_minutes < 720 %}{{ day.observed_minutes }} min read{% else %}{{ lo | mins }}{% endif %}</div>
+  {% endfor %}
+</div>
+<table style="margin-top:8px">
+  <tr><th class="l">Day</th><th>Interruptions</th><th>Outage min (lower)</th><th>Outage min (upper)</th><th>of which 0 V</th>
+      <th>Low-V min</th><th>High-V min</th><th>Evening outage (lower&ndash;upper)</th><th>Longest</th><th>Coverage</th></tr>
+  {% for day in d.days %}
+  <tr class="{{ 'lowcov' if day.observed_minutes < 1296 else '' }}">
+    <td class="l" data-metric="days.{{ loop.index0 }}.cal_day">{{ day.cal_day }}</td>
+    <td data-metric="days.{{ loop.index0 }}.interruptions">{{ day.interruptions }}</td>
+    <td data-metric="days.{{ loop.index0 }}.outage_min_lower">{{ day.outage_min_lower }}</td>
+    <td data-metric="days.{{ loop.index0 }}.outage_min_upper">{{ day.outage_min_upper }}</td>
+    <td data-metric="days.{{ loop.index0 }}.outage_zero_minutes">{{ day.outage_zero_minutes }}</td>
+    <td data-metric="days.{{ loop.index0 }}.low_minutes">{{ day.low_minutes }}</td>
+    <td data-metric="days.{{ loop.index0 }}.high_minutes">{{ day.high_minutes }}</td>
+    <td>{{ day.evening_outage_lower }}&ndash;{{ day.evening_outage_upper }}</td>
+    <td data-metric="days.{{ loop.index0 }}.longest_interruption">{{ day.longest_interruption }}</td>
+    <td data-metric="days.{{ loop.index0 }}.observed_minutes">{{ day.observed_minutes }}/1440</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="muted">Grey rows: less than 90% of the day was read. Minutes of an outage that crosses midnight are counted on each day;
+the interruption itself is counted on the day it starts.</p>
+
+<h2 class="pb">3. Outage events</h2>
+<p class="muted">An event is a run of consecutive minutes at or below 130 V. "Exact" edge: the neighbouring minute was measured with supply.
+"Bounded": the neighbour is missing data, so the outage may have been longer (the upper bound adds at most
+{{ d.method.params.get("events.max_uncertain_extension_minutes") }} minutes per edge). "Censored": monitoring started or ended during the outage.</p>
+<table>
+  <tr><th class="l">Event key</th><th class="l">Start</th><th class="l">End</th><th>Measured min</th><th>Range (min)</th>
+      <th class="l">Start / end</th><th class="l">Potential shared event</th></tr>
+  {% for e in d.events %}
+  <tr>
+    <td class="l mono" data-metric="events.{{ loop.index0 }}.event_key">{{ e.event_key }}</td>
+    <td class="l">{{ e.start_ts | replace("T", " ") }}</td><td class="l">{{ e.end_ts | replace("T", " ") }}</td>
+    <td data-metric="events.{{ loop.index0 }}.min_duration">{{ e.min_duration }}</td>
+    <td>{{ e.min_duration }}&ndash;<span data-metric="events.{{ loop.index0 }}.max_duration">{{ e.max_duration }}</span></td>
+    <td class="l"><span class="tag {{ e.start_certainty }}">{{ e.start_certainty }}</span> / <span class="tag {{ e.end_certainty }}">{{ e.end_certainty }}</span>{% if not e.is_interruption %} (below interruption threshold){% endif %}</td>
+    <td class="l mono">{{ e.group_key or "" }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h2>4. Potential shared supply events</h2>
+{% if d.groups %}
+<p>Other monitors in the same district lost supply within {{ d.method.params.get("coincidence.max_start_offset_minutes") }} minutes of
+these interruptions. Such coincidences are <strong>possible signs</strong> of a shared upstream cause; they are not proof of one.</p>
+{% for g in d.groups %}
+<h3>{{ g.group_key }}: {{ g.n_locations }} monitors, {{ g.n_pairs }} coincident pairs ({{ g.district_locations_with_interruptions }} monitors in the district had interruptions that month)</h3>
+<table>
+  <tr><th class="l">Monitor</th><th class="l">Start</th><th>Offset (min)</th><th>Measured min</th></tr>
+  {% for m in g.members %}<tr><td class="l">{{ m.display_name }}</td><td class="l">{{ m.start_ts | replace("T", " ") }}</td>
+    <td>+{{ m.offset_from_group_start_min }}</td><td>{{ m.min_duration }}</td></tr>{% endfor %}
+</table>
+{% endfor %}
+{% else %}<p>No interruption at this monitor in this month coincided with an interruption at another monitor in the district.</p>{% endif %}
+{% if d.baseline %}
+<div class="note">District-month chance comparison ({{ d.baseline.district }}, {{ d.baseline.month_key }}, comparable months only):
+  <span data-metric="baseline.observed_pairs">{{ d.baseline.observed_pairs | num }}</span> coincident pairs observed against
+  <span data-metric="baseline.expected_pairs">{{ "%.1f" | format(d.baseline.expected_pairs) }}</span> expected by chance
+  (whole-day shifts, {{ d.baseline.n_shifts }} variants;
+  {% if d.baseline.p_value == 0 %}none of the {{ d.baseline.n_shifts }} shifted variants reached the observed count{% else %}share of shifted variants at or above observed: {{ "%.2f" | format(d.baseline.p_value) }}{% endif %}).</div>
+{% else %}<p class="muted">No chance comparison for this district-month (too few comparable months or monitors).</p>{% endif %}
+<div class="note caveat">Coincidence is not cause. A single-premise fault, a monitor fault or chance can produce the same pattern.
+VoltProof calls these "potential shared supply events" and does not identify any equipment.</div>
+
+<h2>5. Data quality</h2>
+{% set q = d.quality %}
+<table style="max-width:520px">
+  <tr><td class="l">Monitoring window (first&ndash;last reading)</td><td>{{ q.first_ts | replace("T"," ") }} &ndash; {{ q.last_ts | replace("T"," ") }}</td></tr>
+  <tr><td class="l">Coverage of the whole window</td><td>{{ q.coverage_window | pct }}</td></tr>
+  <tr><td class="l">Gaps (runs of missing minutes) / longest</td><td>{{ q.gap_count | num }} / {{ q.longest_gap_minutes | mins }}</td></tr>
+  <tr><td class="l">Duplicate readings (identical, kept once)</td><td data-metric="quality.duplicate_readings">{{ q.duplicate_readings | num }}</td></tr>
+  <tr><td class="l">Conflicting readings (treated as missing)</td><td data-metric="quality.conflict_minutes">{{ q.conflict_minutes | num }}</td></tr>
+  <tr><td class="l">Quarantined values</td><td data-metric="quality.quarantined_values">{{ q.quarantined_values | num }}</td></tr>
+  <tr><td class="l">Highest recorded voltage</td><td>{{ q.max_voltage }} V</td></tr>
+  <tr><td class="l">Comparable months / months in window</td><td>{{ q.comparable_months }} / {{ q.months_in_window }}</td></tr>
+</table>
+
+<h2>6. Where a consumer can seek redress</h2>
+<p>{{ d.redress }}</p>
+
+<h2>7. Methodology and limitations</h2>
+<p>Voltage classes follow Prayas (Energy Group), ESMI: no supply &le; {{ d.method.thresholds.outage_max_v }} V; low below
+{{ d.method.thresholds.normal_min_v }} V; normal {{ d.method.thresholds.normal_min_v }}&ndash;{{ d.method.thresholds.normal_max_v }} V;
+high above {{ d.method.thresholds.normal_max_v }} V (<span class="mono">{{ d.method.threshold_source }}</span>).
+A month is comparable when more than 90% of its minutes were read (Prayas's Uttar Pradesh method). Full rules: docs/METHODOLOGY.md (method v{{ d.method.version }}).</p>
+<ul>{% for l in d.method.limitations %}<li>{{ l }}</li>{% endfor %}</ul>
+
+<h2 class="pb">8. Reproducibility appendix</h2>
+<p><strong>Data:</strong> {{ d.provenance.citation }}<br><strong>Licence / terms:</strong> {{ d.provenance.licence }}<br>
+<strong>Attribution:</strong> {{ d.provenance.attribution }}</p>
+<h3>Source files (checksums verified against Harvard Dataverse)</h3>
+<table>
+  <tr><th class="l">File</th><th>Rows</th><th class="l">MD5</th><th class="l">SHA-256</th></tr>
+  {% for f in d.provenance.source_files %}<tr><td class="l">{{ f.file_name }}</td><td>{{ f.rows_loaded | num }}</td>
+    <td class="l mono">{{ f.md5 }}</td><td class="l mono">{{ f.sha256 }}</td></tr>{% endfor %}
+</table>
+<p class="mono">Data manifest SHA-256: {{ d.provenance.data_manifest_sha256 }} &middot; pipeline run: {{ d.provenance.run_id }} &middot; pipeline commit: {{ d.provenance.pipeline_commit }}</p>
+<h3>SQL executed inside Exasol (file hash, statement hash, Exasol session / statement id)</h3>
+<table>
+  <tr><th class="l">Step</th><th>#</th><th class="l">SQL file SHA-256</th><th class="l">Statement SHA-256</th><th class="l">Session</th><th>Stmt</th></tr>
+  {% for p in d.provenance.statements %}<tr><td class="l">sql/{{ p.step }}</td><td>{{ p.stmt_index }}</td>
+    <td class="l mono">{{ p.sql_file_sha256[:16] }}&hellip;</td><td class="l mono">{{ p.stmt_sha256[:16] }}&hellip;</td>
+    <td class="l mono">{{ p.exa_session_id }}</td><td>{{ p.exa_stmt_id }}</td></tr>{% endfor %}
+</table>
+<p class="muted">Each (session, statement) pair can be looked up in Exasol's audit table EXA_DBA_AUDIT_SQL, whose SQL text
+matches the statement hash above (checked by pipeline/check_provenance.py). Regenerate: <span class="mono">{{ d.provenance.regenerate }}</span></p>
+
+<footer>{{ d.disclaimer }} {{ d.provenance.attribution }}</footer>
+</body>
+</html>

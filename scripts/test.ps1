@@ -7,15 +7,17 @@
   integration   hand-written fixtures through the real SQL pipeline (schemas VP_TEST_n)
   differential  oracle vs SQL: Hypothesis random batches (schema VP_HYPO) and a real-data slice
                 (needs the VOLTPROOF schema built by scripts\load.ps1 and the 2018 June-Aug file)
-  The database must be running for integration and differential suites.
+  e2e           Playwright drives the guided demo in Chromium against a real server (needs VOLTPROOF and
+                app\web\dist); saves screenshots to docs\deliverables\screenshots
+  The database must be running for integration, differential and e2e suites.
 
 .PARAMETER Suite
-  all (default) | unit | integration | differential
+  all (default) | unit | integration | differential | e2e
 .PARAMETER Examples
   Number of Hypothesis examples (default 12).
 #>
 param(
-    [ValidateSet('all', 'unit', 'integration', 'differential')][string]$Suite = 'all',
+    [ValidateSet('all', 'unit', 'integration', 'differential', 'e2e')][string]$Suite = 'all',
     [int]$Examples = 12
 )
 
@@ -26,7 +28,7 @@ $out = Join-Path $script:RepoRoot 'reports\tests'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 $env:VOLTPROOF_HYPOTHESIS_EXAMPLES = "$Examples"
 
-$suites = if ($Suite -eq 'all') { @('unit', 'integration', 'differential') } else { @($Suite) }
+$suites = if ($Suite -eq 'all') { @('unit', 'integration', 'differential', 'e2e') } else { @($Suite) }
 $failed = @()
 $ErrorActionPreference = 'Continue'
 foreach ($s in $suites) {

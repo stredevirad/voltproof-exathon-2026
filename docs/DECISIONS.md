@@ -214,6 +214,21 @@ One entry per significant decision: context, options, choice, why. Newest at the
   the analysis with that documented reason, which `QUALITY_FILE` shows. Validation is unaffected:
   Prayas's UP article was published on 7 Aug 2019.
 
+## D-027 · 2026-10-11 · Colour encoding (validated, not eyeballed)
+
+- **Calendar:** a single-hue orange sequential ramp (OKLCH at the outage hue, lightness strictly
+  decreasing 0.958 → 0.400) with 6 binned classes, **instead of the brief's "red-and-green"
+  calendar**. Red/green fails the most common colour-vision deficiency. Days read for less than 90%
+  of their minutes are hatched grey and labelled, never coloured as if complete.
+- **States:** OUTAGE = orange, LOW = blue, HIGH = aqua, from the reference palette's first three slots.
+  They pass `validate_palette.js --pairs all` in both modes: worst CVD ΔE 9.2 light / 9.4 dark; normal
+  vision 24.0 / 20.9. Aqua is below 3:1 contrast on light, so it is always shown with a text label. The
+  voltage line is neutral ink. NO_DATA is a hatched pattern with the words "no reading — not counted as
+  outage". State is also encoded by position (horizontal class bands with text labels), so colour is
+  never the only cue.
+- Rejected after validation: status yellow (fails the lightness band as a mark colour); orange + red
+  together (normal-vision ΔE 10.8 < 15); blue + violet in dark mode (protan ΔE 1.9).
+
 ## D-009 · 2026-10-11 · No geospatial features
 
 - **Context:** the location metadata has no coordinates.

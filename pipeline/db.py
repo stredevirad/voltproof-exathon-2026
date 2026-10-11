@@ -18,7 +18,8 @@ from pathlib import Path
 
 import pyexasol
 
-DEFAULT_DEPLOYMENT_DIR = r"D:\ExasolDeployments\voltproof"
+# Same default as scripts\_common.ps1: <drive of the repository>\ExasolDeployments\voltproof
+DEFAULT_DEPLOYMENT_DIR = str(Path(Path(__file__).resolve().anchor) / "ExasolDeployments" / "voltproof")
 LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 
 
@@ -54,7 +55,7 @@ def _password(ddir: Path) -> str:
     return json.loads((ddir / "secrets.json").read_text(encoding="utf-8"))["dbPassword"]
 
 
-def connect(schema: str | None = None, **kwargs) -> pyexasol.ExaConnection:
+def connect(schema: str | None = None, fetch_dict: bool = False, **kwargs) -> pyexasol.ExaConnection:
     ddir = deployment_dir()
     info = conn_info(ddir)
     sslopt = None
@@ -73,6 +74,6 @@ def connect(schema: str | None = None, **kwargs) -> pyexasol.ExaConnection:
         websocket_sslopt=sslopt,
         compression=False,
         client_name="VoltProof",
-        fetch_dict=False,
+        fetch_dict=fetch_dict,
         **kwargs,
     )

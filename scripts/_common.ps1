@@ -39,9 +39,14 @@ $env:npm_config_cache       = Join-Path $cache 'npm'
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $cache 'ms-playwright'
 $env:HYPOTHESIS_STORAGE_DIRECTORY = Join-Path $cache 'hypothesis'
 $env:VOLTPROOF_TMP          = Join-Path $cache 'tmp'
+$env:PYTHONUNBUFFERED       = '1'   # stream Python progress into logs instead of buffering it
+$env:PYTHONIOENCODING       = 'utf-8'
 New-Item -ItemType Directory -Force -Path $env:VOLTPROOF_TMP | Out-Null
 
-if (-not $env:EXASOL_DEPLOYMENT_DIR) { $env:EXASOL_DEPLOYMENT_DIR = 'D:\ExasolDeployments\voltproof' }
+# Default: <drive of the repository>\ExasolDeployments\voltproof (override with EXASOL_DEPLOYMENT_DIR in .env)
+if (-not $env:EXASOL_DEPLOYMENT_DIR) {
+    $env:EXASOL_DEPLOYMENT_DIR = Join-Path (Split-Path $script:RepoRoot -Qualifier) 'ExasolDeployments\voltproof'
+}
 
 $script:ExasolExe = Join-Path $script:RepoRoot '.tools\exasol\exasol.exe'
 $script:GitleaksExe = Join-Path $script:RepoRoot '.tools\gitleaks\gitleaks.exe'

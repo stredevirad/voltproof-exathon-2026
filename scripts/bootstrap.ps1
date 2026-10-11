@@ -85,6 +85,26 @@ if (-not $SkipTools) {
     }
 }
 
+Write-Step 'Installing Playwright Chromium (PDF reports and browser tests) into .cache\ms-playwright'
+$ErrorActionPreference = 'Continue'
+& (Join-Path $script:RepoRoot '.venv\Scripts\python.exe') -m playwright install chromium 2>&1 |
+    Select-Object -Last 2 | ForEach-Object { "  $_" }
+if ($LASTEXITCODE -ne 0) { throw 'playwright install chromium failed' }
+$ErrorActionPreference = 'Stop'
+
+Write-Step 'Building the web app (app\web -> app\web\dist)'
+$web = Join-Path $script:RepoRoot 'app\web'
+if (Test-Path (Join-Path $web 'package.json')) {
+    Push-Location $web
+    try {
+        $ErrorActionPreference = 'Continue'
+        npm.cmd ci --no-audit --no-fund 2>&1 | Select-Object -Last 2 | ForEach-Object { "  $_" }
+        if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' }
+        npm.cmd run build 2>&1 | Select-Object -Last 3 | ForEach-Object { "  $_" }
+        if ($LASTEXITCODE -ne 0) { throw 'npm run build failed' }
+    } finally { Pop-Location; $ErrorActionPreference = 'Stop' }
+}
+
 Write-Step 'Bootstrap complete'
 Write-Host '  Next: start the database      -> scripts\exa.ps1 install local --auto-approve   (first time)'
 Write-Host '                                   scripts\exa.ps1 start                          (afterwards)'
