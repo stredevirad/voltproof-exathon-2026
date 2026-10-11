@@ -20,7 +20,7 @@ It is one example selected by a rule, not a typical month. The UI says so in a b
 
 | Time | Screen | Narration (plain English) |
 |---|---|---|
-| 0:00–0:20 | Start page | "A shopkeeper in a small Uttar Pradesh town can't get a fix for daily power cuts, because her memory is the only record, against the utility's own reports. Independent monitors run by Prayas recorded more than four hours of outage a day in rural Uttar Pradesh. VoltProof turns those minute-by-minute voltage records into traceable evidence." |
+| 0:00–0:20 | Start page | "A shopkeeper in a small Uttar Pradesh town can't get a fix for daily power cuts, because her memory is the only record, against the utility's own reports. Prayas, which runs independent voltage monitors, reports more than four hours of outage a day in rural Uttar Pradesh. VoltProof turns those minute-by-minute voltage records into traceable evidence." |
 | 0:20–0:35 | Click **Start guided demo**; banner | "The demo opens one real monitor and month, chosen by a fixed rule shown here, not hand-picked." |
 | 0:35–1:05 | Month dashboard: KPI tiles, calendar, quality badge | "This month the monitor recorded N interruptions and at least H hours without usable supply. The headline is a lower bound: hatched days had too few readings, and missing readings are never counted as outage. The range shows what the gaps *could* add." |
 | 1:05–1:35 | Click the demo day; voltage trace | "Minute by minute: the grey line is measured voltage. Orange blocks are outages; hatched grey means no reading, not counted. On 25 July at 18:27 the supply drops to zero." |

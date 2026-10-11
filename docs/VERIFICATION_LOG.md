@@ -87,6 +87,11 @@ No differences from the prompt found.
 | P9 | Evening outages | same | ✅ "Lucknow … did not receive the entire six hours of evening supply between 5 and 11pm, and faced 12 minutes of outage on an average every day. This increased to about 53 minutes … other municipal areas and close to 1 hour and 30 minutes … in rural areas" | ✅ (note: the megacity evening figure is **Lucknow**, not all megacities) |
 | P10 | >270 V / >300 V | same | ✅ Sikanderabad (Sitapur): "around 12 hours of high voltage (>270 volts) supply each day in the initial month"; Baraulia (Barabanki): "high voltage supply exceeding 300 volts on multiple occasions" | ✅ |
 | P11 | Duration mix | same | ✅ "About 37% of the outages … were longer than three hours each, and another 33% outages ranged between one - three hours long" (extra validation target) | New |
+| P12 | Figure 2 | same, `/images/ESMI-blog/4-Uttar-Pradesh/4_UP_2_Daily_outage.png` (viewed 2026-10-11) | ✅ "Daily hours of outage averaged from 2016 to 2019": megacity 21 minutes, other municipal 1 hour 27 min, rural 4 hours 20 min; range bars up to ≈1.3 / ≈14.8 / ≈14.4 h/day | New |
+| P13 | Figure 5 | `4_UP_5_Outage_breakup.png` | ✅ "Duration-wise breakup of outages across all ESMI locations": up to 15 min 11%, 15 min–1 hour 19%, 1–3 hours 33%, more than 3 hours 37% | New |
+| P14 | Figures 6, 8 | `4_UP_6_daily_interruptions.png`, `4_UP_8_Outage_ToD.png` | ✅ Fig 6: monthly interruptions/day per category, Jan 2016–Nov 2019 with gaps (no megacity bars Jan–Oct 2019; no rural Feb 2016, Jun–Aug 2016, Mar–Jun 2019). Fig 8: heatmap of hours of outage within each 6-hour slot (scale 0–5 h), one column per month | New |
+| P15 | Figure 9 | `4_UP_9_EHS.png` | ✅ "Daily evening hours of supply": Megacity 5 hr 48 min, Other Municipal Area 5 hr 7 min, Rural 3 hr 36 min (the bulb is labelled "Megacity"; the text says Lucknow and, for rural, "close to 1 hour and 30 minutes" of outage) | New |
+| P16 | Figures 10–12, 14 | `4_UP_10_…SIkanderabad.png`, `4_UP_11_Biswan.png`, `4_UP_12_…Baraulia.png`, `4_UP_14_Huzurpur_road_Kaisarganj.png` | ✅ Monthly stacked hours/day by class (normal, low, high, no supply, no data) per monitor. Huzurpur road Kaisarganj is our location 182, **not** the demo monitor 183 (Huzurpur-Bahraich) | New |
 
 ### Exasol deployment and probes (2026-10-11, measured on this machine)
 

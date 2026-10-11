@@ -262,3 +262,29 @@ real-data oracle tests are re-run on the new formulations.
 
 - **Context:** the location metadata has no coordinates.
 - **Choice:** coincidence comparison groups are administrative (same district, then same state). No ST_DISTANCE, no map. The GEOMETRY probe in G2 is informational only. The map moves to future scope.
+
+## D-030 · 2026-10-11 · Prayas UP categories for validation
+
+- **Context:** Prayas groups UP monitors as megacity / other municipal area / rural (Table 1: 9 + 7,
+  57 + 11 and 79 + 0 domestic + non-domestic). Our location file has State Capital, District
+  Headquarters, Other Municipal Area and Gram Panchayat, with no "megacity" field.
+- **Choice:** megacity = State Capital (Lucknow) plus the Kanpur District Headquarters monitors (Kanpur is
+  the other UP city that would be called a megacity); other municipal = other District Headquarters and
+  Other Municipal Area; rural = Gram Panchayat. This gives 10 + 7, 66 + 6 and 86 + 1, the closest match
+  of the mappings tried. Prayas's list of monitors is not published, so the mapping cannot be checked
+  monitor by monitor. Lucknow alone is also reported, because Prayas's evening text names Lucknow.
+- **Where:** `sql/110_validation_prayas_up.sql` (`VALIDATION_CATEGORY`); used only for validation, not
+  in the product.
+
+## D-031 · 2026-10-11 · 2019 Jan–Jun file omits most all-zero hours (OPEN: handling to be confirmed)
+
+- **Finding:** see VALIDATION §3.4. The 2019 Jan–June CSV lacks most location-hours in which every
+  minute read 0 V. Prayas's own charts count them as no supply. Normal, low and high minutes agree with
+  Prayas's charts to within 0.2 h/day; only the no-supply hours are missing from the file.
+- **Current handling (unchanged rules):** the absent hours are NO_DATA (R-2: missing data is never an
+  outage). 2019 outage is therefore a lower bound; most affected months fail the 90% coverage rule and
+  are flagged as not comparable. Nothing is inferred from the 0 V readings on either side of a gap,
+  beyond the existing upper bound (R-15: at most 60 minutes of a gap next to each outage edge).
+- **Proposed (not yet done):** a file-level warning in `QUALITY_FILE`, on the Sources page and in the
+  limitations of reports covering 2019 months, giving the share of gaps bounded by 0 V on both sides.
+  This is descriptive only, and no number changes.

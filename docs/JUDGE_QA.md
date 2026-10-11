@@ -28,8 +28,12 @@ same pipeline would run on smart-meter or new monitor data; that is future scope
 Prayas publishes summaries and dashboards. VoltProof adds event-level evidence with explicit uncertainty
 (exact / bounded / censored edges; lower and upper bounds). It also adds coincidence analysis with a
 chance baseline, quarantine and provenance down to the source line and the Exasol statement id, and a
-reproducible report per location-month. We also re-derive Prayas's published UP figures from the raw
-minutes (docs/VALIDATION.md §3 *(G6 pending)*).
+reproducible report per location-month. We also compare our numbers with Prayas's published UP figures
+(docs/VALIDATION.md §3):
+- Prayas's single-monitor supply profiles for 2017–2018 agree with ours to within 0.2 h/day.
+- Its time-of-day and evening outage figures agree.
+- Its headline daily-outage averages (Figure 2) do not: ours are 2.0–2.6 times higher. We could not
+  reconcile that figure with Prayas's own Figures 8 and 9, and we report the gap rather than tune it away.
 
 ## Method and honesty
 
@@ -48,8 +52,10 @@ supply events (17 Bahraich monitors at 18:27–18:29 on 25 July 2018; docs/VALID
 **7. Isn't coincidence just chance?**
 Sometimes, and we measure it. Each district-month is compared with a baseline where every monitor's
 interruptions are shifted by whole days (keeping its time-of-day pattern; R-21). In large rural
-districts we observed about 1.6–2.8 times more coincident pairs than the shifted baseline, with none of
-20 shifts reaching the observed count. Some district-months sit at chance (docs/VALIDATION.md §2). The
+districts we observed about 1.4–3.1 times more coincident pairs than the shifted baseline, with none of
+20 shifts reaching the observed count (Bahraich, July 2018: 3,945 pairs observed, 1,827.5 expected). Over
+all 322 district-months with at least two monitors: 97,852 observed against 43,192 expected. 174 are above
+all 20 shifts, and many sit at chance (docs/VALIDATION.md §2). The
 baseline uses only comparable months, to avoid an anti-conservative bias (D-023). Its known
 conservative bias in 30-day months is disclosed.
 
@@ -64,19 +70,22 @@ Nothing is dropped silently. Malformed rows and values are quarantined with reas
 duplicates become NO_DATA. Every file's rows, quarantines and analysed minutes are reported
 (QUALITY_FILE), and the build fails if a file is mostly quarantined. Examples found in the real data: the
 2019 files use M/D/YYYY dates (D-025); 72 `#VALUE!` dates; the published 2019 July–Dec file lost its
-Hour column and is excluded with that reason (D-026).
+Hour column and is excluded with that reason (D-026). The 2019 Jan–June file omits most hours in which
+every minute read 0 V. We found this by comparing with Prayas's own charts. The minutes stay NO_DATA, so
+2019 outage is a lower bound (docs/VALIDATION.md §3.4, D-031).
 
 **10. How do you know your SQL is correct?**
 Three independent checks (docs/VALIDATION.md §1, docs/TEST_REPORT.md):
-- 17 hand-written fixtures whose expected values were derived from the rules by hand;
+- 18 hand-written fixtures whose expected values were derived from the rules by hand;
 - an independent plain-Python oracle, with exact equality against the SQL on all fixtures, 40 random
   Hypothesis batches and real UP slices;
-- harness-sensitivity tests proving a single wrong value is caught.
+- harness-sensitivity tests showing that a single wrong value is caught.
 
 **11. Could you have tuned parameters to match Prayas's numbers?**
-No parameter was changed to match. Thresholds and the 90% coverage rule are Prayas's published ones.
-Where we test an alternative (interruption threshold 1 vs 2 minutes), both results are reported
-(docs/VALIDATION.md §3 *(G6 pending)*).
+No parameter was changed to match. Thresholds and the 90% coverage rule are Prayas's published ones,
+and the primary definition was fixed before comparing. Where we test alternatives (1 vs 2-minute
+interruptions, averaging method, connection type, 0 V only, years), every result is reported. None of
+them closes the gap to Prayas's Figure 2, and we say so (docs/VALIDATION.md §3.3).
 
 **12. "Compensation due" is modelled but can't be validated. (ledger T3 / Q2)**
 We don't model it. VoltProof never states an amount or an entitlement. A UI and report test fails on
@@ -121,7 +130,7 @@ Several things, all recorded with evidence (VERIFICATION_LOG X6, X22, X31; D-010
 - Native interval/range joins (we emulate them with buckets).
 - Pre-growing the data volume on Windows local deployments.
 - A documented way to get the statement id of the last executed statement (we use
-  `CURRENT_STATEMENT + 1` in non-autocommit mode, proved against the audit log).
+  `CURRENT_STATEMENT + 1` in non-autocommit mode, verified against the audit log).
 
 ## Data and licence
 
@@ -134,7 +143,8 @@ the dataset as the page requires, credit Prayas everywhere and never redistribut
 **19. Why is 2019 July–December missing?**
 The published file has lost its Hour column: 690,915 of 695,974 rows say hour 0, so minute timestamps
 cannot be determined without guessing. It is verified, loaded raw and excluded with that reason (D-026).
-Prayas's UP article was published in August 2019, so validation does not need it.
+Prayas's UP article is dated August 2019, but some of its charts (Figures 6 and 11) run to November 2019,
+so the published figures include months we cannot use. VALIDATION §3 lists this among the differences.
 
 **20. Why "Uttar Pradesh"?**
 Prayas published UP-specific statistics, which lets us validate against an independent published

@@ -8,42 +8,49 @@ figures. Every number here comes from a recorded run. Commands are given so each
 
 | Check | Scope | Result | Command |
 |---|---|---|---|
-| Hand-written fixtures (R-1 to R-21) | 14 synthetic fixtures, every hand-derived expected value | all pass | `scripts\test.ps1 -Suite integration` |
+| Hand-written fixtures (R-1 to R-21) | 18 synthetic fixtures (F01–F18), every hand-derived expected value | all pass | `scripts\test.ps1 -Suite integration` |
 | Fixtures, SQL = oracle | all events, daily and monthly rows, pairs, groups, baselines | identical | same |
 | Harness sensitivity | a single perturbed expected value or oracle field must be reported | detected | same |
 | Random inputs (Hypothesis) | 40 random multi-location batches, randomised parameters | identical (1,874 raw rows, 2,162 events, 228 bridged, 1,063 bounded edges) | `scripts\test.ps1 -Suite differential -Examples 40` |
 | Real data, events and aggregates | 4 UP locations, 2018 Jun–Aug | identical (4,930 events, 365 days, 12 months) | same |
 | Real data, coincidence | Bahraich + Barabanki, all 49 locations, 2018 Jun–Aug | identical (20,127 pairs, 6,683 groups, 6 district-month baselines) | same |
 
-## 2. Coincidence sanity check on one real month (G4)
+## 2. Coincidence sanity check on the full UP data (G4, re-run in G6)
 
-**Data:** 2018 June–August, Uttar Pradesh scope; Δ = 2 min, θ = 1 min, N = 20 shifts.
-Command: `.venv\Scripts\python.exe -m pipeline.g4_sanity Bahraich 2018-07` (output reproduced below,
-run 2026-10-11).
+**Data:** full Uttar Pradesh build (2016-01 to 2019-06); Δ = 2 min, θ = 1 min, N = 20 shifts; the baseline
+uses comparable location-months only (D-023), so "Locations" counts monitors with a comparable month.
+Command: `.venv\Scripts\python.exe -m pipeline.g4_sanity Bahraich 2018-07` (run 2026-10-11 on the full
+build; the earlier 2018 Jun–Aug sample-era table is superseded).
 
 **Observed vs chance (selected district-months):**
 
 | District | Month | Locations | Interruptions | Observed pairs | Expected by chance | Ratio | Empirical p |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Bahraich | 2018-07 | 21 | 5,985 | 4,322 | 2,149.6 | 2.0 | < 0.05 |
-| Bahraich | 2018-08 | 19 | 4,754 | 3,839 | 1,358.4 | 2.8 | < 0.05 |
-| Barabanki | 2018-07 | 24 | 5,397 | 2,748 | 1,749.8 | 1.6 | < 0.05 |
-| Sitapur | 2018-07 | 19 | 3,895 | 1,712 | 1,008.1 | 1.7 | < 0.05 |
-| Lucknow | 2018-06 | 5 | 446 | 59 | 11.8 | 5.0 | < 0.05 |
-| Lucknow | 2018-08 | 5 | 203 | 2 | 1.9 | 1.0 | 0.60 |
-| Fatehpur | 2018-08 | 2 | 290 | 0 | 1.2 | 0.0 | 1.00 |
+| Bahraich | 2018-07 | 19 | 5,557 | 3,945 | 1,827.5 | 2.2 | < 0.05 |
+| Bahraich | 2018-08 | 14 | 4,238 | 3,270 | 1,063.0 | 3.1 | < 0.05 |
+| Barabanki | 2018-07 | 18 | 4,689 | 1,983 | 1,291.8 | 1.5 | < 0.05 |
+| Barabanki | 2018-08 | 13 | 3,003 | 757 | 536.8 | 1.4 | < 0.05 |
+| Sitapur | 2018-07 | 8 | 2,221 | 410 | 276.5 | 1.5 | < 0.05 |
+| Lucknow | 2018-06 | 4 | 406 | 54 | 8.5 | 6.4 | < 0.05 |
+| Lucknow | 2018-08 | 4 | 183 | 2 | 1.8 | 1.1 | 0.50 |
 
 "< 0.05" means none of the 20 shifted versions reached the observed count. With N = 20 the smallest
 resolvable p is 1/20.
 
-**Reading:** in the large rural districts, coincident interruptions are about 1.6–2.8 times more frequent
+**All district-months:** 420 district-months have interruptions in comparable months; 322 of them have at
+least two monitors. Of those 322, 174 are above every one of the 20 shifted versions, 132 have p > 0.05 and
+44 have fewer coincident pairs than expected. Summed over the 322, there are 97,852 observed pairs against
+43,192.4 expected (2.3 times). Over the 141 district-months with at least 10 expected pairs, the median
+ratio is 1.9.
+
+**Reading:** in the large rural districts, coincident interruptions are about 1.4–3.1 times more frequent
 than the time-shifted baseline. The baseline keeps each monitor's own daily rhythm, including scheduled
-evening cuts, so this excess is not explained by time-of-day routine alone. Some district-months sit at
-chance (e.g. Lucknow 2018-08, Fatehpur 2018-08), which is the expected contrast.
+evening cuts, so this excess is not explained by time-of-day routine alone. Many district-months sit at
+chance (e.g. Lucknow 2018-08), which is the expected contrast.
 
 **Example group, Bahraich, 25 July 2018 (evening):** group key `Bahraich | 2018-07-25 18:27`, 17 member
-interruptions at 17 different monitors, 136 coincident pairs, starts between 18:27 and 18:29. 21
-Bahraich monitors had interruptions that month. Each member was checked against the raw CSV
+interruptions at 17 different monitors, 136 coincident pairs, starts between 18:27 and 18:29 (this is the
+guided demo's group). 21 Bahraich monitors had interruptions that month. Each member was checked against the raw CSV
 (independently of the SQL): the minute before the start shows supply (137–243 V) and the start minute
 reads **0 V**. All 17 pass.
 
@@ -55,4 +62,127 @@ scheduled supply arrangements remain possible, and VoltProof reports these only 
 
 ## 3. Comparison with Prayas's published UP figures (G6)
 
-Not yet run. It needs the full 2016–2019 UP files (requested from the user on 2026-10-11).
+**Source:** Prayas (Energy Group), "ESMI in Uttar Pradesh", 7 Aug 2019, text and Figures 2, 5, 6, 8, 9,
+10, 11, 12 and 14 (VERIFICATION_LOG P4–P16). Prayas's stated method: UP, calendar years 2016–19, "Data
+from a location was considered for months only where more than 90% of data was available".
+
+**Summary.** VoltProof agrees with Prayas's single-monitor supply profiles for 2017–2018 to within
+0.2 h/day for every voltage class (34 monitor-months), and with Prayas's time-of-day and evening outage
+figures (Figures 8 and 9). **VoltProof does not reproduce the daily outage averages in Prayas's Figure 2
+and its text** (ours are 2.0–2.6 times higher). We could not reconcile Figure 2 with Figures 8 and 9; the
+article does not state how Figure 2 was averaged. The comparison also found a defect in the 2019
+Jan–Jun source file (§3.4).
+
+### 3.1 Definitions used
+
+- **Primary definition (stated before comparing, not tuned):** Prayas's voltage classes (outage ≤ 130 V);
+  measured minutes only; interruption = an outage of at least 1 minute; location-months with more than
+  90% of calendar minutes read ("comparable", Prayas's rule); 2016-01 to 2019-06 (our 2019 July–Dec file
+  is excluded, D-026); averages pooled (total outage minutes ÷ total observed days) per category;
+  evening = 17:00–22:59.
+- **Categories (D-030):** our location file gives State Capital, District Headquarters, Other Municipal
+  Area and Gram Panchayat. Megacity = State Capital (Lucknow) plus the Kanpur District Headquarters
+  monitors; other municipal = other District Headquarters and Other Municipal Area; rural = Gram
+  Panchayat. Counts: megacity 10 domestic + 7 non-domestic (Prayas 9 + 7), other municipal 66 + 6
+  (Prayas 57 + 11), rural 86 + 1 (Prayas 79 + 0). Monitors with at least one comparable month in the
+  study period: 16 / 68 / 82.
+- **Data used:** 1,876 comparable location-months (megacity 292, other municipal 818, rural 766),
+  56,490 observed location-days.
+
+### 3.2 Results, one row per published figure
+
+| Published (where) | Prayas | VoltProof | Reading |
+|---|---|---|---|
+| Daily outage, min/day (Figure 2 and text) | 21 / 87 / 260 | 55.6 / 174.4 / 555.2 | **Not reproduced** (×2.6 / ×2.0 / ×2.1) |
+| Outage by time of day, summed over the four 6-h slots (Figure 8, read from its colour scale, ±0.1 h per slot) | ≈ 56 / ≈ 155 / ≈ 523 | 54 / 174 / 598 (equal weight per month, as Figure 8's columns) · 56 / 174 / 555 (pooled) | Agrees (within 0–14%) |
+| Evening outage, min per evening (Figure 9: 6 h minus 5 h 48 / 5 h 07 / 3 h 36 of supply) | 12 / 53 / 144 | 11.3 / 47.8 / 147.3 | Agrees |
+| Evening outage (text) | "Lucknow … 12 minutes"; other municipal "about 53"; rural "close to 1 hour and 30 minutes" | Lucknow 6.0; 47.8; 147.3 | The text differs from Figure 9 for rural (90 vs 144) and names Lucknow where Figure 9's bulb says "Megacity"; both readings are shown |
+| Interruptions per day (text; Figure 6 monthly bars) | "a couple" / "nearly five" / "up to 10"; monthly bars about 1–3.6 / 2–7 / 5–10 | 1.81 / 4.01 / 7.50 (≥ 2 min: 1.70 / 3.90 / 7.19); monthly 0.7–3.6 / 2.2–6.4 / 4.8–11.5 | Approximately agrees |
+| Duration mix, "across all ESMI locations" (Figure 5): ≤ 15 min / 15–60 min / 1–3 h / > 3 h | 11 / 19 / 33 / 37% | by count 55.0 / 19.9 / 17.2 / 8.0%; by time 5.5 / 10.2 / 31.1 / 53.2% | **Not reproduced** under either weighting (Figure 5 may cover all ESMI states, which we cannot test) |
+| Single-monitor supply profiles, 2017–2018 (Figures 10, 11, 12, 14: Sikanderabad, Biswan, Baraulia, Huzurpur road Kaisarganj) | hours/day per class, per month | largest difference over 34 monitor-months: normal 0.1, low 0.1, high 0.2, no supply 0.1, no data 0.1 h/day | Agrees |
+| Same monitors, 2019 Jan–Jun | 11 monitor-months | normal / low / high within 0.2 h/day; no supply up to 11.6 h/day lower, with no data correspondingly higher | Source-file defect, §3.4 |
+| Sikanderabad: "around 12 hours of high voltage (>270 volts) supply each day in the initial month" | ≈ 12 h; Figure 10 starts at Dec 2017 and shows 11.8 h | Dec 2017, its first month with > 90% data: 11.7 h (the partial months before: Oct 3.4 h, Nov 8.5 h) | Agrees |
+| Baraulia: "high voltage supply exceeding 300 volts on multiple occasions" | — | 34,554 minutes above 300 V on 150 days | Agrees |
+| Months Prayas leaves out of a monitor's profile (Biswan Sep 2018) | omitted | our coverage 79.7%, below the 90% rule | Consistent |
+
+Megacity, other municipal and rural are given in that order. Prayas's single-monitor figures are read by
+counting the pixels of each legend colour down each stacked bar, whose full height is 24 h.
+
+### 3.3 Investigating the daily-outage gap
+
+Every row below changes one definition and keeps the rest of the primary definition. None is tuned.
+The result does not explain the gap.
+
+| Variant | Megacity | Other municipal | Rural |
+|---|---:|---:|---:|
+| Primary (pooled) | 55.6 | 174.4 | 555.2 |
+| Mean of location-months | 55.6 | 173.9 | 554.3 |
+| Mean of locations | 60.3 | 224.0 | 573.1 |
+| Median of locations | 59.7 | 119.8 | 581.1 |
+| Equal weight per calendar month | 54 | 174 | 598 |
+| Domestic connections only | 57.3 | 184.2 | 564.7 |
+| 0 V minutes only (not 1–130 V) | 55.0 | 170.0 | 539.6 |
+| 2016–2018 only (without 2019) | 56.3 | 189.5 | 566.3 |
+| Upper bound (with inferred minutes) | 55.7 | 177.5 | 558.0 |
+| Lucknow only, for megacity | 34.6 | – | – |
+| **Prayas, Figure 2** | **21** | **87** | **260** |
+
+By year (pooled): megacity 68.3 / 48.1 / 49.6 / 50.3 (2016–2019), other municipal 237.4 / 116.1 / 226.8 /
+84.9, rural 771.4 / 495.5 / 561.0 / 437.5. No single year comes close to Figure 2.
+
+**Causes tested and rejected:**
+- Multi-day zero stretches account for only 5–9% of outage minutes.
+- The gap is not driven by a few extreme monitors: the top 10% of monitors contribute 27.5% / 17.4% / 10.6%
+  of each category's outage minutes.
+- Averaging method, connection type, 0 V vs low readings, the year mix, the 2019 data, and inferred
+  minutes are all ruled out by the table above.
+
+**Evidence that the pipeline does not inflate outage minutes:**
+- Prayas's own single-monitor profiles agree to within 0.1 h/day of no supply for 2017–2018.
+- Prayas's Figures 8 and 9 agree with our time-of-day and evening outage.
+- The gaps run in opposite directions for Lucknow: its daily outage is 1.6 times Figure 2's megacity value,
+  while its evening outage is half the text's 12 minutes. A uniform inflation would push both up.
+- The SQL matches an independent oracle (§1).
+
+**What we cannot test from the publication:**
+- **Prayas's exact location-months.** Figure 6 shows months we have but Prayas does not: megacity 2019
+  Jan–Jun, rural Feb 2016, Jun–Aug 2016 and Mar–Jun 2019. Prayas also had 2019 Jul–Nov, which our files
+  lack.
+- **How Figure 2 averages.** Its megacity range bar tops out at about 1.3 h/day. Three of our megacity
+  monitors average more than that: Aishbagh-Lucknow 151 min/day over 5 months, Masvanpur-Kanpur 98 over 38,
+  Civil Line-Kanpur 88 over 11.
+- **Any verification or exclusion step** applied to the published averages.
+- **Whether Figure 5 covers UP only.**
+
+### 3.4 Finding: the 2019 Jan–Jun file omits most all-zero hours
+
+The single-monitor comparison exposed a defect in `ESMI voltage data 2019 Jan-June.csv`.
+
+**Evidence:**
+- **All-zero hours:** in 2016–2018, 11–17% of read location-hours have 0 V in all 60 minutes. In 2019 it
+  is 4.3%.
+- **Gaps:** 2019 has 12,555 gaps with no reading, against 209–1,027 a year before. 82% of the 2019 gaps
+  (75% of their minutes) have a 0 V reading immediately before and after.
+- **Example:** Biswan-Sitapur on 10 Jan 2019. The CSV has rows for hours 0–9, 17–18 and 20–23. Hour 9 ends
+  at 0 V and hour 17 starts at 0 V, and the same happens around hour 19. Prayas's Figure 11 shows about
+  12 h/day of no supply at Biswan in Jan 2019, where we read 1.8 h of outage and 10.3 h without readings.
+
+**Effect:**
+- Under R-2 ("missing data is never counted as an outage"), these hours are NO_DATA.
+- 2019 outage figures are therefore lower bounds, well below what Prayas's own system shows.
+- Many 2019 location-months fall below the 90% rule and are flagged as not comparable: 222 of 492 UP
+  location-months are comparable.
+- Even comparable 2019 months may lack up to 10% of minutes.
+- The aggregate comparison barely changes without 2019 (table above).
+- Handling is recorded as D-031.
+
+### 3.5 Reproduce
+
+```powershell
+.venv\Scripts\python.exe -m pipeline.run_sql 110          # validation tables (about 1 s; needs the UP build)
+.venv\Scripts\python.exe -m pipeline.prayas_figures       # needs network: downloads Prayas's figures to .cache\prayas
+```
+
+Step 110 is not part of `scripts\load.ps1`, because it is a UP-specific validation, not a product
+feature. `pipeline.prayas_figures` is not part of the clean start, because it needs the network. The
+figures stay in `.cache` and are never committed; they are Prayas's work.

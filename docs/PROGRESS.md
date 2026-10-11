@@ -10,7 +10,7 @@
 | G3 Correctness core | ✅ passed 2026-10-11 | Full UP subset loads (102,845,781 minutes, 176 locations) in 194 s; fixtures F01–F18 + Hypothesis + real-data slices identical to the oracle; quality report renders. Tag `gate-3-correctness` |
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
-| G6 Validation & hardening | ⬜ not started | — |
+| G6 Validation & hardening | 🟡 in progress | Prayas comparison written (VALIDATION §3): single-monitor and time-of-day figures agree; Figure 2 daily averages not reproduced; 2019 file defect found (D-031, open). Benchmarks, README, clean start pending |
 | G7 Submission | ⬜ not started | — |
 
 ## Remaining risks (top 5)
@@ -121,10 +121,20 @@
 - G5: FastAPI API, React/ECharts app (colours validated, D-027), PDF evidence report, `scripts\start.ps1`
   (tested on port 8077), SETUP_WINDOWS, JUDGE_QA (22 questions), DEMO_SCRIPT, THIRD_PARTY_NOTICES.
 
+### G6 (in progress)
+- **Validation against Prayas (VALIDATION §3, done):**
+  - `sql/110_validation_prayas_up.sql` (D-030 categories) and `pipeline/prayas_figures.py`, which reads
+    Prayas's published charts.
+  - **Agrees:** single-monitor profiles for 2017–2018 (34 monitor-months, ≤ 0.2 h/day in every class),
+    Figure 8 time of day, Figure 9 evening, Sikanderabad and Baraulia anchors.
+  - **Not reproduced:** Figure 2 daily averages (ours 2.0–2.6×) and Figure 5 duration mix. Investigated,
+    nothing tuned.
+- **Data finding (D-031, OPEN):** the 2019 Jan–Jun file omits most all-0 V hours, so 2019 outage is a lower
+  bound. Awaiting the user's decision on handling (stop rule c).
+- VALIDATION §2 regenerated from the full build (Bahraich 2018-07: 3,945 vs 1,827.5). JUDGE_QA #4, #7, #9,
+  #11 and #19 updated; fixture count corrected to 18.
+
 ### Next (G6)
-1. Validation against Prayas's UP figures (docs/VALIDATION.md §3), using its definitions and the >90% filter.
-2. Benchmarks from `EXA_SQL_LAST_DAY` (cold vs warm, N runs) into docs/BENCHMARKS.md; WHY_EXASOL.md.
-3. Clean-start test from a fresh clone following only the README; README itself.
-4. Re-run VALIDATION §2 coincidence table on the full data with the comparable-only baseline.
-2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
-3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.
+1. Benchmarks from `EXA_SQL_LAST_DAY` (cold vs warm, N runs) into docs/BENCHMARKS.md; WHY_EXASOL.md.
+2. README (no "reproduces Prayas" wording); clean-start test from a fresh clone following only the README.
+3. TEST_REPORT.md from actual runs.
