@@ -5,7 +5,7 @@
 | Gate | Status | Evidence / blocker |
 |---|---|---|
 | G0 Environment & repo | ✅ passed 2026-10-11 (commit pending) | Environment report below; scaffold staged. The local `git commit` was denied twice at the permission prompt, so it awaits user approval. Tag `gate-0-env` follows the commit |
-| G1 Data access & licence | 🟡 in progress | Terms documented (`docs/data/SOURCE_TERMS.md`); user approved the CC0 + Prayas-terms basis. `scripts\get-data.ps1` verifier works (reports MISSING correctly). **Waiting for the user's browser download** of the first-sample files |
+| G1 Data access & licence | ✅ passed 2026-10-11 | Terms + exact citation in `docs/data/SOURCE_TERMS.md`; 3 sample files MD5-verified (original CSV); 542,518 rows confirmed; outage = 0 V, missing = absent hours; corrections D-013 to D-016. Tag `gate-1-data` |
 | G2 Exasol | 🟡 DB running; needs the real sample | Exasol 2026.2.0-nano.3 installed via `scripts\exa.ps1 install local`; pyexasol 2.4.1 connects; feature probes recorded (`reports/exasol_probes.json`). Pass criterion (one real ESMI query) pending the sample |
 | G3 Correctness core | ⬜ not started | — |
 | G4 Coincidence | ⬜ not started | — |
@@ -69,7 +69,29 @@
 - Stray `NUL` file (Podman ssh known_hosts line) removed from the repo root; `.gitignore` guards it.
 - **Commit still blocked** by the auto-mode classifier (no permission rule matches; see the checkpoint). Nothing committed yet.
 
+### Session 3 (same day): user work order (history scan, resources, G1→G3)
+- User committed the scaffold (`20ef134`, tag `gate-0-env`); all three teammates registered. Local commits are now authorised for Claude (no push).
+- User decision: **no courtesy email to Prayas** (dropped).
+- **Step 1, history scan:** `gitleaks git --redact -v` → 1 commit scanned (~184 KB), **no leaks found**. Commit contents checked: no data, `.cache`, `.tools`, `.venv` or `docs/private`.
+- **Step 2, resource facts (measured 14:59 IST):**
+
+| Resource | Value | Source |
+|---|---|---|
+| Host | Intel Core Ultra 5 125H, 15.6 GB RAM | G0 |
+| WSL2 VM (shared by Podman + Docker Desktop) | 10,951 MiB RAM, 4,096 MiB swap, 18 CPUs | `.wslconfig` exists: `memory=11GB, processors=18, swap=4GB`; `free -m` in VM |
+| Exasol container | no own cap (limit = VM, 11.48 GB) | `podman stats` |
+| Exasol DB RAM | **8.9 GiB** (`dbram=auto`), 9 vCPU, 1 node | `EXA_SYSTEM_EVENTS`, `exasol.conf` |
+| Connections | licence limit 20; `maxConnections` 18 | `EXA_SYSTEM_EVENTS.PARAMETERS`, `EXA_METADATA` |
+| Free disk | C: 28.57 GB · D: 406.20 GB | `Get-PSDrive` |
+| DB data location | D: (`D:\ExasolDeployments\voltproof\local\runtime\exa`) | launcher source + measurement |
+
+  **Limits that could bite on the full UP load (2014–2018 national ≈ 6.6 M location-hours ≈ 396 M minute values; UP is a subset):**
+  1. **Host RAM headroom:** 8.9 GiB DB RAM inside an 11 GB VM leaves Windows ~4.6 GB of the 15.6 GB. A browser + Playwright + VS Code during a heavy load could push Windows into paging. *Recommendation:* keep `.wslconfig` unchanged (11 GB); keep Docker Desktop off; avoid other heavy apps during full loads. Only if Windows becomes sluggish, consider `memory=10GB` (needs your approval; lowers DB RAM proportionally).
+  2. **Storage I/O over the Windows→WSL bind mount (X22, unverified upstream):** measured during the G2 load, see below.
+  3. **Disk:** no concern. Data grows on D: (406 GB free); C: only grows with images/SLCs.
+  4. **Connections:** 18 usable. The app uses a small pool (≤4), tests ≤2.
+
 ### Next
-1. User: download the first-sample files; resolve the commit block.
+1. G1 inspection + G2 load and first real query (files landed 14:50–14:54, MD5-verified).
 2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
 3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.

@@ -20,7 +20,7 @@ class Params:
     normal_min_v: float = 205
     normal_max_v: float = 270
     min_valid_v: float = 0
-    max_valid_v: float = 350
+    max_valid_v: float | None = None  # no upper cut by default (D-013)
     gap_bridge_max_minutes: int = 0
     max_uncertain_extension_minutes: int = 60
     interruption_min_minutes: int = 1
@@ -92,7 +92,7 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
                 res.quarantine.append({"location": r.location, "source_row": r.source_row,
                                        "minute": i, "reason": "non_numeric"})
                 continue
-            if v < p.min_valid_v or v > p.max_valid_v:
+            if v < p.min_valid_v or (p.max_valid_v is not None and v > p.max_valid_v):
                 res.quarantine.append({"location": r.location, "source_row": r.source_row,
                                        "minute": i, "reason": "out_of_range"})
                 continue
@@ -196,7 +196,7 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
         days: dict[dt.date, dict] = {}
         for i, (minute, st, _) in enumerate(seq):
             d = days.setdefault(minute.date(), {
-                "expected": 0, "observed": 0, "outage_lower": 0, "outage_upper": 0,
+                "expected": 0, "observed": 0, "outage_lower": 0, "outage_upper": 0, "outage_zero": 0,
                 "low": 0, "high": 0, "evening_lower": 0, "evening_upper": 0,
                 "interruptions": 0, "longest": 0,
             })
@@ -207,6 +207,8 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
             if st == OUTAGE:
                 d["outage_lower"] += 1
                 d["outage_upper"] += 1
+                if seq[i][2] == 0:
+                    d["outage_zero"] += 1
                 if evening:
                     d["evening_lower"] += 1
                     d["evening_upper"] += 1

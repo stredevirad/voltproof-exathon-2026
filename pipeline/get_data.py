@@ -27,6 +27,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import urllib.error
@@ -121,6 +122,24 @@ def find_local(entry: dict) -> Path | None:
     return None
 
 
+def ddi_row_count(file_id: int) -> int | None:
+    """Observation count Dataverse publishes for an ingested tabular file (DDI caseQnty; no download gate)."""
+    cache = REPO_ROOT / "data" / f"dataverse_ddi_{file_id}.xml"
+    if not cache.exists():
+        url = f"{SERVER}/api/access/datafile/{file_id}/metadata/ddi"
+        with urllib.request.urlopen(_request(url), timeout=60) as resp:
+            cache.write_bytes(resp.read())
+    m = re.search(r"<caseQnty>(\d+)</caseQnty>", cache.read_text(encoding="utf-8", errors="replace"))
+    return int(m.group(1)) if m else None
+
+
+def count_data_rows(path: Path) -> int:
+    """Lines after the header row (both the original CSV and the tab export carry one header line)."""
+    with path.open("rb") as fh:
+        lines = sum(1 for _ in fh)
+    return max(lines - 1, 0)
+
+
 def verify(entry: dict, path: Path) -> dict:
     md5, sha, size = hash_file(path)
     variant = "unknown"
@@ -128,16 +147,7 @@ def verify(entry: dict, path: Path) -> dict:
         variant = "original"
     elif size == entry["stored_size"]:
         variant = "tab-export"
-    md5_ok = md5 == entry["md5"]
-    if md5_ok:
-        status = "verified"
-    elif variant == "tab-export":
-        # Dataverse publishes one MD5 per file; for ingested tabular files it may describe the original
-        # upload rather than the tab export. Report precisely rather than guessing.
-        status = "size-matches-tab-export-md5-differs"
-    else:
-        status = "MISMATCH"
-    return {
+    rec = {
         "dataverse_file_id": entry["id"],
         "file": path.name,
         "variant": variant,
@@ -145,8 +155,22 @@ def verify(entry: dict, path: Path) -> dict:
         "md5": md5,
         "md5_published": entry["md5"],
         "sha256": sha,
-        "status": status,
     }
+    if md5 == entry["md5"]:
+        rec["status"] = "verified"
+    elif variant == "tab-export" and entry["is_tabular"]:
+        # Verified 2026-10-11: the published MD5 is the checksum of the ORIGINAL upload (the original-format
+        # CSVs match it exactly). A tab-delimited export is a converted copy and cannot match, so it is
+        # verified by exact byte size plus the observation count Dataverse publishes in its DDI metadata.
+        expected_rows = ddi_row_count(entry["id"])
+        rows = count_data_rows(path)
+        rec["rows"] = rows
+        rec["rows_published"] = expected_rows
+        rec["status"] = ("verified-size-and-rows" if expected_rows is not None and rows == expected_rows
+                         else "MISMATCH-rows")
+    else:
+        rec["status"] = "MISMATCH"
+    return rec
 
 
 def guestbook_body() -> dict:
@@ -236,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         r = verify(entry, path)
         results.append(r)
         print(f"{r['status']:<12} {r['file']}  {r['bytes']:,} bytes  ({r['variant']})")
-        if r["status"] != "verified":
+        if r["status"] not in ("verified", "verified-size-and-rows"):
             problems += 1
 
     manifest = {

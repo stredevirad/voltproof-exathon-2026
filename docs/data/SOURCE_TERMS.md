@@ -18,8 +18,11 @@ data is used. The only synthetic data in this repository is the small hand-writt
 | Coverage | November 2014 – December 2019 (14 files) |
 | Retrieved | 2026-10-11 via the Dataverse native API (`/api/datasets/:persistentId/?persistentId=doi:10.7910/DVN/CLLZZM`) |
 
-**Suggested citation:** Prayas (Energy Group), "Minute-wise voltage data collected in Electricity Supply
-Monitoring Initiative", Harvard Dataverse, V2, doi:10.7910/DVN/CLLZZM.
+**Data citation** (exact text from the Dataverse citation API,
+`/api/datasets/:persistentId/versions/:latest-published/citation`, retrieved 2026-10-11):
+
+> Prayas, Energy Group, 2019, "Minute-wise voltage data collected in Electricity Supply Monitoring
+> Initiative", https://doi.org/10.7910/DVN/CLLZZM, Harvard Dataverse, V2, UNF:6:CQzM5yPH9GilZHSqyRRyEQ== [fileUNF]
 
 ## Licence (dataset metadata)
 
@@ -45,12 +48,13 @@ public domain on watchyourpower.org and the Harvard Dataverse."
 
 ## How VoltProof complies (stricter of the two readings)
 
-1. **Attribution everywhere the data appears:** README, app footer, every evidence report, the pitch deck.
+1. **Citation and attribution everywhere the data appears.** We cite the dataset with the citation
+   above, as the Dataverse page requires, and credit Prayas (Energy Group) and ESMI in the README, the
+   app footer, every evidence report and the pitch deck.
 2. **No redistribution of raw data.** Raw files are never committed; `.gitignore` blocks `data/`, `*.csv`,
    `*.tab`. Each user downloads the files from Harvard Dataverse.
 3. **Non-commercial, research and demonstration use.** VoltProof is MIT-licensed open-source software
    entered in a free public hackathon. It is not a commercial product.
-4. **Notification.** The team notifies Prayas of this use by email (sent by a team member, not by the software).
 
 The MIT licence in `LICENSE` covers **code only**. It does not cover the ESMI data.
 

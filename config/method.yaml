@@ -26,12 +26,13 @@ classification:
 data_quality:
   # Prayas (Dataverse description): "Missing data should be interpreted as unavailable data and not as
   # interruption." Missing minutes become NO_DATA, never OUTAGE.
-  # Physical plausibility: Dataverse DDI summary stats for the 2018 June-Aug file show min 0.0 and
-  # max 350.0 for every minute column. Values outside [min_valid_v, max_valid_v] are quarantined with a
-  # reason code, never silently dropped.
+  # Values below min_valid_v (negative) or non-numeric are quarantined with a reason code.
+  # No upper cut (max_valid_v: null). G1 (2018 June-Aug, 32,551,080 readings): max 364 V; one monitor
+  # saturates at exactly 350 V (Pachmori, flat whole hours) and one shows a 364 V transient right after
+  # supply returns (Saraswati Nagar Risiya). Both are real high-voltage readings, so an upper cut would
+  # hide evidence (DECISIONS D-013). The observed maximum is reported in the data-quality output instead.
   min_valid_v: 0
-  max_valid_v: 350          # provisional: observed ceiling; confirm against all files in G1/G3
-  provisional: true
+  max_valid_v: null
 
 coverage:
   # Prayas, "ESMI in Uttar Pradesh" (07 Aug 2019): "Data from a location was considered for months only

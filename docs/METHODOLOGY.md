@@ -16,11 +16,15 @@ reports no invalid (blank) minute cells, so missing data normally appears as **a
 
 ## 2. Cleaning
 
-- **R-1 Unpivot.** Each raw row becomes 60 minute readings at `Date + Hour:Min`. Timestamps are local
-  time as recorded (assumed IST, Asia/Kolkata; see VERIFICATION_LOG). The unpivot runs in SQL in Exasol.
-- **R-2 Malformed values.** A reading is invalid if the date or hour cannot be parsed, the hour is
-  outside 0–23, the value is non-numeric, or the value is outside `[min_valid_v, max_valid_v]`.
-  Invalid readings are kept in a quarantine table with a reason code, and their minutes become NO_DATA.
+- **R-1 Unpivot.** Each raw row becomes 60 minute readings at `Date + Hour:Min`. Prayas documents
+  `Hour` as "Hour of the day (0 to 23)" without a time zone. We treat timestamps as local Indian time
+  (IST), consistent with Prayas's own evening-window analysis, and apply no conversion (D-015). The
+  unpivot runs in SQL in Exasol.
+- **R-2 Malformed values.** A reading is invalid if the date (`DD-MM-YYYY`) or hour cannot be parsed,
+  the hour is outside 0–23, the value is non-numeric, or the value is below `min_valid_v` (or above
+  `max_valid_v` when one is configured; none is by default, see D-013). Invalid readings are kept in a
+  quarantine table with a reason code, and their minutes become NO_DATA. A blank cell is simply "no
+  reading" (NO_DATA), not a quarantined value.
 - **R-3 Duplicates.** If the same (location, minute) appears more than once with the same value, one
   reading is kept and the duplicate is counted. If the values differ, the minute is a **conflict**: it
   becomes NO_DATA (uncertain) and is counted. No value is chosen arbitrarily.
@@ -69,6 +73,10 @@ reports no invalid (blank) minute cells, so missing data normally appears as **a
   when both neighbours claim it. Gaps on the monitoring-window boundary add nothing to aggregates,
   because minutes outside the window are not counted.
 - **R-16 Voltage-quality minutes.** LOW and HIGH minutes per day (measured only).
+- **R-16b Zero-voltage share.** OUTAGE minutes are also split into `0 V` minutes and `1–130 V`
+  minutes. Prayas counts both as no supply. The split shows how much of an outage was measured as
+  zero and how much as voltage too low to use. Some monitors report a floor value (101 V or 99 V)
+  during deep sags (G1 evidence, D-014).
 - **R-17 Evening window.** Minutes from 17:00 to 22:59 (Prayas: "between 5 and 11pm"). Lower and upper
   evening outage minutes follow R-14/R-15, restricted to the window.
 - **R-18 Coverage.** Reported two ways:

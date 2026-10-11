@@ -108,8 +108,25 @@ No differences from the prompt found.
 | D6 | Python UDF needs SLC | same | ✅ confirmed: "No usable script language container is installed for the requested language." (`SCRIPT_LANGUAGES` lists `PYTHON3=builtin_python3` but no container is present) |
 | X27 | FLUSH STATISTICS + EXA_SQL_LAST_DAY | same | ✅ rows present after flush |
 | X11 / D7 | EXA_DBA_AUDIT_SQL on local | same | ✅ table is readable as `sys` and **contains rows** (auditing appears active). No AUDIT parameter visible in EXA_METADATA. Column-level use to be checked in G5 |
-| X9 | 20-connection limit | — | ⏳ still not found in docs or metadata |
+| X9 | 20-connection limit | `EXA_SYSTEM_EVENTS.PARAMETERS` at STARTUP; `EXA_METADATA.maxConnections` | ✅ `-maxConnectionsLicenseLimit=20`; `maxConnections = 18` reported to clients |
+| X29 | DB RAM | `EXA_SYSTEM_EVENTS` (STARTUP 2026-10-11 08:58 UTC), `exasol.conf` `[DB_PARAMS] dbram=auto` | ✅ `DB_RAM_SIZE = 8.9` GiB, `VCPU = 9`, 1 node; `EXA_DB_SIZE_LAST_DAY.RECOMMENDED_DB_RAM_SIZE = 8.9` |
+| X30 | WSL/Podman VM limits | `.wslconfig` (memory=11GB, processors=18, swap=4GB); `free -m` / `nproc` inside `podman-machine-default` | ✅ VM sees 10,951 MiB RAM, 4,096 MiB swap, 18 CPUs; container has no own memory cap (`podman stats`: limit 11.48 GB = VM) |
 | X28 | `wsl --manage <distro> --move <Location>` | `wsl --help` (WSL 2.7.13) | ✅ supported, also `--set-sparse`. **Not used** (see DECISIONS D-010) |
+
+### G1 real-sample inspection (2026-10-11; files downloaded by the user via browser, 14:50–14:54 IST)
+
+| # | Claim / question | How checked | Result |
+|---|---|---|---|
+| G1f | Which variant the published MD5 describes | `scripts\get-data.ps1 -Set first` | ✅ **Original-format CSV** files match the published MD5 exactly (all 3 files `verified`). A `.tab` export therefore cannot match; the verifier now accepts it by exact size + DDI row count (`verified-size-and-rows`, unit-tested) |
+| G1g | Formats | `head` / `cat -A`; `pipeline/profile_raw.py` | ✅ ASCII, comma-separated, CRLF, header row. Dates **`DD-MM-YYYY`** in both files; `Hour` 0–23; 63 columns in every one of the 542,518 rows |
+| G1h | Row count 2018 June–Aug | line count + profiler | ✅ **542,518** data rows (= Dataverse observation count); 295 locations; 2018-06-01 to 2018-08-31 |
+| G1i | Missing data encoding | profiler | ✅ 0 blank, 0 non-numeric, 0 non-integer cells; 0 duplicate (location, date, hour) keys. **Missing data = absent location-hours** (e.g. Dhule 16-06-2018 has hours 0 and 17, nothing in between) |
+| G1b | Outage encoding | profiler + examples | ✅ 4,337,926 zero readings (13.3%). Example: Dhule 16-06-2018 hour 17 is 0 V for minutes 0–37, then 247 V |
+| G1j | 350 V ceiling? | `pipeline/inspect_values.py` | ⚠️ **Not a ceiling.** Max 364 V (1 reading, transient at restoration). 285 readings at exactly 350 V, 284 from one monitor (Pachmori) that saturates at 350 for whole hours → sensor cap at that device. D-013 |
+| G1k | Low-voltage floor values | same | ⚠️ 101 V ×116,494 (102 monitors), 99 V ×15,694 (25 monitors) inside deep sags, never a whole hour → device floors. Prayas classes them as no supply (≤130 V). D-014 |
+| G1l | Location metadata | profiler | ✅ 528 rows, unique names, 177 "[Offline]"; columns as documented; **no coordinates**; categories Gram Panchayat 199 / District Headquarters 159 / State Capital 105 / Other Municipal Area 65; connection Domestic 433 / Non Domestic 83 / Agriculture 12. UP: 179 locations, 17 districts. D-016 |
+| G1m | Time zone | About the initiative.pdf | ⚠️ Not stated ("Hour of the day (0 to 23)"). Treated as local IST (D-015) |
+| G1n | Dataset citation | Dataverse citation API | ✅ "Prayas, Energy Group, 2019, "Minute-wise voltage data collected in Electricity Supply Monitoring Initiative", https://doi.org/10.7910/DVN/CLLZZM, Harvard Dataverse, V2, UNF:6:CQzM5yPH9GilZHSqyRRyEQ== [fileUNF]" |
 
 ### Not yet verified (carried forward)
 
