@@ -34,7 +34,9 @@ export default function Sources() {
               <td>{Number(f.rows_loaded).toLocaleString("en-IN")}</td>
               <td className="l">{f.period_from} – {f.period_to}</td><td className="l">{f.date_format}</td>
               <td>{Number(f.rows_quarantined).toLocaleString("en-IN")}</td><td>{Number(f.minutes_in_scope).toLocaleString("en-IN")}</td>
-              <td className="l small">{f.exclude_reason ? <><b>Excluded:</b> {f.exclude_reason}</> : "analysed (in-scope locations)"}</td></tr>))}</tbody>
+              <td className="l small">{f.exclude_reason ? <><b>Excluded:</b> {f.exclude_reason}</>
+                : f.data_warning ? <span data-testid="file-data-warning"><b>Analysed; outage figures are lower bounds:</b> {f.data_warning}</span>
+                : "analysed (in-scope locations)"}</td></tr>))}</tbody>
         </table>
       </div>
       <p className="small muted">Checksums are verified against the values Harvard Dataverse publishes before loading (scripts\get-data.ps1).

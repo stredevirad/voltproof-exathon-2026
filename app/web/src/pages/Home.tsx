@@ -41,7 +41,8 @@ export default function Home() {
             Pick a monitored location and a month. VoltProof shows every interruption the independent monitor recorded,
             how certain each one is, and whether other monitors in the district lost supply at the same time. Then it
             produces a report that traces every number back to the source file and line. Data: Prayas (Energy Group) ESMI,
-            Uttar Pradesh, 2016–2019 (historical).
+            Uttar Pradesh, 2016–2019 (historical). January–June 2019 figures are lower bounds because of a defect in the
+            published file (see Data &amp; sources).
           </p>
         </div>
         <div className="card">
@@ -111,7 +112,8 @@ export default function Home() {
                         <tr key={m.month_key} className="clickable" tabIndex={0}
                             onClick={() => nav(`/location/${locId}/${m.month_key}`)}
                             onKeyDown={(e) => e.key === "Enter" && nav(`/location/${locId}/${m.month_key}`)}>
-                          <td className="l">{m.month_key} {m.is_comparable ? <span className="badge ok">comparable</span> : <span className="badge warn">low coverage</span>}</td>
+                          <td className="l">{m.month_key} {m.is_comparable ? <span className="badge ok">comparable</span> : <span className="badge warn">low coverage</span>}
+                            {m.data_warning && <span className="badge warn" title="Source-file defect: outage figures are lower bounds">lower bound</span>}</td>
                           <td>{m.interruptions}</td><td>{fmtHours(m.outage_min_lower)}</td><td>{fmtPct(m.coverage_calendar)}</td>
                         </tr>
                       ))}

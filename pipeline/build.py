@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 from pipeline import load_raw
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 from pipeline.run_sql import resolve_steps, run_steps
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +23,7 @@ MAX_QUARANTINE_SHARE = 0.5
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--schema", default="VOLTPROOF")
+    ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     ap.add_argument("--skip-load", action="store_true", help="reuse raw tables already loaded")
     args = ap.parse_args(argv)
     schema = args.schema.upper()

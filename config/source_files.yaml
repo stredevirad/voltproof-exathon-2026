@@ -14,7 +14,18 @@
 3362468: {file: "ESMI minute-wise voltage data 2018 Jan-May", period_from: 2018-01-01, period_to: 2018-05-31}
 3362279: {file: "ESMI minute-wise voltage data 2018 June-Aug", period_from: 2018-06-01, period_to: 2018-08-31}
 3362276: {file: "ESMI minute-wise voltage data 2018 Sep-Dec", period_from: 2018-09-01, period_to: 2018-12-31}
-4411478: {file: "ESMI voltage data 2019 Jan-June", period_from: 2019-01-01, period_to: 2019-06-30}
+4411478:
+  file: "ESMI voltage data 2019 Jan-June"
+  period_from: 2019-01-01
+  period_to: 2019-06-30
+  # Presentation only (D-031): shown on the Sources page, on views and in reports for days in this period.
+  # It changes no rule and no number; the minutes stay NO_DATA (R-2).
+  data_warning: >-
+    This published file omits most hours in which every minute read 0 V. Prayas's own charts count those
+    hours as no supply; VoltProof counts them as missing data, never as outage. Outage figures for
+    January-June 2019 are therefore lower bounds, and many of these months are not comparable. Evidence:
+    in 2016-2018, 11-17% of read location-hours are entirely 0 V, in 2019 4.3%; 82% of the 2019 gaps have
+    a 0 V reading just before and just after (docs/VALIDATION.md section 3.4).
 4411477:
   file: "ESMI voltage data 2019 July-Dec"
   period_from: 2019-07-01

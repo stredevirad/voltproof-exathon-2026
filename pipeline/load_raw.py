@@ -16,7 +16,7 @@ import sys
 import time
 from pathlib import Path
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 from pipeline.run_sql import ensure_schema, resolve_steps, run_steps
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -136,7 +136,7 @@ def load_paths(conn, schema: str, files: list[tuple]) -> list[dict]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--schema", default="VOLTPROOF")
+    ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     args = ap.parse_args(argv)
     schema = args.schema.upper()
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))

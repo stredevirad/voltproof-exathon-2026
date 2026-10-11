@@ -14,11 +14,11 @@ from pathlib import Path
 import pytest
 
 from app.api import report, service
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 from tests.support.claims import forbidden_hits
 
 pytestmark = pytest.mark.exasol
-S = "VOLTPROOF"
+S = DEFAULT_SCHEMA
 
 
 @pytest.fixture(scope="module")
@@ -121,3 +121,22 @@ def test_pdf_is_written(generated):
     pdf: Path = generated["pdf"]
     data = pdf.read_bytes()
     assert data[:4] == b"%PDF" and len(data) > 20_000
+
+
+def test_data_warning_only_in_reports_for_affected_months(generated):
+    """D-031: a report for a 2019 Jan-Jun month carries the source-file warning; the 2018 demo report does not."""
+    assert generated["side"]["data_warning"] is None
+    assert 'data-testid="data-warning"' not in generated["html"]
+    assert not any(l.startswith("Source-file data defect") for l in generated["side"]["method"]["limitations"])
+    with connect(schema=S) as c:
+        row = c.execute("SELECT LOCATION_ID, MONTH_KEY FROM MONTHLY WHERE MONTH_KEY = '2019-01' "
+                        "ORDER BY LOCATION_ID LIMIT 1").fetchone()
+    if not row:
+        pytest.skip("no 2019 month in this build")
+    out = report.generate(int(row[0]), row[1], pdf=False)
+    side = json.loads(report.path_for(out["report_id"], "json").read_text(encoding="utf-8"))
+    html = report.path_for(out["report_id"], "html").read_text(encoding="utf-8")
+    assert side["data_warning"] and "lower bounds" in side["data_warning"]
+    assert 'data-testid="data-warning"' in html
+    assert any(l.startswith("Source-file data defect") for l in side["method"]["limitations"])
+    assert not forbidden_hits(unescape(re.sub(r"<[^>]+>", " ", html)))

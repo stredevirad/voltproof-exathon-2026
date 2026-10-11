@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, type Ev } from "../api";
 import { C, EChart, hatch } from "../charts";
-import { Certainty, ErrorBox, Kpi, Skeleton, useApi } from "../ui";
+import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, useApi } from "../ui";
 
 const PIECES = [
   { value: 0, label: "no outage", color: C.ramp[0] },
@@ -99,6 +99,7 @@ export default function LocationMonth() {
       )}
       <p className="small muted" style={{ marginBottom: 0 }}><Link to="/">Start</Link> / {loc.state_name} / {loc.district}</p>
       <h1 data-testid="location-title">{loc.display_name} · {month}</h1>
+      <DataWarning text={data.data_warning} />
       <div className="row small muted" style={{ alignItems: "center" }}>
         <span>{loc.source_category} · {loc.connection_type} connection</span>
         {m.is_comparable
@@ -156,7 +157,7 @@ export default function LocationMonth() {
           {data.baseline ? (
             <p className="small" data-testid="baseline">
               In {data.baseline.month_key}, monitors in this district had <b>{data.baseline.observed_pairs.toLocaleString("en-IN")}</b> coincident
-              interruption pairs (starts ≤ 2 min apart). With each monitor's days shifted at random, about <b>{data.baseline.expected_pairs.toFixed(1)}</b>{" "}
+              interruption pairs (starts ≤ 2 min apart). With the monitors' days shifted against each other by whole days (time of day kept; {data.baseline.n_shifts} fixed shifts), about <b>{data.baseline.expected_pairs.toFixed(1)}</b>{" "}
               would be expected; {fmtP(data.baseline.p_value, data.baseline.n_shifts)}. Comparable months only.
             </p>
           ) : <p className="small muted">No chance comparison for this district-month (fewer than two monitors with a comparable month).</p>}

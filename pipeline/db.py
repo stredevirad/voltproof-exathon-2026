@@ -55,6 +55,10 @@ def _password(ddir: Path) -> str:
     return json.loads((ddir / "secrets.json").read_text(encoding="utf-8"))["dbPassword"]
 
 
+# Analytical schema: VOLTPROOF unless VOLTPROOF_SCHEMA names another (e.g. a clean-start test next to the main build).
+DEFAULT_SCHEMA = os.environ.get("VOLTPROOF_SCHEMA", "VOLTPROOF")
+
+
 def connect(schema: str | None = None, fetch_dict: bool = False, **kwargs) -> pyexasol.ExaConnection:
     ddir = deployment_dir()
     info = conn_info(ddir)

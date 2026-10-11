@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, fmtMin, fmtTs } from "../api";
 import { C, EChart, hatch } from "../charts";
-import { Certainty, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
+import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
 
 const toMs = (ts: string) => new Date(ts + ":00").getTime(); // local wall-clock (IST as recorded)
 
@@ -90,6 +90,7 @@ export default function DayView() {
         <Link to="/">Start</Link> / <Link to={`/location/${locationId}/${day!.slice(0, 7)}`}>{data.location?.display_name} · {day!.slice(0, 7)}</Link>
       </p>
       <h1 data-testid="day-title">{data.location?.display_name} · {day}</h1>
+      <DataWarning text={data.data_warning} />
       {d ? (
         <p className="muted">
           {d.interruptions} interruptions · outage at least {fmtMin(d.outage_min_lower)}

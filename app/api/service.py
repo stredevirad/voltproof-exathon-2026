@@ -32,6 +32,29 @@ DEMO_RULE = (
 
 
 @lru_cache(maxsize=1)
+def data_warnings() -> list[dict]:
+    """Source-file data warnings (config/source_files.yaml `data_warning`, D-031). Presentation only."""
+    import yaml
+    cfg = yaml.safe_load((REPO_ROOT / "config" / "source_files.yaml").read_text(encoding="utf-8")) or {}
+    return [{"file_id": int(k), "file": v.get("file"), "period_from": str(v["period_from"]),
+             "period_to": str(v["period_to"]), "warning": " ".join(str(v["data_warning"]).split())}
+            for k, v in cfg.items() if v.get("data_warning")]
+
+
+def warning_for(first_day: str, last_day: str | None = None) -> str | None:
+    """The data warning that applies to any day in [first_day, last_day] (ISO dates), if one does."""
+    last_day = last_day or first_day
+    hits = [w["warning"] for w in data_warnings() if w["period_from"] <= last_day and first_day <= w["period_to"]]
+    return " ".join(hits) or None
+
+
+def month_bounds(month_key: str) -> tuple[str, str]:
+    first = dt.date.fromisoformat(month_key + "-01")
+    nxt = (first.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
+    return first.isoformat(), (nxt - dt.timedelta(days=1)).isoformat()
+
+
+@lru_cache(maxsize=1)
 def git_commit() -> str | None:
     try:
         out = subprocess.run(["git", "rev-parse", "--short=12", "HEAD"], cwd=REPO_ROOT, capture_output=True,
@@ -58,8 +81,10 @@ def meta() -> dict:
                              DATE_FORMAT, ROWS_QUARANTINED, VALUES_QUARANTINED, MINUTES_IN_SCOPE
                       FROM {S}.QUALITY_FILE ORDER BY FILE_ID""")
     checks = {r["file_id"]: r for r in query(f"SELECT FILE_ID, MD5, SHA256, BYTES FROM {S}.SOURCE_FILE")}
+    warnings = {w["file_id"]: w["warning"] for w in data_warnings()}
     for f in files:
         f.update({k: checks.get(f["file_id"], {}).get(k) for k in ("md5", "sha256", "bytes")})
+        f["data_warning"] = warnings.get(f["file_id"])
     last = query_one(f"""SELECT RUN_ID, MAX(FINISHED_AT) AS FINISHED_AT, MAX(DATA_MANIFEST_SHA256) AS MANIFEST,
                                 MAX(APP_GIT_COMMIT) AS PIPELINE_COMMIT
                          FROM {S}.RUN_LOG GROUP BY RUN_ID ORDER BY 2 DESC LIMIT 1""")
@@ -103,6 +128,8 @@ def location(location_id: int) -> dict | None:
     loc["months"] = query(f"""SELECT MONTH_KEY, OUTAGE_MIN_LOWER, OUTAGE_MIN_UPPER, INTERRUPTIONS, COVERAGE_CALENDAR,
                                      IS_COMPARABLE FROM {S}.MONTHLY WHERE LOCATION_ID = {{id!d}} ORDER BY MONTH_KEY""",
                           {"id": location_id})
+    for m in loc["months"]:
+        m["data_warning"] = warning_for(*month_bounds(m["month_key"])) is not None
     return loc
 
 
@@ -126,7 +153,8 @@ def month(location_id: int, month_key: str) -> dict | None:
                        ORDER BY e.START_TS""", {"id": location_id, "m": month_key})
     baseline = query_one(f"SELECT * FROM {S}.COINCIDENCE_BASELINE WHERE DISTRICT = {{d}} AND MONTH_KEY = {{m}}",
                          {"d": loc["district"], "m": month_key})
-    return {"location": loc, "month": m, "days": days, "events": events, "baseline": baseline}
+    return {"location": loc, "month": m, "days": days, "events": events, "baseline": baseline,
+            "data_warning": warning_for(*month_bounds(month_key))}
 
 
 def day(location_id: int, day_str: str) -> dict:
@@ -153,7 +181,7 @@ def day(location_id: int, day_str: str) -> dict:
     loc = query_one(f"SELECT LOCATION_ID, DISPLAY_NAME, DISTRICT, STATE_NAME FROM {S}.LOCATION "
                     f"WHERE LOCATION_ID = {{id!d}}", {"id": location_id})
     return {"location": loc, "day": day_str, "daily": daily, "readings": readings, "segments": segments,
-            "claims": claims, "events": events}
+            "claims": claims, "events": events, "data_warning": warning_for(day_str)}
 
 
 def event(event_key: str) -> dict | None:
@@ -178,6 +206,7 @@ def event(event_key: str) -> dict | None:
     e["group"] = group(member["group_key"]) if member else None
     e["baseline"] = query_one(f"SELECT * FROM {S}.COINCIDENCE_BASELINE WHERE DISTRICT = {{d}} AND MONTH_KEY = {{m}}",
                               {"d": e["district"], "m": e["start_ts"][:7]})
+    e["data_warning"] = warning_for(e["start_ts"][:10], e["end_ts"][:10])
     return e
 
 

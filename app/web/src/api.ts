@@ -7,7 +7,7 @@ export type Loc = {
 };
 export type MonthRow = {
   month_key: string; outage_min_lower: number; outage_min_upper: number; interruptions: number;
-  coverage_calendar: number; is_comparable: boolean;
+  coverage_calendar: number; is_comparable: boolean; data_warning: boolean;
 };
 export type Day = {
   cal_day: string; expected_minutes: number; observed_minutes: number; outage_min_lower: number;
@@ -24,7 +24,7 @@ export type Baseline = {
   expected_pairs: number; p_value: number; n_shifts: number; comparable_only: boolean;
 };
 export type MonthData = {
-  location: Loc; days: Day[]; events: Ev[]; baseline: Baseline | null;
+  location: Loc; days: Day[]; events: Ev[]; baseline: Baseline | null; data_warning: string | null;
   month: Day & { month_key: string; calendar_minutes: number; coverage_calendar: number; coverage_window: number;
                  is_comparable: boolean; outage_zero_minutes: number };
 };
@@ -32,7 +32,7 @@ export type Segment = { seg_no: number; supply_state: string; start_ts: string; 
 export type DayData = {
   location: Loc; day: string; daily: Day | null; readings: { ts: string; voltage: number; supply_state: string }[];
   segments: Segment[]; claims: { claim_start: string; claim_end: string; claim_minutes: number; side: string }[];
-  events: Ev[];
+  events: Ev[]; data_warning: string | null;
 };
 export type GroupData = {
   group_key: string; district: string; start_ts: string; end_ts: string; n_members: number; n_locations: number;
@@ -46,7 +46,7 @@ export type EventData = Ev & {
   source_lines: { ts: string; voltage: number; file_id: number; line_no: number; file_name: string }[];
   provenance: { step: string; stmt_index: number; sql_file_sha256: string; stmt_sha256: string;
                 exa_session_id: number; exa_stmt_id: number; run_id: string }[];
-  group: GroupData | null; baseline: Baseline | null;
+  group: GroupData | null; baseline: Baseline | null; data_warning: string | null;
 };
 export type Demo = { location_id: number; month: string; day: string; event_key: string; group_key: string; rule: string };
 

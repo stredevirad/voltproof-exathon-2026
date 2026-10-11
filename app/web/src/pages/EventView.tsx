@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { api, fmtMin, fmtP, fmtTs, type GroupData } from "../api";
-import { ErrorBox, Skeleton, useApi } from "../ui";
+import { DataWarning, ErrorBox, Skeleton, useApi } from "../ui";
 
 function edgeText(kind: "start" | "end", certainty: string, seg: { supply_state: string; minutes: number } | null, cap = 60) {
   const where = kind === "start" ? "before it began" : "after it ended";
@@ -34,7 +34,7 @@ export function GroupPanel({ g, highlight }: { g: GroupData; highlight?: string 
       {g.baseline ? (
         <p className="small" data-testid="baseline-note">Chance comparison, {g.baseline.district} {g.baseline.month_key} (comparable months only):
           <b> {g.baseline.observed_pairs.toLocaleString("en-IN")}</b> coincident pairs observed, about <b>{g.baseline.expected_pairs.toFixed(1)}</b>{" "}
-          expected if each monitor's outage days were shifted at random; {fmtP(g.baseline.p_value, g.baseline.n_shifts)}.</p>
+          expected if the monitors' outage days were shifted against each other by whole days (time of day kept; {g.baseline.n_shifts} fixed shifts); {fmtP(g.baseline.p_value, g.baseline.n_shifts)}.</p>
       ) : <p className="small muted">No chance comparison for this district-month.</p>}
       <div className="note caveat small">Coincidence is not cause. A shared upstream cause is possible, but a single-premise fault, a monitor
         fault or chance can produce the same pattern. VoltProof calls this a <i>potential shared supply event</i> and does not identify any equipment.</div>
@@ -56,6 +56,7 @@ export default function EventView() {
         <Link to={`/location/${e.location_id}/day/${day}?event=${e.event_key}`}>{day}</Link>
       </p>
       <h1 data-testid="event-title">Outage at {e.display_name}, {fmtTs(e.start_ts)}</h1>
+      <DataWarning text={e.data_warning} />
       <div className="grid-2">
         <div className="card" data-testid="event-details">
           <table className="data">

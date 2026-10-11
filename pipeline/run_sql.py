@@ -23,7 +23,7 @@ from pathlib import Path
 
 import yaml
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SQL_DIR = REPO_ROOT / "sql"
@@ -180,7 +180,7 @@ def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--schema", default="VOLTPROOF")
+    ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     ap.add_argument("steps", nargs="*", help="step prefixes, e.g. 010 020 (default: all)")
     args = ap.parse_args(argv)
     steps = resolve_steps(args.steps)

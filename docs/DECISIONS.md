@@ -276,7 +276,7 @@ real-data oracle tests are re-run on the new formulations.
 - **Where:** `sql/110_validation_prayas_up.sql` (`VALIDATION_CATEGORY`); used only for validation, not
   in the product.
 
-## D-031 · 2026-10-11 · 2019 Jan–Jun file omits most all-zero hours (OPEN: handling to be confirmed)
+## D-031 · 2026-10-11, decided 2026-10-12 · 2019 Jan–Jun file omits most all-zero hours
 
 - **Finding:** see VALIDATION §3.4. The 2019 Jan–June CSV lacks most location-hours in which every
   minute read 0 V. Prayas's own charts count them as no supply. Normal, low and high minutes agree with
@@ -285,6 +285,16 @@ real-data oracle tests are re-run on the new formulations.
   outage). 2019 outage is therefore a lower bound; most affected months fail the 90% coverage rule and
   are flagged as not comparable. Nothing is inferred from the 0 V readings on either side of a gap,
   beyond the existing upper bound (R-15: at most 60 minutes of a gap next to each outage edge).
-- **Proposed (not yet done):** a file-level warning in `QUALITY_FILE`, on the Sources page and in the
-  limitations of reports covering 2019 months, giving the share of gaps bounded by 0 V on both sides.
-  This is descriptive only, and no number changes.
+- **Decision (project owner, 2026-10-12):** keep the rules unchanged and add a plain, descriptive warning.
+  - **Where the warning appears:** the Sources page, and every view and evidence report covering a day in
+    2019 January–June. It is presentation only: `data_warning` in `config/source_files.yaml`, read by the
+    app. No SQL, oracle or number changes.
+  - **Headline and aggregate figures** in the README, deck, JUDGE_QA and the app's overview use 2016–2018,
+    the validated years (`pipeline/headline_figures.py` → docs/HEADLINE_FIGURES.md). Scale figures (rows
+    and minutes processed) still describe the full load.
+  - **2019 months** stay visible, labelled as lower bounds.
+- **Recorded as stated by the project owner:** the decision was made before looking at whether it changes
+  any headline in our favour.
+- **For the record:** the 2016–2018-only variant was already reported in VALIDATION §3.3 before this
+  decision (outage min/day 56.3 / 189.5 / 566.3, against 55.6 / 174.4 / 555.2 for the primary definition).
+  VALIDATION §3 keeps its pre-stated primary definition (2016-01 to 2019-06).

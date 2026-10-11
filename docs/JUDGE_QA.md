@@ -6,10 +6,12 @@ completed from the validation and benchmark runs. Nothing is claimed that has no
 ## Problem and impact
 
 **1. Who actually has this problem?**
-Households and small shops in places with poor supply. Prayas's ESMI monitors in Uttar Pradesh recorded,
-in 2016–19, about 21 min/day of outage in megacities, about 90 min/day in other municipal areas and more
-than 4 h/day in rural areas (Prayas, "ESMI in Uttar Pradesh", 7 Aug 2019; docs/VERIFICATION_LOG.md
-P7–P9). Today the consumer's memory is their only record, set against the utility's own reports.
+Households and small shops in places with poor supply. For Uttar Pradesh in 2016–19, Prayas reports about
+21 min/day of outage in megacities, about 90 min/day in other municipal areas and more than 4 h/day in
+rural areas (Prayas, "ESMI in Uttar Pradesh", 7 Aug 2019; docs/VERIFICATION_LOG.md P7). VoltProof's own
+measurement of the same monitors, 2016–2018, is higher: 56, 190 and 566 min/day (docs/HEADLINE_FIGURES.md;
+the difference is discussed in docs/VALIDATION.md §3). Today the consumer's memory is their only record,
+set against the utility's own reports.
 
 **2. Can a consumer actually use this?**
 The output is a dated evidence report (PDF) per location-month. It lists every interruption with exact
@@ -21,8 +23,8 @@ claiming any entitlement. Using it today
 needs a monitor like ESMI's; see "future scope" in the README.
 
 **3. Is this data current?**
-No. ESMI data covers Nov 2014 – Dec 2019, and our Uttar Pradesh analysis covers 2016–19
-(docs/data/SOURCE_TERMS.md). We present it as a historical case study that demonstrates a method. The
+No. ESMI data covers Nov 2014 – Dec 2019. Our Uttar Pradesh analysis covers January 2016 to June 2019, and
+headline figures use 2016–2018 because the 2019 file has a known defect (D-031; docs/data/SOURCE_TERMS.md). We present it as a historical case study that demonstrates a method. The
 same pipeline would run on smart-meter or new monitor data; that is future scope, not a claim.
 
 **4. Isn't this what Prayas already publishes?**
@@ -33,8 +35,9 @@ reproducible report per location-month. We also compare our numbers with Prayas'
 (docs/VALIDATION.md §3):
 - Prayas's single-monitor supply profiles for 2017–2018 agree with ours to within 0.2 h/day.
 - Its time-of-day and evening outage figures agree.
-- Its headline daily-outage averages (Figure 2) do not: ours are 2.0–2.6 times higher. We could not
-  reconcile that figure with Prayas's own Figures 8 and 9, and we report the gap rather than tune it away.
+- Our daily-outage averages are higher than Prayas's Figure 2. Prayas's Figure 2 and its Figures 8–9 imply
+  different averages, and the article does not state the averaging used for Figure 2 (docs/VALIDATION.md §3).
+  We report the difference; no parameter was tuned to close it.
 
 ## Method and honesty
 
@@ -55,8 +58,8 @@ Sometimes, and we measure it. Each district-month is compared with a baseline wh
 interruptions are shifted by whole days (keeping its time-of-day pattern; R-21). In large rural
 districts we observed about 1.4–3.1 times more coincident pairs than the shifted baseline, with none of
 20 shifts reaching the observed count (Bahraich, July 2018: 3,945 pairs observed, 1,827.5 expected). Over
-all 322 district-months with at least two monitors: 97,852 observed against 43,192 expected. 174 are above
-all 20 shifts, and many sit at chance (docs/VALIDATION.md §2). The
+the 276 district-months of 2016–2018 with at least two monitors: 91,532 observed against 40,704.6 expected.
+150 are above all 20 shifts, and many sit at chance (docs/HEADLINE_FIGURES.md, docs/VALIDATION.md §2). The
 baseline uses only comparable months, to avoid an anti-conservative bias (D-023). Its known
 conservative bias in 30-day months is disclosed.
 

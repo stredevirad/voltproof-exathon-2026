@@ -11,7 +11,7 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RAW = REPO_ROOT / "data" / "raw" / "ESMI minute-wise voltage data 2018 June-Aug.csv"
@@ -84,7 +84,7 @@ def main(location: str, day_str: str) -> int:
     day = dt.date.fromisoformat(day_str)
     start = dt.datetime.combine(day, dt.time())
     end = start + dt.timedelta(days=1)
-    with connect(schema="VOLTPROOF") as c:
+    with connect(schema=DEFAULT_SCHEMA) as c:
         rows = c.execute(ISLANDS_SQL, {"loc": location, "start": f"{start:%Y-%m-%d %H:%M:%S}",
                                        "end": f"{end:%Y-%m-%d %H:%M:%S}"}).fetchall()
         session = c.session_id()

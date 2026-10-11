@@ -18,7 +18,7 @@ import base64
 import urllib.request
 from pathlib import Path
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CACHE = REPO_ROOT / ".cache" / "prayas"
@@ -81,7 +81,7 @@ def figure8_estimate() -> dict[tuple[str, str], float]:
 def voltproof_by_slot() -> tuple[dict[tuple[str, str], float], dict[tuple[str, str], float]]:
     """(pooled over all location-months, equal weight per calendar month like Figure 8's month columns)."""
     names = list(SLOTS)
-    with connect(schema="VOLTPROOF") as c:
+    with connect(schema=DEFAULT_SCHEMA) as c:
         rows = c.execute("""
             SELECT v.PRAYAS_CATEGORY, v.MONTH_START,
                    CASE WHEN HOUR(rs.TS) BETWEEN 5 AND 10 THEN 0 WHEN HOUR(rs.TS) BETWEEN 11 AND 16 THEN 1
@@ -175,7 +175,7 @@ def profiles_from_figures() -> dict[str, list[dict[str, float]]]:
 def profiles_from_exasol() -> dict[str, dict[str, dict[str, float]]]:
     """Hours/day by class per calendar month, straight from READING_STATE (no-data = calendar minutes not read)."""
     ids = ", ".join(str(v[1]) for v in PROFILES.values())
-    with connect(schema="VOLTPROOF") as c:
+    with connect(schema=DEFAULT_SCHEMA) as c:
         rows = c.execute(f"""
             SELECT LOCATION_ID, TO_CHAR(TRUNC(TS, 'MM'), 'YYYY-MM') AS M,
                    DAYS_BETWEEN(ADD_MONTHS(CAST(TRUNC(TS, 'MM') AS DATE), 1), CAST(TRUNC(TS, 'MM') AS DATE)) AS NDAYS,

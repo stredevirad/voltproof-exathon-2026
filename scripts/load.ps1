@@ -16,7 +16,7 @@
 #>
 param(
     [ValidateSet('first', 'up', 'all')][string]$Set = 'up',
-    [string]$Schema = 'VOLTPROOF',
+    [string]$Schema = $(if ($env:VOLTPROOF_SCHEMA) { $env:VOLTPROOF_SCHEMA } else { 'VOLTPROOF' }),
     [switch]$SkipLoad
 )
 

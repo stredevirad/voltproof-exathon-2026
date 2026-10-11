@@ -113,7 +113,7 @@ def build_data(location_id: int, month_key: str) -> dict:
                            "normal_max_v": params.get("classification.normal_max_v")},
             "threshold_source": params.get("classification.source_url"),
             "params": params,
-            "limitations": LIMITATIONS,
+            "limitations": LIMITATIONS + ([f"Source-file data defect: {m['data_warning']}"] if m["data_warning"] else []),
         },
         "provenance": {
             "app_commit": service.git_commit(),
@@ -128,6 +128,7 @@ def build_data(location_id: int, month_key: str) -> dict:
             "regenerate": f"scripts\\load.ps1 ; then POST /api/reports {{\"location_id\": {location_id}, "
                           f"\"month\": \"{month_key}\"}}",
         },
+        "data_warning": m["data_warning"],
         "redress": REDRESS_TEXT,
         "disclaimer": DISCLAIMER,
         # Monday = 0; places the first day of the window in the calendar grid

@@ -63,6 +63,7 @@
 </div>
 
 <h2>1. Summary in plain language</h2>
+{% if d.data_warning %}<div class="note caveat" data-testid="data-warning"><strong>Lower bounds: known defect in the source file.</strong> {{ d.data_warning }}</div>{% endif %}
 <p>
   The monitor <strong>measured</strong> voltage for <span data-metric="summary.observed_minutes">{{ s.observed_minutes | num }}</span>
   of the <span data-metric="summary.calendar_minutes">{{ s.calendar_minutes | num }}</span> minutes in this month

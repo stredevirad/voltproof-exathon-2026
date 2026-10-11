@@ -11,14 +11,14 @@ import datetime as dt
 import sys
 from pathlib import Path
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RAW = REPO_ROOT / "data" / "raw" / "ESMI minute-wise voltage data 2018 June-Aug.csv"
 
 
 def main(district: str, month: str) -> int:
-    with connect(schema="VOLTPROOF") as c:
+    with connect(schema=DEFAULT_SCHEMA) as c:
         print("COINCIDENCE_BASELINE (all district-months in scope):")
         for r in c.execute("SELECT DISTRICT, MONTH_KEY, N_LOCATIONS, N_INTERRUPTIONS, OBSERVED_PAIRS, "
                            "EXPECTED_PAIRS, P_VALUE FROM COINCIDENCE_BASELINE ORDER BY 1, 2").fetchall():

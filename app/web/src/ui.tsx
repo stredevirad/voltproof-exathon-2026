@@ -35,6 +35,16 @@ export function ErrorBox({ error, what }: { error: Error; what: string }) {
   );
 }
 
+/** Known defect in the source file for this period (config/source_files.yaml, D-031). Presentation only. */
+export function DataWarning({ text }: { text: string | null | undefined }) {
+  if (!text) return null;
+  return (
+    <div className="banner warn" role="note" data-testid="data-warning">
+      <strong>Lower bounds: known defect in the source file.</strong> {text}
+    </div>
+  );
+}
+
 export function Kpi({ label, value, sub, testId }: { label: string; value: ReactNode; sub?: ReactNode; testId?: string }) {
   return (
     <div className="kpi" data-testid={testId}>

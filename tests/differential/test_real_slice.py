@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from pipeline.db import connect
+from pipeline.db import DEFAULT_SCHEMA, connect
 from tests.oracle.reference import RawRow, run
 from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
                                    oracle_coincidence, params_from_yaml)
@@ -23,7 +23,7 @@ pytestmark = pytest.mark.exasol
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
-SCHEMA = "VOLTPROOF"
+SCHEMA = DEFAULT_SCHEMA
 SLICE_SIZE = 4
 
 

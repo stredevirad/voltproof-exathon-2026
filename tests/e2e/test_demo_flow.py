@@ -147,6 +147,7 @@ def test_methodology_and_sources_pages(page, server):
         pg.get_by_text(marker).first.wait_for()
         _check_wording(pg, route)
     assert "Excluded" in pg.get_by_test_id("files-table").inner_text()
+    assert "lower bounds" in pg.get_by_test_id("file-data-warning").inner_text()  # D-031
     _shot(pg, "06_sources")
 
 
@@ -159,3 +160,20 @@ def test_error_and_empty_states(page, server):
     pg.goto(server + "/")
     pg.get_by_test_id("location-search").fill("zzzz-no-such-place")
     pg.get_by_text("No monitored location matches").wait_for()
+
+
+def test_lower_bound_banner_on_2019_month(page, server):
+    """D-031: months covered by the defective 2019 Jan-Jun file show the lower-bound warning."""
+    try:
+        urllib.request.urlopen(server + "/api/locations/90/months/2019-01", timeout=30)
+    except Exception:
+        pytest.skip("Biswan-Sitapur 2019-01 not in this build")
+    pg = page
+    pg.goto(server + "/location/90/2019-01")
+    banner = pg.get_by_test_id("data-warning")
+    banner.wait_for()
+    assert "lower bounds" in banner.inner_text()
+    pg.get_by_test_id("calendar").wait_for()
+    pg.wait_for_timeout(600)
+    _check_wording(pg, "2019 month")
+    _shot(pg, "07_lower_bound_2019")

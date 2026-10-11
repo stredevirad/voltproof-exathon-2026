@@ -93,6 +93,8 @@ table.data tr.clickable:hover td { background: rgba(42, 120, 214, 0.06); }
 .swatch.nodata { background: repeating-linear-gradient(45deg, #e4e7ec, #e4e7ec 3px, #98a2b3 3px, #98a2b3 5px); }
 .note { border-left: 3px solid var(--ink-2); background: var(--surface-1); padding: var(--space-3) var(--space-4); border-radius: 0 6px 6px 0; }
 .note.caveat { border-left-color: var(--st-outage); }
+.banner.warn { background: var(--warn-bg); border-left: 3px solid var(--ink-2); padding: var(--space-3) var(--space-4);
+  border-radius: 0 6px 6px 0; margin: var(--space-3) 0; font-size: var(--fs-sm); }
 .skeleton { background: linear-gradient(90deg, var(--grid), var(--surface-1), var(--grid)); background-size: 200% 100%;
   animation: shimmer 1.4s infinite; border-radius: var(--radius); min-height: 120px; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
