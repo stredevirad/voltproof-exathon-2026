@@ -74,17 +74,25 @@ LEFT JOIN MO mo ON mo.LOCATION_ID = l.LOCATION_ID;
 -- empties a file is visible immediately.
 CREATE OR REPLACE TABLE QUALITY_FILE AS
 SELECT f.FILE_ID, f.FILE_NAME, f.FILE_KIND, f.ROWS_EXPECTED, f.ROWS_LOADED,
+       dcl.PERIOD_FROM, dcl.PERIOD_TO, dcl.EXCLUDE_REASON,
+       CASE WHEN fmt.N_DASH >= fmt.N_SLASH THEN fmt.DASH_FORMAT ELSE fmt.SLASH_FORMAT END AS DATE_FORMAT,
        COALESCE(q.ROWS_QUARANTINED, 0)                                    AS ROWS_QUARANTINED,
        COALESCE(q.UNKNOWN_LOCATION, 0)                                    AS ROWS_UNKNOWN_LOCATION,
        COALESCE(q.BAD_DATE, 0)                                            AS ROWS_BAD_DATE,
+       COALESCE(q.AMBIGUOUS_DATE, 0)                                      AS ROWS_AMBIGUOUS_DATE,
        COALESCE(q.BAD_HOUR, 0)                                            AS ROWS_BAD_HOUR,
+       COALESCE(q.OUTSIDE_PERIOD, 0)                                      AS ROWS_OUTSIDE_DECLARED_PERIOD,
        COALESCE(v.VALUES_QUARANTINED, 0)                                  AS VALUES_QUARANTINED,
        COALESCE(m.MINUTES_IN_SCOPE, 0)                                    AS MINUTES_IN_SCOPE
 FROM SOURCE_FILE f
+LEFT JOIN SOURCE_FILE_DECLARED dcl ON dcl.FILE_ID = f.FILE_ID
+LEFT JOIN FILE_DATE_FORMAT fmt ON fmt.FILE_ID = f.FILE_ID
 LEFT JOIN (SELECT FILE_ID, COUNT(*) AS ROWS_QUARANTINED,
-                  SUM(CASE WHEN REASON = 'unknown_location' THEN 1 ELSE 0 END) AS UNKNOWN_LOCATION,
-                  SUM(CASE WHEN REASON = 'bad_date' THEN 1 ELSE 0 END)         AS BAD_DATE,
-                  SUM(CASE WHEN REASON = 'bad_hour' THEN 1 ELSE 0 END)         AS BAD_HOUR
+                  SUM(CASE WHEN REASON = 'unknown_location' THEN 1 ELSE 0 END)        AS UNKNOWN_LOCATION,
+                  SUM(CASE WHEN REASON = 'bad_date' THEN 1 ELSE 0 END)                AS BAD_DATE,
+                  SUM(CASE WHEN REASON = 'ambiguous_date_format' THEN 1 ELSE 0 END)   AS AMBIGUOUS_DATE,
+                  SUM(CASE WHEN REASON = 'bad_hour' THEN 1 ELSE 0 END)                AS BAD_HOUR,
+                  SUM(CASE WHEN REASON = 'outside_declared_period' THEN 1 ELSE 0 END) AS OUTSIDE_PERIOD
            FROM ROW_QUARANTINE GROUP BY FILE_ID) q ON q.FILE_ID = f.FILE_ID
 LEFT JOIN (SELECT FILE_ID, COUNT(*) AS VALUES_QUARANTINED FROM VALUE_QUARANTINE GROUP BY FILE_ID) v
        ON v.FILE_ID = f.FILE_ID

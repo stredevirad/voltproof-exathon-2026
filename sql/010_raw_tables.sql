@@ -50,6 +50,16 @@ CREATE TABLE IF NOT EXISTS RAW_LOCATION (
     CONNECTION_TYPE  VARCHAR(200)
 );
 
+-- Declared coverage of each source file (config/source_files.yaml; empty for synthetic fixtures unless
+-- a fixture declares one) and files excluded from the analysis with a documented reason.
+CREATE TABLE IF NOT EXISTS SOURCE_FILE_DECLARED (
+    FILE_ID         DECIMAL(9,0)  NOT NULL,
+    PERIOD_FROM     DATE,
+    PERIOD_TO       DATE,
+    EXCLUDE_REASON  VARCHAR(2000),
+    PRIMARY KEY (FILE_ID) DISABLE
+);
+
 -- Method parameters, loaded from config/method.yaml by the runner before each pipeline run.
 CREATE TABLE IF NOT EXISTS PARAMS (
     NAME       VARCHAR(200)  NOT NULL,

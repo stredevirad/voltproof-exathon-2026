@@ -20,7 +20,13 @@ reports no invalid (blank) minute cells, so missing data normally appears as **a
   `Hour` as "Hour of the day (0 to 23)" without a time zone. We treat timestamps as local Indian time
   (IST), consistent with Prayas's own evening-window analysis, and apply no conversion (D-015). The
   unpivot runs in SQL in Exasol.
-- **R-2 Malformed values.** A reading is invalid if the date (`DD-MM-YYYY`) or hour cannot be parsed,
+- **R-1b Date formats.** The date format is detected per file from the data (D-025): `DD-MM-YYYY`
+  (2014–2018 files, documented ESMI convention) or `M/D/YYYY` (2019 files, decided because the second
+  part exceeds 12). Slash dates that the data cannot decide are quarantined as
+  `ambiguous_date_format`. Rows dated outside the file's declared period (its Dataverse description)
+  are quarantined as `outside_declared_period`. Files with a documented defect are excluded from the
+  analysis (D-026: 2019 July–Dec, Hour column lost).
+- **R-2 Malformed values.** A reading is invalid if the date or hour cannot be parsed,
   the hour is outside 0–23, the value is non-numeric, or the value is below `min_valid_v` (or above
   `max_valid_v` when one is configured; none is by default, see D-013). Invalid readings are kept in a
   quarantine table with a reason code, and their minutes become NO_DATA. A blank cell is simply "no

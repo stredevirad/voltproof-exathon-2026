@@ -15,31 +15,82 @@ WHERE ((SELECT STR_VALUE FROM PARAMS WHERE NAME = 'subset.states') IS NULL
        OR INSTR('|' || (SELECT STR_VALUE FROM PARAMS WHERE NAME = 'subset.locations') || '|',
                 '|' || l.SOURCE_NAME || '|') > 0);
 
+-- Date format per file, detected from the data itself (R-1, D-025). Dash dates follow the documented
+-- ESMI convention DD-MM-YYYY unless the data contradicts it; slash dates (2019 files) must be decidable
+-- from the data (a part > 12), otherwise they are quarantined as ambiguous, never guessed.
+CREATE OR REPLACE TABLE FILE_DATE_FORMAT AS
+WITH S AS (
+    SELECT FILE_ID,
+           SUM(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}' THEN 1 ELSE 0 END) AS N_DASH,
+           SUM(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}' THEN 1 ELSE 0 END) AS N_SLASH,
+           MAX(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}'
+                    THEN CAST(REGEXP_SUBSTR(TRIM(DATE_STR), '[0-9]+', 1, 1) AS DECIMAL(4,0)) END)      AS DASH_MAX1,
+           MAX(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}'
+                    THEN CAST(REGEXP_SUBSTR(TRIM(DATE_STR), '[0-9]+', 1, 2) AS DECIMAL(4,0)) END)      AS DASH_MAX2,
+           MAX(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}'
+                    THEN CAST(REGEXP_SUBSTR(TRIM(DATE_STR), '[0-9]+', 1, 1) AS DECIMAL(4,0)) END)      AS SLASH_MAX1,
+           MAX(CASE WHEN TRIM(DATE_STR) REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}'
+                    THEN CAST(REGEXP_SUBSTR(TRIM(DATE_STR), '[0-9]+', 1, 2) AS DECIMAL(4,0)) END)      AS SLASH_MAX2
+    FROM RAW_HOURLY
+    GROUP BY FILE_ID
+)
+SELECT S.*,
+       CASE WHEN DASH_MAX2 > 12 AND DASH_MAX1 <= 12 THEN 'MM-DD-YYYY' ELSE 'DD-MM-YYYY' END   AS DASH_FORMAT,
+       CASE WHEN SLASH_MAX2 > 12 AND SLASH_MAX1 <= 12 THEN 'MM/DD/YYYY'
+            WHEN SLASH_MAX1 > 12 AND SLASH_MAX2 <= 12 THEN 'DD/MM/YYYY' END                   AS SLASH_FORMAT
+FROM S;
+
 -- Parsed row header fields (NULL when unparseable) for every raw row.
 CREATE OR REPLACE TABLE RAW_ROW_PARSED AS
-SELECT h.FILE_ID, h.LINE_NO, h.LOCATION_NAME, h.DATE_STR, h.HOUR_STR,
+WITH R AS (
+    SELECT h.FILE_ID, h.LINE_NO, h.LOCATION_NAME, h.DATE_STR, h.HOUR_STR, TRIM(h.DATE_STR) AS D,
+           f.DASH_FORMAT, f.SLASH_FORMAT
+    FROM RAW_HOURLY h
+    JOIN FILE_DATE_FORMAT f ON f.FILE_ID = h.FILE_ID
+)
+SELECT R.FILE_ID, R.LINE_NO, R.LOCATION_NAME, R.DATE_STR, R.HOUR_STR,
        l.LOCATION_ID,
-       CASE WHEN sc.LOCATION_ID IS NULL THEN FALSE ELSE TRUE END                          AS IN_SCOPE,
-       CASE WHEN IS_DATE(TRIM(h.DATE_STR), 'DD-MM-YYYY')
-            THEN CAST(TO_DATE(TRIM(h.DATE_STR), 'DD-MM-YYYY') AS TIMESTAMP) END           AS DAY_TS,
-       CASE WHEN IS_NUMBER(TRIM(h.HOUR_STR)) THEN CAST(TRIM(h.HOUR_STR) AS DOUBLE) END   AS HOUR_NUM
-FROM RAW_HOURLY h
-LEFT JOIN LOCATION l ON l.SOURCE_NAME = TRIM(h.LOCATION_NAME)
-LEFT JOIN LOCATION_IN_SCOPE sc ON sc.LOCATION_ID = l.LOCATION_ID;
+       CASE WHEN sc.LOCATION_ID IS NULL OR dcl.EXCLUDE_REASON IS NOT NULL THEN FALSE ELSE TRUE END AS IN_SCOPE,
+       CASE WHEN R.D REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}' AND R.SLASH_FORMAT IS NULL
+            THEN TRUE ELSE FALSE END                                                           AS AMBIGUOUS_DATE,
+       CAST(CASE
+         WHEN R.D REGEXP_LIKE '[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}' AND R.DASH_FORMAT = 'DD-MM-YYYY'
+              AND IS_DATE(R.D, 'DD-MM-YYYY') THEN TO_DATE(R.D, 'DD-MM-YYYY')
+         WHEN R.D REGEXP_LIKE '[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}' AND R.DASH_FORMAT = 'MM-DD-YYYY'
+              AND IS_DATE(R.D, 'MM-DD-YYYY') THEN TO_DATE(R.D, 'MM-DD-YYYY')
+         WHEN R.D REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}' AND R.SLASH_FORMAT = 'MM/DD/YYYY'
+              AND IS_DATE(R.D, 'MM/DD/YYYY') THEN TO_DATE(R.D, 'MM/DD/YYYY')
+         WHEN R.D REGEXP_LIKE '[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}' AND R.SLASH_FORMAT = 'DD/MM/YYYY'
+              AND IS_DATE(R.D, 'DD/MM/YYYY') THEN TO_DATE(R.D, 'DD/MM/YYYY')
+       END AS TIMESTAMP)                                                                       AS DAY_TS,
+       CASE WHEN IS_NUMBER(TRIM(R.HOUR_STR)) THEN CAST(TRIM(R.HOUR_STR) AS DOUBLE) END        AS HOUR_NUM,
+       dcl.PERIOD_FROM,
+       dcl.PERIOD_TO
+FROM R
+LEFT JOIN LOCATION l ON l.SOURCE_NAME = TRIM(R.LOCATION_NAME)
+LEFT JOIN LOCATION_IN_SCOPE sc ON sc.LOCATION_ID = l.LOCATION_ID
+LEFT JOIN SOURCE_FILE_DECLARED dcl ON dcl.FILE_ID = R.FILE_ID;
 
--- Row-level problems: unknown location, unparseable date, bad hour. Such rows produce no readings.
--- Rows of out-of-scope (known) locations are not analysed and therefore not reported here.
+-- Row-level problems: unknown location, unparseable or ambiguous date, bad hour, date outside the
+-- file's declared period. Such rows produce no readings. Rows of out-of-scope locations and of excluded
+-- files are not analysed and therefore not reported here (excluded files appear in QUALITY_FILE).
 CREATE OR REPLACE TABLE ROW_QUARANTINE AS
-SELECT FILE_ID, LINE_NO, LOCATION_NAME, DATE_STR, HOUR_STR,
+SELECT p.FILE_ID, p.LINE_NO, p.LOCATION_NAME, p.DATE_STR, p.HOUR_STR,
        CASE
-         WHEN LOCATION_ID IS NULL THEN 'unknown_location'
-         WHEN DAY_TS IS NULL THEN 'bad_date'
-         ELSE 'bad_hour'
+         WHEN p.LOCATION_ID IS NULL THEN 'unknown_location'
+         WHEN p.AMBIGUOUS_DATE THEN 'ambiguous_date_format'
+         WHEN p.DAY_TS IS NULL THEN 'bad_date'
+         WHEN p.HOUR_NUM IS NULL OR p.HOUR_NUM NOT BETWEEN 0 AND 23 OR p.HOUR_NUM <> FLOOR(p.HOUR_NUM) THEN 'bad_hour'
+         ELSE 'outside_declared_period'
        END AS REASON
-FROM RAW_ROW_PARSED
-WHERE (LOCATION_ID IS NULL OR IN_SCOPE)
-  AND (LOCATION_ID IS NULL OR DAY_TS IS NULL OR HOUR_NUM IS NULL
-       OR HOUR_NUM NOT BETWEEN 0 AND 23 OR HOUR_NUM <> FLOOR(HOUR_NUM));
+FROM RAW_ROW_PARSED p
+WHERE (p.LOCATION_ID IS NULL AND NOT EXISTS (SELECT 1 FROM SOURCE_FILE_DECLARED x
+                                             WHERE x.FILE_ID = p.FILE_ID AND x.EXCLUDE_REASON IS NOT NULL)
+       OR p.IN_SCOPE)
+  AND (p.LOCATION_ID IS NULL OR p.DAY_TS IS NULL OR p.HOUR_NUM IS NULL
+       OR p.HOUR_NUM NOT BETWEEN 0 AND 23 OR p.HOUR_NUM <> FLOOR(p.HOUR_NUM)
+       OR (p.PERIOD_FROM IS NOT NULL AND CAST(p.DAY_TS AS DATE) < p.PERIOD_FROM)
+       OR (p.PERIOD_TO IS NOT NULL AND CAST(p.DAY_TS AS DATE) > p.PERIOD_TO));
 
 -- Minute grid of every valid in-scope row, with the raw cell text (still untouched) and its numeric parse.
 CREATE OR REPLACE TABLE MINUTE_RAW AS
@@ -50,6 +101,8 @@ WITH MINUTES AS (
     FROM RAW_ROW_PARSED p
     WHERE p.IN_SCOPE AND p.DAY_TS IS NOT NULL AND p.HOUR_NUM BETWEEN 0 AND 23
       AND p.HOUR_NUM = FLOOR(p.HOUR_NUM)
+      AND (p.PERIOD_FROM IS NULL OR CAST(p.DAY_TS AS DATE) >= p.PERIOD_FROM)
+      AND (p.PERIOD_TO IS NULL OR CAST(p.DAY_TS AS DATE) <= p.PERIOD_TO)
 ), CELLS AS (
     SELECT r.LOCATION_ID, r.FILE_ID, r.LINE_NO, r.DAY_TS, r.HR, m.MI,
            TRIM(CASE m.MI

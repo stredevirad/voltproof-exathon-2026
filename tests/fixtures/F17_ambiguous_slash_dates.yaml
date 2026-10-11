@@ -1,0 +1,13 @@
+description: Slash dates where neither part ever exceeds 12 cannot be decided (M/D or D/M); they are quarantined, never guessed.
+rules: [R-1, R-2]
+params: {}
+locations:
+  - {name: F17 November, district: F17 District}
+hours:
+  - {loc: F17 November, date: 3/4/2019, hour: 10, values: "0*60"}
+  - {loc: F17 November, date: 4/3/2019, hour: 10, values: "230*60"}
+expected:
+  events_count: {F17 November: 0}
+  quality:
+    row_quarantine: {ambiguous_date_format: 2}
+    why: "3/4/2019 could be 4 March or 3 April; the file gives no part above 12 to decide"

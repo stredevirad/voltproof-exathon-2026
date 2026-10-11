@@ -36,6 +36,10 @@ class RawRow:
     hour: str
     values: list[str]  # 60 strings, "Min 0" .. "Min 59"
     source_row: int = 0
+    # Per-file overrides (R-1/R-2): the file's date format ("" = ambiguous -> quarantined) and its declared
+    # period (first_day, last_day) -> rows outside it are quarantined.
+    date_format: str | None = None
+    period: tuple | None = None
 
 
 @dataclass
@@ -73,14 +77,23 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
     # R-1, R-2: unpivot and validate
     readings: dict[tuple[str, dt.datetime], list[float]] = defaultdict(list)
     for r in rows:
+        fmt = date_format if r.date_format is None else r.date_format
+        if fmt == "" and "/" in r.date:
+            res.quarantine.append({"location": r.location, "source_row": r.source_row,
+                                   "reason": "ambiguous_date_format"})
+            continue
         try:
-            day = dt.datetime.strptime(r.date.strip(), date_format)
+            day = dt.datetime.strptime(r.date.strip(), fmt)
         except ValueError:
             res.quarantine.append({"location": r.location, "source_row": r.source_row, "reason": "bad_date"})
             continue
         hour_num = _parse_number(r.hour.strip())
         if hour_num is None or hour_num != int(hour_num) or not 0 <= hour_num <= 23:
             res.quarantine.append({"location": r.location, "source_row": r.source_row, "reason": "bad_hour"})
+            continue
+        if r.period and not (r.period[0] <= day.date() <= r.period[1]):
+            res.quarantine.append({"location": r.location, "source_row": r.source_row,
+                                   "reason": "outside_declared_period"})
             continue
         base = day.replace(hour=int(hour_num), minute=0, second=0, microsecond=0)
         for i in range(60):

@@ -27,25 +27,26 @@ SCHEMA = "VOLTPROOF"
 SLICE_SIZE = 4
 
 
-def _readings_files(conn) -> list[Path]:
-    names = [r[0] for r in conn.execute(
-        f"SELECT FILE_NAME FROM {SCHEMA}.SOURCE_FILE WHERE FILE_KIND = 'readings' ORDER BY FILE_ID").fetchall()]
-    files = [RAW_DIR / n for n in names]
-    missing = [f.name for f in files if not f.exists()]
+def _readings_files(conn) -> list[tuple[Path, dict | None]]:
+    from pipeline.load_raw import declared_periods
+
+    declared = declared_periods()
+    rows = conn.execute(
+        f"SELECT FILE_ID, FILE_NAME FROM {SCHEMA}.SOURCE_FILE WHERE FILE_KIND = 'readings' ORDER BY FILE_ID"
+    ).fetchall()
+    files = [(RAW_DIR / name, declared.get(int(fid))) for fid, name in rows]
+    missing = [f.name for f, _ in files if not f.exists()]
     if missing:
         pytest.skip(f"raw files loaded in {SCHEMA} are not present in data/raw: {missing}")
     return files
 
 
-def _raw_rows(files: list[Path], names: set[str]) -> list[RawRow]:
+def _raw_rows(files: list[tuple[Path, dict | None]], names: set[str]) -> list[RawRow]:
+    from tests.support.rawfiles import read_rows
+
     out = []
-    for path in files:
-        with path.open(newline="", encoding="utf-8") as fh:
-            rd = csv.reader(fh)
-            next(rd)
-            for line_no, row in enumerate(rd, start=2):
-                if row and row[0] in names:
-                    out.append(RawRow(row[0], row[1], row[2], row[3:], line_no))
+    for path, declared in files:
+        out.extend(read_rows(path, names, declared))
     return out
 
 

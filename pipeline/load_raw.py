@@ -83,13 +83,28 @@ def _stream_with_line_numbers(pipe, src, file_id: int):
         pipe.write("".join(buf).encode("utf-8"))
 
 
+def declared_periods() -> dict[int, dict]:
+    """config/source_files.yaml: declared period and optional exclusion reason per Dataverse file id."""
+    import yaml
+    p = REPO_ROOT / "config" / "source_files.yaml"
+    return {int(k): v for k, v in (yaml.safe_load(p.read_text(encoding="utf-8")) or {}).items()}
+
+
 def load_file(conn, schema: str, file_id: int, path: Path, kind: str, md5: str | None,
-              sha256: str | None) -> dict:
+              sha256: str | None, declared: dict | None = None) -> dict:
     table = "RAW_LOCATION" if kind == "locations" else "RAW_HOURLY"
     check_header(path, kind)
     expected = count_data_lines(path)
     conn.execute(f"DELETE FROM {table} WHERE FILE_ID = {int(file_id)}")
     conn.execute(f"DELETE FROM SOURCE_FILE WHERE FILE_ID = {int(file_id)}")
+    conn.execute(f"DELETE FROM SOURCE_FILE_DECLARED WHERE FILE_ID = {int(file_id)}")
+    if declared:
+        conn.ext.insert_multi(
+            "SOURCE_FILE_DECLARED",
+            [(int(file_id), str(declared.get("period_from")) if declared.get("period_from") else None,
+              str(declared.get("period_to")) if declared.get("period_to") else None,
+              declared.get("exclude_reason"))],
+            columns=["FILE_ID", "PERIOD_FROM", "PERIOD_TO", "EXCLUDE_REASON"])
     t0 = time.perf_counter()
     if expected > 0:  # a header-only file is valid and simply contributes no rows
         conn.import_from_callback(_stream_with_line_numbers, str(path), (schema, table),
@@ -111,12 +126,12 @@ def load_file(conn, schema: str, file_id: int, path: Path, kind: str, md5: str |
             "mb_per_second": round(path.stat().st_size / 1e6 / seconds, 2) if seconds else None}
 
 
-def load_paths(conn, schema: str, files: list[tuple[int, Path, str]]) -> list[dict]:
-    """Load explicit (file_id, path, kind) entries into `schema` (used by fixtures and tests).
+def load_paths(conn, schema: str, files: list[tuple]) -> list[dict]:
+    """Load explicit (file_id, path, kind[, declared]) entries into `schema` (used by fixtures and tests).
     The connection must have autocommit off; raw tables are created first."""
     run_steps(conn, schema, resolve_steps(["010"]), quiet=True)
     ensure_schema(conn, schema)
-    return [load_file(conn, schema, fid, path, kind, None, None) for fid, path, kind in files]
+    return [load_file(conn, schema, f[0], f[1], f[2], None, None, f[3] if len(f) > 3 else None) for f in files]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -131,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     if not files:
         raise SystemExit("No verified data files in data/manifest.json. Run scripts\\get-data.ps1 first.")
     files.sort(key=lambda f: f["dataverse_file_id"] != LOCATION_FILE_ID)  # locations first
+    declared = declared_periods()
     results = []
     with connect(autocommit=False) as conn:
         run_steps(conn, schema, resolve_steps(["010"]), quiet=True)
@@ -139,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
         for f in files:
             kind = "locations" if f["dataverse_file_id"] == LOCATION_FILE_ID else "readings"
             r = load_file(conn, schema, f["dataverse_file_id"], RAW_DIR / f["file"], kind, f.get("md5"),
-                          f.get("sha256"))
+                          f.get("sha256"), declared.get(int(f["dataverse_file_id"])))
             results.append(r)
             print(f"loaded {r['file']}: {r['rows']:,} rows in {r['seconds']:.2f}s "
                   f"({r['rows_per_second']:,} rows/s, {r['mb_per_second']} MB/s)")

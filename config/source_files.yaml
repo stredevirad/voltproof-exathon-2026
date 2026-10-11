@@ -1,0 +1,25 @@
+# Declared coverage of each ESMI file on Harvard Dataverse (doi:10.7910/DVN/CLLZZM), taken from each file's
+# description, e.g. "This file contains minute-wise voltage data collected under ESMI from January to June
+# 2016." Rows dated outside a file's declared period are quarantined ('outside_declared_period', R-2).
+# A file with exclude_reason is loaded raw (verified, traceable) but kept out of the analysis (D-026).
+# Keys are Dataverse file ids (stable for dataset version 2.0).
+
+3360846: {file: "ESMI minute-wise voltage data 2014", period_from: 2014-01-01, period_to: 2014-12-31}
+3360855: {file: "ESMI minute-wise voltage data 2015", period_from: 2015-01-01, period_to: 2015-12-31}
+3360857: {file: "ESMI minute-wise voltage data 2016 Jan-June", period_from: 2016-01-01, period_to: 2016-06-30}
+3360856: {file: "ESMI minute-wise voltage data 2016 July-Dec", period_from: 2016-07-01, period_to: 2016-12-31}
+3360888: {file: "ESMI minute-wise voltage data 2017 Jan-April", period_from: 2017-01-01, period_to: 2017-04-30}
+3362275: {file: "ESMI minute-wise voltage data 2017 May-Aug", period_from: 2017-05-01, period_to: 2017-08-31}
+3362278: {file: "ESMI minute-wise voltage data 2017 Sept-Dec", period_from: 2017-09-01, period_to: 2017-12-31}
+3362468: {file: "ESMI minute-wise voltage data 2018 Jan-May", period_from: 2018-01-01, period_to: 2018-05-31}
+3362279: {file: "ESMI minute-wise voltage data 2018 June-Aug", period_from: 2018-06-01, period_to: 2018-08-31}
+3362276: {file: "ESMI minute-wise voltage data 2018 Sep-Dec", period_from: 2018-09-01, period_to: 2018-12-31}
+4411478: {file: "ESMI voltage data 2019 Jan-June", period_from: 2019-01-01, period_to: 2019-06-30}
+4411477:
+  file: "ESMI voltage data 2019 July-Dec"
+  period_from: 2019-07-01
+  period_to: 2019-12-31
+  exclude_reason: >-
+    Hour column lost in the published file: 690,915 of 695,974 rows have Hour = 0 and every location-day
+    appears as 24 rows all labelled hour 0 (e.g. Adgaon-Nashik 7/1/2019), so minute timestamps cannot be
+    determined without guessing from row order (verified 2026-10-11, pipeline/profile_2019.py)

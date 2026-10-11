@@ -1,0 +1,23 @@
+description: 2019-style M/D/YYYY dates (decided by a day > 12), a spreadsheet-error date, and a row outside the file's declared period.
+rules: [R-1, R-2, R-4, R-9, R-10]
+params: {}
+file: {period_from: 2019-07-01, period_to: 2019-07-31}
+locations:
+  - {name: F16 Mike, district: F16 District}
+hours:
+  - {loc: F16 Mike, date: 7/14/2019, hour: 9,  values: "230*60"}        # 14 > 12 in the 2nd part -> MM/DD/YYYY
+  - {loc: F16 Mike, date: 7/14/2019, hour: 10, values: "230*30 0*30"}   # outage 10:30-10:59
+  - {loc: F16 Mike, date: "#VALUE!", hour: "", values: "230*60"}        # spreadsheet error -> bad_date
+  - {loc: F16 Mike, date: 8/1/2019, hour: 10, values: "0*60"}           # 1 Aug is outside the declared July
+expected:
+  events_count: {F16 Mike: 1}
+  events:
+    - {loc: F16 Mike, start: "2019-07-14 10:30", end: "2019-07-14 10:59", min_duration: 30, max_duration: 90,
+       start_certainty: exact, end_certainty: censored,
+       why: "the August row is quarantined, so 10:59 is the last minute of the window (censored, +60)"}
+  daily:
+    - {loc: F16 Mike, day: 2019-07-14, expected: 120, observed: 120, outage_lower: 30, outage_upper: 30,
+       interruptions: 1, longest: 30, why: "hours 9-10 of 14 July 2019"}
+  quality:
+    row_quarantine: {bad_date: 1, outside_declared_period: 1}
+    why: "#VALUE! is not a date; 8/1/2019 parses as 1 August, outside 2019-07-01..2019-07-31"

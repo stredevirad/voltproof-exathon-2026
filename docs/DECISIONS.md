@@ -179,6 +179,41 @@ One entry per significant decision: context, options, choice, why. Newest at the
 - With N = 20 shifts the smallest resolvable empirical p is 1/20. A p of 0 is reported as "< 0.05"
   ("none of 20 shifted versions reached the observed count"), never as "p = 0".
 
+## D-023 · 2026-10-11 · Chance baseline on comparable location-months only
+
+- **Problem (advisor review):** a shifted event can land on days its partner was not monitored, which
+  lowers "expected" and overstates the observed/expected ratio. Large UP districts lose monitors
+  mid-quarter (Bahraich 25 → 21 → 19 locations).
+- **Choice:** `coincidence.baseline_comparable_only: true` (default). Observed and shifted counts use
+  only interruptions of comparable location-months. Pairs and groups are still reported for every
+  interruption. The mod-30 alignment effect (conservative) is disclosed in METHODOLOGY R-21.
+
+## D-024 · 2026-10-11 · Stable keys
+
+- `EVENT_KEY = LOCATION_ID || '-' || start minute`, and `GROUP_KEY = district | start minute`, are used in
+  URLs, report ids and tests. `EVENT_ID` and `GROUP_ID` renumber on rebuild. `LOCATION_ID` stays stable
+  as long as the location file is unchanged (it is the rank of the source name).
+
+## D-025 · 2026-10-11 · Date format detected per file, in SQL (correction from the full download)
+
+- **Real data:** the two 2019 files use `M/D/YYYY` (e.g. `1/1/2019`; the July–Dec file starts at
+  `7/1/2019`; the 2nd part reaches 31). All 2014–2018 files use `DD-MM-YYYY`. 2019 Jan–June also
+  holds 72 `#VALUE!` dates and 50 rows dated July–November.
+- **Choice:** `FILE_DATE_FORMAT` (step 030) detects the format per file from the data. Dash dates
+  follow the documented ESMI convention `DD-MM-YYYY` unless the data contradicts it. Slash dates
+  must be decidable (one part > 12), otherwise they are quarantined as `ambiguous_date_format`, never
+  guessed. Fixtures F16/F17 cover this.
+
+## D-026 · 2026-10-11 · Declared file periods; 2019 July–Dec excluded from the analysis
+
+- `config/source_files.yaml` records each file's declared period (from its Dataverse description).
+  Rows dated outside it are quarantined (`outside_declared_period`).
+- **2019 July–Dec has lost its Hour column:** 690,915 of 695,974 rows say hour 0, and every
+  location-day appears as 24 rows all labelled 0 (e.g. Adgaon-Nashik 7/1/2019). Minute timestamps
+  could only be guessed from row order. The file is loaded raw (verified, traceable) but excluded from
+  the analysis with that documented reason, which `QUALITY_FILE` shows. Validation is unaffected:
+  Prayas's UP article was published on 7 Aug 2019.
+
 ## D-009 · 2026-10-11 · No geospatial features
 
 - **Context:** the location metadata has no coordinates.

@@ -18,7 +18,8 @@ from pipeline.db import connect
 from pipeline.load_raw import load_paths
 from pipeline.run_sql import resolve_steps, run_steps
 from tests.fixtures.render import all_specs, render
-from tests.oracle.reference import RawRow, run
+from tests.oracle.reference import run
+from tests.support.rawfiles import read_rows
 from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
                                    oracle_coincidence, params_from_yaml)
 
@@ -38,15 +39,9 @@ def _groups():
     return list(groups.items())
 
 
-def _oracle_rows(readings_path, known_locations: set[str]) -> list[RawRow]:
-    rows = []
-    with readings_path.open(newline="", encoding="utf-8") as fh:
-        rd = csv.reader(fh)
-        next(rd)
-        for line_no, r in enumerate(rd, start=2):
-            if r[0] in known_locations:  # unknown locations are quarantined by R-2
-                rows.append(RawRow(r[0], r[1], r[2], r[3:], line_no))
-    return rows
+def _oracle_rows(readings_path, known_locations: set[str], declared: dict | None = None) -> list[RawRow]:
+    # unknown locations are quarantined by R-2, so the oracle only sees known names
+    return read_rows(readings_path, known_locations, declared)
 
 
 @pytest.fixture(scope="session")
@@ -63,7 +58,7 @@ def built():
                 lp, rp = render(s)
                 rendered[s["id"]] = (lp, rp)
                 base = 9_000_000 + (gi * 100 + si) * 10
-                files += [(base + 1, lp, "locations"), (base + 2, rp, "readings")]
+                files += [(base + 1, lp, "locations"), (base + 2, rp, "readings", s.get("file"))]
             load_paths(conn, schema, files)
             overrides = dict(BASE_OVERRIDES, **json.loads(pkey))
             run_steps(conn, schema, resolve_steps(["020", "030", "040", "050", "060", "070", "080", "090", "100"]),
@@ -74,8 +69,8 @@ def built():
                 base = 9_000_000 + (gi * 100 + si) * 10
                 sql = fetch_sql(conn, schema, names)
                 oracle = oracle_as_comparable(
-                    run(_oracle_rows(rendered[s["id"]][1], set(names)), params_from_yaml(json.loads(pkey)),
-                        "%d-%m-%Y"))
+                    run(_oracle_rows(rendered[s["id"]][1], set(names), s.get("file")),
+                        params_from_yaml(json.loads(pkey)), "%d-%m-%Y"))
                 districts = sorted({loc["district"] for loc in s["locations"]})
                 co_sql = fetch_coincidence(conn, schema, districts)
                 fparams = json.loads(pkey)
