@@ -139,8 +139,10 @@ def fetch_coincidence(conn, schema: str, districts: list[str] | None = None) -> 
 
 
 def oracle_coincidence(events: list[dict], district_of: dict[str, str], delta: int, theta: int,
-                       n_shifts: int) -> dict:
-    """Run tests/oracle/coincidence.py on oracle events (interruptions only) in the same comparable shape."""
+                       n_shifts: int, comparable: set | None = None, comparable_only: bool = True) -> dict:
+    """Run tests/oracle/coincidence.py on oracle events (interruptions only) in the same comparable shape.
+    `comparable` = {(location, 'YYYY-MM')} of comparable location-months (from the oracle's monthly output);
+    with comparable_only, only those interruptions enter the baseline (pairs and groups use all)."""
     from tests.oracle import coincidence as oc
 
     order = {name: i for i, name in enumerate(sorted(district_of))}
@@ -148,7 +150,11 @@ def oracle_coincidence(events: list[dict], district_of: dict[str, str], delta: i
                  order=order[e["location"]]) for e in events if e["is_interruption"]]
     pairs = oc.pairs(ints, delta, theta)
     groups = oc.groups(ints, delta, theta)
-    base = oc.baseline(ints, delta, theta, n_shifts)
+    base_ints = ints
+    if comparable_only:
+        comparable = comparable or set()
+        base_ints = [e for e in ints if (e["location"], e["start"].strftime("%Y-%m")) in comparable]
+    base = oc.baseline(base_ints, delta, theta, n_shifts)
     return {
         "pairs": {(a["location"], a["start"], b["location"], b["start"]) for a, b in pairs},
         "groups": {(g["district"], g["start"]): frozenset((m["location"], m["start"]) for m in g["members"])

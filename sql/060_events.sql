@@ -65,6 +65,8 @@ WITH P AS (
     FROM B CROSS JOIN P
 )
 SELECT CAST(ROW_NUMBER() OVER (ORDER BY LOCATION_ID, START_TS) AS DECIMAL(18,0))         AS EVENT_ID,
+       -- stable key for URLs and reports (EVENT_ID renumbers on every rebuild)
+       CAST(LOCATION_ID AS VARCHAR(12)) || '-' || TO_CHAR(START_TS, 'YYYYMMDDHH24MI')      AS EVENT_KEY,
        LOCATION_ID,
        'OUTAGE'                                                                        AS EVENT_TYPE,
        START_TS,

@@ -1,6 +1,9 @@
 description: Chance baseline by circular whole-day shifts (G4), small enough to compute by hand.
 rules: [R-21]
-params: {}   # defaults: baseline_shifts N = 20, max_start_offset_minutes 2, min_overlap_minutes 1
+# defaults: baseline_shifts N = 20, max_start_offset_minutes 2, min_overlap_minutes 1.
+# The fixture months are tiny (not comparable), so the comparable-only restriction is switched off here;
+# F15 tests the restriction itself.
+params: {coincidence.baseline_comparable_only: false}
 locations:
   - {name: F14 X1, district: F14 District X}
   - {name: F14 X2, district: F14 District X}

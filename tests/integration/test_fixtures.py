@@ -78,8 +78,13 @@ def built():
                         "%d-%m-%Y"))
                 districts = sorted({loc["district"] for loc in s["locations"]})
                 co_sql = fetch_coincidence(conn, schema, districts)
-                co_ref = oracle_coincidence(oracle["events"], all_districts, COINC["max_start_offset_minutes"],
-                                            COINC["min_overlap_minutes"], COINC["baseline_shifts"])
+                fparams = json.loads(pkey)
+                comparable = {k for k, v in oracle["monthly"].items() if v["comparable"]}
+                co_ref = oracle_coincidence(
+                    oracle["events"], all_districts, COINC["max_start_offset_minutes"], COINC["min_overlap_minutes"],
+                    COINC["baseline_shifts"], comparable=comparable,
+                    comparable_only=bool(fparams.get("coincidence.baseline_comparable_only",
+                                                     COINC["baseline_comparable_only"])))
                 q = {
                     "duplicate_minutes": dict(conn.execute(
                         f"SELECT l.SOURCE_NAME, SUM(c.DUPLICATE_COUNT) FROM {schema}.READING_CLEAN c "
@@ -173,8 +178,8 @@ def test_harness_detects_a_wrong_expectation(built):
     assert any("bridged_minutes" in p for p in check_expectations(b))
 
 
-@pytest.mark.parametrize("fid", [s["id"] for s in SPECS if "coincidence" in s.get("expected", {})
-                                 or "baseline" in s.get("expected", {})])
+@pytest.mark.parametrize("fid", [s["id"] for s in SPECS if {"coincidence", "baseline", "baseline_absent"}
+                                 & set(s.get("expected", {}))])
 def test_coincidence_expectations(built, fid):
     b = built[fid]
     exp = b["spec"]["expected"]
@@ -194,6 +199,9 @@ def test_coincidence_expectations(built, fid):
                        for g in c["groups"]}
         if co["groups"] != want_groups:
             problems.append(f"[R-20] groups SQL={co['groups']} expected={want_groups}")
+    for bl in exp.get("baseline_absent", []):
+        if (bl["district"], bl["month"]) in co["baseline"]:
+            problems.append(f"[R-21] baseline row present for {bl['district']} {bl['month']} ({bl['why']})")
     for bl in exp.get("baseline", []):
         got = co["baseline"].get((bl["district"], bl["month"]))
         want = (bl["observed_pairs"], round(bl["expected_pairs"], 6), round(bl["p_value"], 6))

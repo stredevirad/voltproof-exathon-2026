@@ -73,4 +73,8 @@ coincidence:
   min_overlap_minutes: 1
   baseline_method: circular_day_shift
   baseline_shifts: 20
+  # Count observed and shifted pairs only among interruptions of COMPARABLE location-months (>90% calendar
+  # coverage). Otherwise a shifted event can land on days its partner was not monitored, which lowers
+  # "expected" and overstates the coincidence ratio (D-023). Pairs and groups themselves are not filtered.
+  baseline_comparable_only: true
   provisional: true

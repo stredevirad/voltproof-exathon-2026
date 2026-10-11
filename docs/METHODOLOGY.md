@@ -106,7 +106,16 @@ N = `baseline_shifts`.
 - **R-21 Chance baseline.** For each district and calendar month with D days, take the locations of
   that district with at least one interruption starting in that month, and order them by LOCATION_ID
   with index j = 0…L−1. Only pairs whose two interruptions both start in that month are counted,
-  both for the observed count and for the shifted counts. For k = 1…N, shift every interruption of location j by
+  both for the observed count and for the shifted counts. With `baseline_comparable_only` (default
+  on), only interruptions of **comparable** location-months (R-18) enter the baseline, for observed and
+  shifted counts alike. Without this, a shifted event can land on days its partner was not monitored,
+  which deflates "expected" and overstates the ratio. Coincident pairs and groups (R-19, R-20) are
+  reported for all interruptions; the restriction applies only to the chance comparison.
+  Known conservative effect: in a 30-day month, `(j − j′)·k ≡ 0 (mod 30)` occurs for several k ≤ 20
+  (e.g. j − j′ = 3, k = 10), so some location pairs keep their alignment under the shift and
+  "expected" is inflated for them, more often in 30-day than in 31-day months. This makes the ratio
+  conservative and is disclosed, not corrected.
+  For k = 1…N, shift every interruption of location j by
   `(j·k) mod D` whole days, wrapping within the month (start day d → `((d − 1 + shift) mod D) + 1`,
   same time of day, same duration). Then count coincident pairs (R-19) among the shifted events of
   that month. Reported per district-month: observed pairs (no shift), expected pairs (mean over k),

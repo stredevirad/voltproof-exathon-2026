@@ -1,0 +1,33 @@
+description: The baseline uses only comparable location-months (default). The same coincidences as F14, but the months are not comparable, so the district-month has no baseline row; the pairs themselves are still reported.
+rules: [R-18, R-19, R-21]
+params: {}   # default: coincidence.baseline_comparable_only = true
+locations:
+  - {name: F15 Y1, district: F15 District Y}
+  - {name: F15 Y2, district: F15 District Y}
+hours:
+  - {loc: F15 Y1, date: 01-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F15 Y1, date: 03-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F15 Y2, date: 01-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F15 Y2, date: 02-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F15 Y2, date: 03-06-2018, hour: 10, values: "0*1 230*59"}
+expected:
+  coincidence:
+    pairs:
+      - {a: F15 Y1, a_start: "2018-06-01 10:00", b: F15 Y2, b_start: "2018-06-01 10:00", why: "same minute, overlap 1"}
+      - {a: F15 Y1, a_start: "2018-06-03 10:00", b: F15 Y2, b_start: "2018-06-03 10:00", why: "same minute, overlap 1"}
+    groups:
+      - district: F15 District Y
+        start: "2018-06-01 10:00"
+        members:
+          - {loc: F15 Y1, start: "2018-06-01 10:00"}
+          - {loc: F15 Y2, start: "2018-06-01 10:00"}
+        why: "pairs and groups are not filtered by comparability"
+      - district: F15 District Y
+        start: "2018-06-03 10:00"
+        members:
+          - {loc: F15 Y1, start: "2018-06-03 10:00"}
+          - {loc: F15 Y2, start: "2018-06-03 10:00"}
+        why: "second day of coincidence"
+  baseline_absent:
+    - {district: F15 District Y, month: "2018-06",
+       why: "neither location-month is comparable (a few hours of data), so no baseline is computed"}
