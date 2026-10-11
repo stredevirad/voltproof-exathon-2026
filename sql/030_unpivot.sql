@@ -40,6 +40,25 @@ SELECT S.*,
             WHEN SLASH_MAX1 > 12 AND SLASH_MAX2 <= 12 THEN 'DD/MM/YYYY' END                   AS SLASH_FORMAT
 FROM S;
 
+-- Location name matching (D-029): exact source name first; otherwise the normalised MATCH_KEY, but only
+-- when that key identifies exactly one location. Every distinct raw name and how it matched is recorded.
+CREATE OR REPLACE TABLE NAME_MATCH AS
+WITH N AS (
+    SELECT FILE_ID, TRIM(LOCATION_NAME) AS RAW_NAME, COUNT(*) AS N_ROWS,
+           TRIM(REGEXP_REPLACE(REGEXP_REPLACE(REPLACE(LOWER(TRIM(LOCATION_NAME)), '[offline]', ''),
+                                              '\s*-\s*', '-'), '\s+', ' '), ' -') AS MATCH_KEY
+    FROM RAW_HOURLY
+    GROUP BY FILE_ID, TRIM(LOCATION_NAME)
+)
+SELECT N.FILE_ID, N.RAW_NAME, N.N_ROWS,
+       COALESCE(e.LOCATION_ID, k.LOCATION_ID)                                       AS LOCATION_ID,
+       CASE WHEN e.LOCATION_ID IS NOT NULL THEN 'exact'
+            WHEN k.LOCATION_ID IS NOT NULL THEN 'normalised'
+            ELSE 'unknown' END                                                      AS MATCH_METHOD
+FROM N
+LEFT JOIN LOCATION e ON e.SOURCE_NAME = N.RAW_NAME
+LEFT JOIN LOCATION k ON k.MATCH_KEY = N.MATCH_KEY AND k.MATCH_KEY_UNIQUE;
+
 -- Parsed row header fields (NULL when unparseable) for every raw row.
 CREATE OR REPLACE TABLE RAW_ROW_PARSED AS
 WITH R AS (
@@ -67,7 +86,8 @@ SELECT R.FILE_ID, R.LINE_NO, R.LOCATION_NAME, R.DATE_STR, R.HOUR_STR,
        dcl.PERIOD_FROM,
        dcl.PERIOD_TO
 FROM R
-LEFT JOIN LOCATION l ON l.SOURCE_NAME = TRIM(R.LOCATION_NAME)
+LEFT JOIN NAME_MATCH nm ON nm.FILE_ID = R.FILE_ID AND nm.RAW_NAME = TRIM(R.LOCATION_NAME)
+LEFT JOIN LOCATION l ON l.LOCATION_ID = nm.LOCATION_ID
 LEFT JOIN LOCATION_IN_SCOPE sc ON sc.LOCATION_ID = l.LOCATION_ID
 LEFT JOIN SOURCE_FILE_DECLARED dcl ON dcl.FILE_ID = R.FILE_ID;
 
@@ -199,5 +219,18 @@ WHERE V_NUM IS NOT NULL
   AND V_NUM <= COALESCE((SELECT NUM_VALUE FROM PARAMS WHERE NAME = 'data_quality.max_valid_v'), V_NUM);
 
 DROP TABLE MINUTE_RAW;
+
+-- One row per valid in-scope raw hour-row. Duplicate minutes can only come from repeated (location, hour)
+-- rows, so step 040 checks R-3 over this small table (about 60x fewer rows than minutes) and compares
+-- minutes only inside repeated hours.
+CREATE OR REPLACE TABLE HOUR_ROW AS
+SELECT LOCATION_ID,
+       ADD_HOURS(DAY_TS, CAST(HOUR_NUM AS DECIMAL(2,0))) AS HOUR_TS,
+       FILE_ID,
+       LINE_NO
+FROM RAW_ROW_PARSED
+WHERE IN_SCOPE AND DAY_TS IS NOT NULL AND HOUR_NUM BETWEEN 0 AND 23 AND HOUR_NUM = FLOOR(HOUR_NUM)
+  AND (PERIOD_FROM IS NULL OR CAST(DAY_TS AS DATE) >= PERIOD_FROM)
+  AND (PERIOD_TO IS NULL OR CAST(DAY_TS AS DATE) <= PERIOD_TO);
 
 DROP TABLE RAW_ROW_PARSED;

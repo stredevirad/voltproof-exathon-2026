@@ -92,6 +92,7 @@ def test_guided_demo_workflow(page, server):
     pg = page
     pg.goto(server + "/")
     pg.get_by_test_id("guided-demo").wait_for()
+    pg.get_by_test_id("location-table").wait_for()
     _check_wording(pg, "home")
     _shot(pg, "01_home")
 

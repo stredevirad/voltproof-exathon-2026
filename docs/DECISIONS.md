@@ -229,6 +229,35 @@ One entry per significant decision: context, options, choice, why. Newest at the
 - Rejected after validation: status yellow (fails the lightness band as a mark colour); orange + red
   together (normal-vision ΔE 10.8 < 15); blue + violet in dark mode (protan ΔE 1.9).
 
+## D-028 · 2026-10-11 · Formulations that scale to the full UP load (measured)
+
+The first full Uttar Pradesh build (90.5 M minutes then; 102.8 M after D-029) was dominated by two
+statements that were fine at sample scale (10.4 M minutes):
+
+| Step | Before | After | Change (same semantics; fixtures + oracle) |
+|---|---|---|---|
+| 040 duplicates/conflicts | > 50 min, 7.1 GB temp RAM, spilled (killed) | **24 s** | Repeats are found on the ~1.7 M **hour-rows** (a repeated minute can only come from a repeated hour-row). Only those hours are grouped per minute; the rest pass through |
+| 050 runs (gaps-and-islands) | **665 s**, ~6 GB temp RAM | **54 s** | One window function: `minute_number − ROW_NUMBER() OVER (PARTITION BY location, state ORDER BY ts)` is constant along a run, replacing LAG + running SUM (two full sorts) |
+| `READING_STATE` | 90 M-row table | view | It is only a CASE over `READING_CLEAN`; materialising it rewrote ~1 GB for no gain |
+
+Result: the full build takes **160 s of SQL** (194 s wall) on the build machine. All fixture, Hypothesis and
+real-data oracle tests are re-run on the new formulations.
+
+## D-029 · 2026-10-11 · Location-name matching (status marker and spacing)
+
+- **Real data:** the 2019 Jan–June file names locations with an added `" [Offline]"` status marker and
+  sometimes doubled spaces (e.g. `Jagatapur-Bahraich [Offline]`, `Kakatiya Nagar- Hyderabad  [Offline]`).
+  Exact matching quarantined 559,269 of its 894,850 rows. Prayas documents `[Offline]` as a status
+  ("monitoring … discontinued"), not part of the identity.
+- **Choice:** exact name first. Otherwise a normalised key (lower case, `[offline]` removed, no spaces
+  around hyphens, single spaces), but only when that key identifies **exactly one** location (no
+  location-file key is ambiguous). The method per raw name is recorded in `NAME_MATCH`, and `QUALITY_FILE`
+  counts the rows matched this way.
+- **Not done:** fuzzy matching. 19 names still match nothing (e.g. `Bhubaneswar_5`, `KT_4355`,
+  `Varanasi_7721`, three Sultanpur spellings) and stay quarantined as `unknown_location`. Guessing an
+  identity would be worse than reporting it. Effect on UP: 67 monitors' 2019 data recovered (2019 Jan–June
+  in-scope minutes 5.06 M → 17.44 M); remaining quarantine in that file is 27,964 rows. Fixture F18.
+
 ## D-009 · 2026-10-11 · No geospatial features
 
 - **Context:** the location metadata has no coordinates.

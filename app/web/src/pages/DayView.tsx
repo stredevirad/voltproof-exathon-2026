@@ -37,7 +37,8 @@ export default function DayView() {
       const sel = e.event_key === selected;
       return [{ name: e.event_key, xAxis: a,
                 itemStyle: { color: C.outage, opacity: sel ? 0.55 : 0.3, borderColor: sel ? C.ink1 : undefined, borderWidth: sel ? 1.5 : 0 },
-                label: { show: b - a >= 20 * 60000 || sel, formatter: `outage ${e.min_duration} min`, color: C.ink1, fontSize: 11 } },
+                // label only wide blocks (or the selected one) so labels never collide; every outage is in the table
+                label: { show: b - a >= 100 * 60000 || sel, formatter: `${e.min_duration} min`, color: C.ink1, fontSize: 11 } },
               { xAxis: b }];
     });
     return {

@@ -1,0 +1,24 @@
+description: Readings files may add the "[Offline]" status marker or extra spaces to a location's name (seen in the 2019 files). Such rows are matched by the normalised key when it is unique; a name matching no location stays quarantined.
+rules: [R-1, R-2]
+params: {}
+locations:
+  - {name: F18 Oscar, district: F18 District}
+  - {name: F18 Papa-Quebec, district: F18 District}
+hours:
+  - {loc: "F18 Oscar [Offline]",  date: 12-06-2018, hour: 10, values: "230*50 0*10"}   # status marker added
+  - {loc: "F18 Papa - Quebec",    date: 12-06-2018, hour: 10, values: "0*5 230*55"}    # spaces around the hyphen
+  - {loc: "f18  papa-quebec",     date: 12-06-2018, hour: 11, values: "230*60"}        # case and double space
+  - {loc: "F18 Romeo",            date: 12-06-2018, hour: 10, values: "0*60"}          # no such location
+expected:
+  events_count: {F18 Oscar: 1, F18 Papa-Quebec: 1}
+  events:
+    - {loc: F18 Oscar, start: "2018-06-12 10:50", end: "2018-06-12 10:59", min_duration: 10,
+       start_certainty: exact, end_certainty: censored, why: "row named 'F18 Oscar [Offline]' belongs to F18 Oscar"}
+    - {loc: F18 Papa-Quebec, start: "2018-06-12 10:00", end: "2018-06-12 10:04", min_duration: 5,
+       start_certainty: censored, end_certainty: exact, why: "'F18 Papa - Quebec' matches F18 Papa-Quebec"}
+  daily:
+    - {loc: F18 Papa-Quebec, day: 2018-06-12, expected: 120, observed: 120, outage_lower: 5,
+       why: "hours 10 and 11 came under two spellings of the same name"}
+  quality:
+    row_quarantine: {unknown_location: 1}
+    why: "F18 Romeo matches no location, even after normalisation"

@@ -83,8 +83,14 @@ SELECT f.FILE_ID, f.FILE_NAME, f.FILE_KIND, f.ROWS_EXPECTED, f.ROWS_LOADED,
        COALESCE(q.BAD_HOUR, 0)                                            AS ROWS_BAD_HOUR,
        COALESCE(q.OUTSIDE_PERIOD, 0)                                      AS ROWS_OUTSIDE_DECLARED_PERIOD,
        COALESCE(v.VALUES_QUARANTINED, 0)                                  AS VALUES_QUARANTINED,
-       COALESCE(m.MINUTES_IN_SCOPE, 0)                                    AS MINUTES_IN_SCOPE
+       COALESCE(m.MINUTES_IN_SCOPE, 0)                                    AS MINUTES_IN_SCOPE,
+       COALESCE(nm.ROWS_NORMALISED, 0)                                    AS ROWS_NAME_NORMALISED,
+       COALESCE(nm.NAMES_UNKNOWN, 0)                                      AS NAMES_UNKNOWN
 FROM SOURCE_FILE f
+LEFT JOIN (SELECT FILE_ID,
+                  SUM(CASE WHEN MATCH_METHOD = 'normalised' THEN N_ROWS ELSE 0 END) AS ROWS_NORMALISED,
+                  SUM(CASE WHEN MATCH_METHOD = 'unknown' THEN 1 ELSE 0 END)         AS NAMES_UNKNOWN
+           FROM NAME_MATCH GROUP BY FILE_ID) nm ON nm.FILE_ID = f.FILE_ID
 LEFT JOIN SOURCE_FILE_DECLARED dcl ON dcl.FILE_ID = f.FILE_ID
 LEFT JOIN FILE_DATE_FORMAT fmt ON fmt.FILE_ID = f.FILE_ID
 LEFT JOIN (SELECT FILE_ID, COUNT(*) AS ROWS_QUARANTINED,

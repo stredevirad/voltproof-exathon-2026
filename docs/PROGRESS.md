@@ -7,9 +7,9 @@
 | G0 Environment & repo | ✅ passed 2026-10-11 (commit pending) | Environment report below; scaffold staged. The local `git commit` was denied twice at the permission prompt, so it awaits user approval. Tag `gate-0-env` follows the commit |
 | G1 Data access & licence | ✅ passed 2026-10-11 | Terms + exact citation in `docs/data/SOURCE_TERMS.md`; 3 sample files MD5-verified (original CSV); 542,518 rows confirmed; outage = 0 V, missing = absent hours; corrections D-013 to D-016. Tag `gate-1-data` |
 | G2 Exasol | ✅ passed 2026-10-11 | Native IMPORT 542,518 rows in 1.23 s; in-DB unpivot to 32,551,080 minutes in 4.8 s; first LAG+SUM islands query on real data identical to an independent raw-CSV check (Dhule 16-06-2018: 37-min outage 17:00–17:36). Tag `gate-2-exasol` |
-| G3 Correctness core | 🟡 all tests green; full-subset load pending | Fixtures 14/14 (hand expectations + SQL = oracle), Hypothesis 40/40, real slice identical, quality report renders. **Remaining:** load the full UP 2016–19 subset (user is downloading 9 files) |
+| G3 Correctness core | ✅ passed 2026-10-11 | Full UP subset loads (102,845,781 minutes, 176 locations) in 194 s; fixtures F01–F18 + Hypothesis + real-data slices identical to the oracle; quality report renders. Tag `gate-3-correctness` |
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
-| G5 Product | ⬜ not started | — |
+| G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ⬜ not started | — |
 | G7 Submission | ⬜ not started | — |
 
@@ -108,8 +108,23 @@
 - `sql/095_quality.sql`; `scripts\load.ps1` (verify → IMPORT → SQL → quality guard → provenance 55/55); `scripts\test.ps1`.
 - **G4:** `sql/100_coincidence.sql` (pairs, chains/groups, shift baseline). Baseline went from 348 s to 1.8 s via bucketed equality joins (D-021). Real data: 26,075 pairs → 9,347 potential shared supply events. Bahraich 2018-07: 4,322 observed vs 2,149.6 expected pairs; example group of 17 monitors at 18:27–18:29 on 25 July 2018 (raw-CSV checked).
 
-### Next
-1. When the 9 UP files land: profile the 2019 CSVs, run `scripts\load.ps1 -Set up`, re-run all suites → G3 pass.
-2. G5 product: FastAPI + React/ECharts + evidence report (PDF) + Playwright e2e.
+### Session 3 (continued): full UP data, G3 and G5 passed
+- The user downloaded the 9 UP files (all original CSV, MD5-verified). Profiling found three real defects:
+  2019 `M/D/YYYY` dates (D-025), a lost Hour column in 2019 July–Dec (excluded, D-026), and name variants
+  with an added "[Offline]" (D-029). Each was handled with evidence and fixtures F16–F18.
+- Scale: the first full build stalled (> 60 min) in two statements. Hour-level duplicate detection and
+  single-window gaps-and-islands brought the full build to **160 s SQL / 194 s wall** (D-028).
+- Advisor review fixes: baseline on comparable months only (D-023), stable keys (D-024), real-data tests
+  read every loaded file.
+- **Full test run on the full data (19:59 IST): unit 16, integration 63, differential 4 (Hypothesis 12 +
+  real slices; 12.5 min), e2e 3, all passed.** Screenshots in `docs/deliverables/screenshots/`.
+- G5: FastAPI API, React/ECharts app (colours validated, D-027), PDF evidence report, `scripts\start.ps1`
+  (tested on port 8077), SETUP_WINDOWS, JUDGE_QA (22 questions), DEMO_SCRIPT, THIRD_PARTY_NOTICES.
+
+### Next (G6)
+1. Validation against Prayas's UP figures (docs/VALIDATION.md §3), using its definitions and the >90% filter.
+2. Benchmarks from `EXA_SQL_LAST_DAY` (cold vs warm, N runs) into docs/BENCHMARKS.md; WHY_EXASOL.md.
+3. Clean-start test from a fresh clone following only the README; README itself.
+4. Re-run VALIDATION §2 coincidence table on the full data with the comparable-only baseline.
 2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
 3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.

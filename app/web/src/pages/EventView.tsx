@@ -14,7 +14,11 @@ function edgeText(kind: "start" | "end", certainty: string, seg: { supply_state:
 export function GroupPanel({ g, highlight }: { g: GroupData; highlight?: string }) {
   return (
     <div className="card" data-testid="coincidence-panel">
-      <h3 style={{ marginTop: 0 }}>Other monitors that lost supply within 2 minutes ({g.n_locations} monitors)</h3>
+      <h3 style={{ marginTop: 0 }}>
+        {highlight
+          ? `${g.n_locations - 1} other monitor${g.n_locations - 1 === 1 ? "" : "s"} lost supply within 2 minutes`
+          : `${g.n_locations} monitors lost supply within 2 minutes of each other`}
+      </h3>
       <p className="small muted">Potential shared supply event {g.group_key}: {g.n_pairs} coincident pairs in {g.district} district.
         {" "}{g.district_locations_with_interruptions} monitors in the district had interruptions that month.</p>
       <div className="scroll" style={{ maxHeight: 300 }}>

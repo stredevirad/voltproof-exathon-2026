@@ -36,14 +36,40 @@ def detect_formats(dates: list[str]) -> tuple[str, str]:
     return dash, slash
 
 
+def match_key(name: str) -> str:
+    """D-029 matching key: lower case, '[offline]' removed, no spaces around hyphens, single spaces."""
+    s = name.strip().lower().replace("[offline]", "")
+    s = re.sub(r"\s*-\s*", "-", s)
+    s = re.sub(r"\s+", " ", s)
+    return s.strip(" -")
+
+
+def name_matcher(location_names: set[str]):
+    """Return raw_name -> canonical location name (exact first, else a unique normalised key) or None."""
+    by_key: dict[str, list[str]] = {}
+    for n in location_names:
+        by_key.setdefault(match_key(n), []).append(n)
+
+    def match(raw: str) -> str | None:
+        raw = raw.strip()
+        if raw in location_names:
+            return raw
+        hits = by_key.get(match_key(raw), [])
+        return hits[0] if len(hits) == 1 else None
+
+    return match
+
+
 def _as_date(v) -> dt.date | None:
     if v is None or v == "":
         return None
     return v if isinstance(v, dt.date) else dt.date.fromisoformat(str(v))
 
 
-def read_rows(path: Path, names: set[str] | None = None, declared: dict | None = None) -> list[RawRow]:
+def read_rows(path: Path, names: set[str] | None = None, declared: dict | None = None,
+              matcher=None) -> list[RawRow]:
     """All data rows of `path` (optionally only `names`) with per-row date format and declared period.
+    With `matcher` (see name_matcher), raw names are mapped to canonical location names first (D-029).
     Rows of a file with an exclude_reason are not returned (excluded from the analysis, D-026)."""
     if declared and declared.get("exclude_reason"):
         return []
@@ -58,9 +84,10 @@ def read_rows(path: Path, names: set[str] | None = None, declared: dict | None =
                   _as_date(declared.get("period_to")) or dt.date.max)
     out = []
     for line_no, row in raw:
-        if names is not None and row[0] not in names:
+        loc = matcher(row[0]) if matcher else row[0]
+        if loc is None or (names is not None and loc not in names):
             continue
         d = row[1].strip()
         fmt = slash if SLASH.match(d) else dash
-        out.append(RawRow(row[0], row[1], row[2], row[3:], line_no, date_format=fmt, period=period))
+        out.append(RawRow(loc, row[1], row[2], row[3:], line_no, date_format=fmt, period=period))
     return out

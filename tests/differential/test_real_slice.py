@@ -42,11 +42,14 @@ def _readings_files(conn) -> list[tuple[Path, dict | None]]:
 
 
 def _raw_rows(files: list[tuple[Path, dict | None]], names: set[str]) -> list[RawRow]:
-    from tests.support.rawfiles import read_rows
+    from tests.support.rawfiles import name_matcher, read_rows
 
+    with connect() as conn:
+        all_names = {r[0] for r in conn.execute(f"SELECT SOURCE_NAME FROM {SCHEMA}.LOCATION").fetchall()}
+    matcher = name_matcher(all_names)
     out = []
     for path, declared in files:
-        out.extend(read_rows(path, names, declared))
+        out.extend(read_rows(path, names, declared, matcher=matcher))
     return out
 
 

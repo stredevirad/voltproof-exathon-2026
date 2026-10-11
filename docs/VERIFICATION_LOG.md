@@ -139,6 +139,18 @@ No differences from the prompt found.
 | X22 (update) | Windows→WSL bind-mount write path | volume file timestamps + run without errors | ✅ No I/O errors or visible slowness at this scale (persistent volume `storage\vol_1000.dat` written at 15:08:33 during the load) |
 | X31 | Persistent volume sizing | file listing of `<deployment>\local\runtime\exa\storage` | ⚠️ `vol_1000.dat` is a **preallocated 1,024 MB** file (plus `vol_1001.dat` 1,024 MB). Current data is 358 MiB stored. **What happens when data exceeds it is untested.** Test before the full UP load |
 
+### Full Uttar Pradesh load (2026-10-11 evening; files downloaded by the user, all 12 MD5-verified)
+
+| # | Finding | How | Result |
+|---|---|---|---|
+| U1 | 2019 date format | `pipeline/profile_2019.py` | ⚠️ `M/D/YYYY` (2nd part up to 31) in both 2019 files; 72 `#VALUE!` dates in Jan–June → D-025 |
+| U2 | 2019 July–Dec Hour column | same + row inspection | ❌ 690,915 of 695,974 rows have Hour = 0; 24 rows per location-day all labelled 0 → excluded (D-026) |
+| U3 | Name variants in 2019 | `ROW_QUARANTINE` / `NAME_MATCH` | ⚠️ 187 names with an added "[Offline]" or extra spaces; 169 match uniquely after normalisation, 19 match nothing → D-029 |
+| U4 | Full build size | `scripts\load.ps1 -Set up` | 7,367,053 raw rows in 10 analysed files; **102,845,781 clean UP minutes**, 176 locations, 408,223 outage events, 83,929 location-days, 2,870 location-months (1,876 comparable), 184,299 coincident pairs, 64,526 potential shared supply events |
+| U5 | Full build time | RUN_LOG | 160 s SQL / 194 s wall after D-028 (first attempt > 60 min, see D-028) |
+| U6 | Provenance at full scale | `pipeline/check_provenance.py` | ✅ 199/199 statements match `EXA_DBA_AUDIT_SQL` by exact text |
+| U7 | Host memory during the load | `free -m` in the VM, Windows free RAM | VM 8.5 of 11 GB used, no swap; Windows free RAM fell to 0.8 GB (tight, as predicted in step 2) |
+
 ### Not yet verified (carried forward)
 
 - ⏳ Electricity (Rights of Consumers) Rules, 2020: official gazette text and amendments (G1/G7).

@@ -47,7 +47,7 @@ export default function LocationMonth() {
       },
       visualMap: { type: "piecewise", seriesIndex: 0, orient: "horizontal", left: 0, top: 0, pieces: PIECES,
                    textStyle: { color: C.ink2 }, itemWidth: 14, itemHeight: 12, selectedMode: false },
-      calendar: { top: 70, left: 30, right: 10, cellSize: ["auto", 46], range: month, orient: "horizontal",
+      calendar: { top: 64, left: 44, right: 10, cellSize: ["auto", 44], range: month, orient: "horizontal",
                   yearLabel: { show: false }, monthLabel: { show: false }, dayLabel: { firstDay: 1, color: C.ink2, nameMap: "EN" },
                   splitLine: { show: false }, itemStyle: { borderColor: C.surface, borderWidth: 2, color: "#ffffff" } },
       series: [
@@ -123,7 +123,7 @@ export default function LocationMonth() {
       <div className="grid-2">
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Outage per day (lower bound) <span className="small muted">— select a day to see its minutes</span></h3>
-          {option && <EChart option={option} height={360} onClick={onDayClick} testId="calendar"
+          {option && <EChart option={option} height={64 + 7 * 44 + 14} onClick={onDayClick} testId="calendar"
                              ariaLabel={`Calendar of daily outage minutes for ${loc.display_name} in ${month}. The same values are in the table below.`} />}
           <p className="small muted"><span className="swatch nodata" /> Hatched: less than 90% of the day was read. Missing readings are never counted as outage.</p>
           <button onClick={() => setShowTable(!showTable)} aria-expanded={showTable}>{showTable ? "Hide" : "Show"} daily table</button>

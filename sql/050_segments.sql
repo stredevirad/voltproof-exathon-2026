@@ -1,8 +1,11 @@
 -- 050_segments.sql
 -- R-5 classification, R-6 NO_DATA, R-7 islands (D-018: NO_DATA stored as runs, not per minute).
 
--- R-5: state of every clean reading, thresholds from PARAMS (never hard-coded).
-CREATE OR REPLACE TABLE READING_STATE AS
+-- R-5: state of every clean reading, thresholds from PARAMS (never hard-coded). A view, not a table: it is
+-- a CASE over READING_CLEAN, and materialising it rewrote ~90M rows on the full UP load for no gain (D-028).
+DROP TABLE IF EXISTS READING_STATE;
+
+CREATE OR REPLACE VIEW READING_STATE AS
 SELECT r.LOCATION_ID,
        r.TS,
        r.VOLTAGE,
@@ -18,32 +21,28 @@ CROSS JOIN (
     FROM PARAMS
 ) p;
 
--- Gaps-and-islands over readings: a new run starts when the state changes OR the previous reading is
--- not exactly one minute earlier (a gap ends any run).
+-- Gaps-and-islands over readings (R-7): maximal runs of consecutive minutes in the same state. Within one
+-- location and state, (minute number - ROW_NUMBER) is constant along consecutive minutes and jumps at any
+-- gap or interruption by another state, so it identifies the run. One window function over the readings,
+-- no LAG and no running SUM: the earlier LAG + running-SUM version needed two full sorts of the ~90M UP
+-- minutes and ran for more than 10 minutes, with ~6 GB temporary RAM (D-028). Same runs (fixtures + oracle).
 CREATE OR REPLACE TABLE MEASURED_RUN AS
-WITH C AS (
+WITH K AS (
     SELECT LOCATION_ID, TS, VOLTAGE, SUPPLY_STATE,
-           CASE WHEN SUPPLY_STATE = LAG(SUPPLY_STATE) OVER (PARTITION BY LOCATION_ID ORDER BY TS)
-                 AND MINUTES_BETWEEN(TS, LAG(TS) OVER (PARTITION BY LOCATION_ID ORDER BY TS)) = 1
-                THEN 0 ELSE 1 END AS IS_NEW
+           MINUTES_BETWEEN(TS, TIMESTAMP '2000-01-01 00:00:00')
+             - ROW_NUMBER() OVER (PARTITION BY LOCATION_ID, SUPPLY_STATE ORDER BY TS) AS RUN_KEY
     FROM READING_STATE
-), I AS (
-    SELECT LOCATION_ID, TS, VOLTAGE, SUPPLY_STATE,
-           SUM(IS_NEW) OVER (PARTITION BY LOCATION_ID ORDER BY TS
-                             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS RUN_NO
-    FROM C
 )
 SELECT LOCATION_ID,
-       RUN_NO,
-       MIN(SUPPLY_STATE)                                         AS SUPPLY_STATE,
+       SUPPLY_STATE,
        MIN(TS)                                            AS START_TS,
        MAX(TS)                                            AS END_TS,
        COUNT(*)                                           AS MINUTES,
        SUM(CASE WHEN VOLTAGE = 0 THEN 1 ELSE 0 END)       AS ZERO_MINUTES,
        MIN(VOLTAGE)                                       AS MIN_VOLTAGE,
        MAX(VOLTAGE)                                       AS MAX_VOLTAGE
-FROM I
-GROUP BY LOCATION_ID, RUN_NO;
+FROM K
+GROUP BY LOCATION_ID, SUPPLY_STATE, RUN_KEY;
 
 -- R-6: NO_DATA runs are the gaps between consecutive measured runs inside the monitoring window.
 CREATE OR REPLACE TABLE SEGMENT AS

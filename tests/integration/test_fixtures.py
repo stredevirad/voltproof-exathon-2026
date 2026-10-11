@@ -19,7 +19,7 @@ from pipeline.load_raw import load_paths
 from pipeline.run_sql import resolve_steps, run_steps
 from tests.fixtures.render import all_specs, render
 from tests.oracle.reference import run
-from tests.support.rawfiles import read_rows
+from tests.support.rawfiles import name_matcher, read_rows
 from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
                                    oracle_coincidence, params_from_yaml)
 
@@ -39,9 +39,10 @@ def _groups():
     return list(groups.items())
 
 
-def _oracle_rows(readings_path, known_locations: set[str], declared: dict | None = None) -> list[RawRow]:
-    # unknown locations are quarantined by R-2, so the oracle only sees known names
-    return read_rows(readings_path, known_locations, declared)
+def _oracle_rows(readings_path, known_locations: set[str], declared: dict | None = None,
+                 all_names: set[str] | None = None) -> list:
+    # unknown locations are quarantined by R-2, so the oracle only sees rows that match a known location
+    return read_rows(readings_path, known_locations, declared, matcher=name_matcher(all_names or known_locations))
 
 
 @pytest.fixture(scope="session")
@@ -69,7 +70,7 @@ def built():
                 base = 9_000_000 + (gi * 100 + si) * 10
                 sql = fetch_sql(conn, schema, names)
                 oracle = oracle_as_comparable(
-                    run(_oracle_rows(rendered[s["id"]][1], set(names), s.get("file")),
+                    run(_oracle_rows(rendered[s["id"]][1], set(names), s.get("file"), set(all_districts)),
                         params_from_yaml(json.loads(pkey)), "%d-%m-%Y"))
                 districts = sorted({loc["district"] for loc in s["locations"]})
                 co_sql = fetch_coincidence(conn, schema, districts)
