@@ -67,7 +67,7 @@ One entry per significant decision: context, options, choice, why. Newest at the
 - **Context:** Python UDFs need `exasol slc install python3`, which restarts the DB and adds image
   size on C:. Lua scripts and Lua scalar UDFs work out of the box (probed).
 - **Choice:** the core pipeline is pure SQL (window functions). Any per-location procedural step, and
-  the optional in-database orchestration (SHOULD), uses Lua. No Python SLC unless a later need is proven.
+  the optional in-database orchestration (SHOULD), uses Lua. No Python SLC unless a later need is shown.
 
 ## D-012 · 2026-10-11 · TLS handling for the local DB
 
@@ -126,7 +126,7 @@ One entry per significant decision: context, options, choice, why. Newest at the
   in-database unpivot. The long form is what window functions need for gaps-and-islands across hour
   boundaries. The wide form is kept only as the untouched raw layer, where it is 60× fewer rows to import.
 
-## D-017 · 2026-10-11 · One transaction per SQL step; statement ids proven against the audit log
+## D-017 · 2026-10-11 · One transaction per SQL step; statement ids verified against the audit log
 
 - **Finding:** in autocommit mode Exasol inserts `COMMIT /* AUTO */` after every statement, so a
   "current statement − 1" lookup pointed at COMMITs (caught by `pipeline/check_provenance.py`: 6 of 11
@@ -137,7 +137,7 @@ One entry per significant decision: context, options, choice, why. Newest at the
 
 ## D-018 · 2026-10-11 · NO_DATA represented as runs, not per-minute rows
 
-- **Context:** the master prompt's `MINUTE_STATE` would synthesise one row per missing minute
+- **Context:** the initial design's `MINUTE_STATE` would synthesise one row per missing minute
   (hundreds of millions of rows for UP 2016–19).
 - **Choice:** `SEGMENT` holds maximal runs per location: measured state runs (gaps-and-islands over
   readings, breaking on a state change **or** a non-consecutive minute) plus NO_DATA runs derived
@@ -177,7 +177,7 @@ One entry per significant decision: context, options, choice, why. Newest at the
 ## D-022 · 2026-10-11 · Baseline resolution and reporting
 
 - With N = 20 shifts the smallest resolvable empirical p is 1/20. A p of 0 is reported as "< 0.05"
-  ("none of 20 shifted versions reached the observed count"), never as "p = 0".
+  ("none of 20 shifted versions reached the observed count"), never as a p-value of zero.
 
 ## D-023 · 2026-10-11 · Chance baseline on comparable location-months only
 

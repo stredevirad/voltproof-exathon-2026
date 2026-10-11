@@ -26,12 +26,16 @@ REPORT_ID = re.compile(r"^VP-\d{1,9}-\d{6}-[0-9a-f]{8}$")
 S = SCHEMA
 
 REDRESS_TEXT = (
-    "A consumer can raise supply complaints with the distribution company. Under Section 42 of the Electricity "
-    "Act, 2003, distribution licensees must provide a forum for redressal of consumer grievances, and a consumer "
-    "whose grievance is not redressed may make a representation to the Electricity Ombudsman appointed or "
-    "designated by the State Electricity Regulatory Commission (Press Information Bureau, Ministry of Power, "
-    "30 December 2010). VoltProof does not determine whether any standard of performance was breached, or what "
-    "remedy, if any, applies."
+    "A consumer can raise supply complaints with the distribution company. In Uttar Pradesh, the State "
+    "Electricity Regulatory Commission's regulations made under Section 42(5) to (8) of the Electricity Act, 2003 "
+    "provide a Consumer Grievance Redressal Forum to be constituted by each distribution licensee (Section 42(5)) "
+    "and an Electricity Ombudsman appointed or designated by the Commission (Section 42(6)); their 2003 "
+    "definition of a deficiency includes interruption or failure of power supply and voltage complaints. "
+    "A consumer whose grievance is not redressed may make a representation to the Ombudsman. Sources: UPERC "
+    "(Consumer Grievance Redressal Forum & Electricity Ombudsman) Regulations, 2003, clauses 2.1(i), (l) and (n); "
+    "Press Information Bureau, Ministry of Power, 30 December 2010. Check the Commission's current regulations "
+    "for the procedure in force. VoltProof does not determine whether any standard of performance was breached, "
+    "or what remedy, if any, applies."
 )
 DISCLAIMER = "VoltProof is an evidence-analysis aid, not legal advice or an official determination."
 LIMITATIONS = [

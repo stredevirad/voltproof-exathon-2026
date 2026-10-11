@@ -16,15 +16,16 @@ The output is a dated evidence report (PDF) per location-month. It lists every i
 timestamps, certainty and duration bounds, and other monitors that lost supply at the same time, with
 an appendix tracing each number to the source file line and the SQL that produced it
 (app/api/report.py; tests/integration/test_report.py). It points to the statutory grievance route
-(Electricity Act 2003 s.42 forum and Ombudsman) without claiming any entitlement. Using it today
+(the Section 42 forum and Ombudsman, as set up by UPERC's regulations; VERIFICATION_LOG L1–L3) without
+claiming any entitlement. Using it today
 needs a monitor like ESMI's; see "future scope" in the README.
 
-**3. Is this data current? (ledger Q3 / L4)**
+**3. Is this data current?**
 No. ESMI data covers Nov 2014 – Dec 2019, and our Uttar Pradesh analysis covers 2016–19
 (docs/data/SOURCE_TERMS.md). We present it as a historical case study that demonstrates a method. The
 same pipeline would run on smart-meter or new monitor data; that is future scope, not a claim.
 
-**4. Isn't this what Prayas already publishes? (ledger N1)**
+**4. Isn't this what Prayas already publishes?**
 Prayas publishes summaries and dashboards. VoltProof adds event-level evidence with explicit uncertainty
 (exact / bounded / censored edges; lower and upper bounds). It also adds coincidence analysis with a
 chance baseline, quarantine and provenance down to the source line and the Exasol statement id, and a
@@ -43,7 +44,7 @@ not as interruption." Missing minutes become NO_DATA (METHODOLOGY R-6). An outag
 reported with a measured lower bound (headline) and an upper bound that may claim at most 60 minutes per
 side (R-10, R-15). Fixtures F05, F06 and F09 test exactly this.
 
-**6. "A home monitor isn't the utility's meter." (ledger Q3)**
+**6. "A home monitor isn't the utility's meter."**
 Correct, and every report says so (report limitations). Two mitigations: (a) corroboration, because
 interruptions that start within 2 minutes at other monitors in the district are shown as potential shared
 supply events (17 Bahraich monitors at 18:27–18:29 on 25 July 2018; docs/VALIDATION.md §2); (b) the
@@ -87,20 +88,20 @@ and the primary definition was fixed before comparing. Where we test alternative
 interruptions, averaging method, connection type, 0 V only, years), every result is reported. None of
 them closes the gap to Prayas's Figure 2, and we say so (docs/VALIDATION.md §3.3).
 
-**12. "Compensation due" is modelled but can't be validated. (ledger T3 / Q2)**
-We don't model it. VoltProof never states an amount or an entitlement. A UI and report test fails on
-phrases such as "compensation due" and "entitled to" (tests/support/claims.py). The report only points to
+**12. Does VoltProof work out what a consumer is owed?**
+No. VoltProof never states an amount owed or an entitlement. A UI and report test fails on any phrase
+that asserts one (the exact list is in tests/support/claims.py). The report only points to
 the grievance route. Encoding one state's standards-of-performance rules from the primary regulation is
 future scope.
 
-**13. What exactly is "a potential shared supply event"? Isn't that a transformer fault?**
+**13. What exactly is "a potential shared supply event"? Does it identify faulty equipment?**
 It is a chain of interruptions at different monitors in one district whose starts are at most 2 minutes
-apart, with overlapping outage minutes (R-19, R-20). We do not identify any equipment, and the words
-"transformer fault" and "feeder fault" are blocked by the claims test.
+apart, with overlapping outage minutes (R-19, R-20). We do not identify any equipment, and phrases naming an
+equipment fault are blocked by the claims test.
 
 ## Exasol
 
-**14. Why Exasol? Wouldn't Excel or DuckDB do? (ledger X4)**
+**14. Why Exasol? Wouldn't Excel or DuckDB do?**
 Excel cannot hold this data: about 400 million minute values for 2014–18 alone. DuckDB could run the
 queries. What Exasol gives this project, measured (docs/WHY_EXASOL.md, docs/BENCHMARKS.md *(G6 pending)*):
 - the whole pipeline as versioned SQL inside the database (native `IMPORT`, unpivot, window-function
@@ -112,7 +113,7 @@ queries. What Exasol gives this project, measured (docs/WHY_EXASOL.md, docs/BENC
 
 We make no "X times faster than DuckDB" claim: we did not benchmark DuckDB on the same data.
 
-**15. ~600 M rows on a 24 GB laptop? (ledger F2)**
+**15. ~600 M rows on a 24 GB laptop?**
 Measured instead of estimated: 2014–18 contains 6,601,854 location-hours, which is 396,111,240 minute
 values (Dataverse DDI metadata). The build machine has 15.6 GB RAM, not 24, and Exasol gets 8.9 GiB.
 Load and query times for the Uttar Pradesh subset are in docs/BENCHMARKS.md *(G6 pending)*.
@@ -134,7 +135,7 @@ Several things, all recorded with evidence (VERIFICATION_LOG X6, X22, X31; D-010
 
 ## Data and licence
 
-**18. Is the data licensed for this? (ledger L2)**
+**18. Is the data licensed for this?**
 Harvard Dataverse lists the dataset licence as **CC0 1.0**. Prayas's description also asks for
 non-commercial, academic and research use with acknowledgement. We follow the stricter reading: we cite
 the dataset as the page requires, credit Prayas everywhere and never redistribute the raw data

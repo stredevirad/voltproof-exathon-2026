@@ -31,7 +31,7 @@
 - Exasol Personal docs v2.3 read in full for: requirements, local deployment, managed deployments, connect, limitations, UDFs, troubleshooting, release notes.
 - ESMI dataset located on Harvard Dataverse via the native API: `doi:10.7910/DVN/CLLZZM`, **CC0 1.0**, 14 files, 2,185,993,808 bytes, Nov 2014 – Dec 2019. Row counts measured from DDI metadata (no download needed).
 - Prayas thresholds and UP-article methodology captured verbatim (VERIFICATION_LOG P1–P11).
-- Scaffold: `.gitignore`, `.gitattributes`, `CLAUDE.md`, `docs/{PROGRESS,DECISIONS,VERIFICATION_LOG}.md`, `.claude/settings.json` (project permissions; destroy/remove deny-listed, bypass mode disabled), verbatim prompt in `docs/private/`.
+- Scaffold: `.gitignore`, `.gitattributes`, `CLAUDE.md`, `docs/{PROGRESS,DECISIONS,VERIFICATION_LOG}.md`, `.claude/settings.json` (project permissions; destroy/remove deny-listed, bypass mode disabled), verbatim brief in a gitignored private folder.
 - uv-managed CPython 3.12.14 installed into `D:\Projects\VoltProof\.cache\uv-python`.
   - Side effects (uv defaults, not yet disabled at that point): a 47 KB launcher shim `C:\Users\LENOVO\.local\bin\python3.12.exe` and a PEP 514 registry entry under HKCU. Future installs use `--no-bin --no-registry`.
 
@@ -72,7 +72,7 @@
 ### Session 3 (same day): user work order (history scan, resources, G1→G3)
 - User committed the scaffold (`20ef134`, tag `gate-0-env`); all three teammates registered. Local commits are now authorised for Claude (no push).
 - User decision: **no courtesy email to Prayas** (dropped).
-- **Step 1, history scan:** `gitleaks git --redact -v` → 1 commit scanned (~184 KB), **no leaks found**. Commit contents checked: no data, `.cache`, `.tools`, `.venv` or `docs/private`.
+- **Step 1, history scan:** `gitleaks git --redact -v` → 1 commit scanned (~184 KB), **no leaks found**. Commit contents checked: no data, `.cache`, `.tools`, `.venv` or private files.
 - **Step 2, resource facts (measured 14:59 IST):**
 
 | Resource | Value | Source |
@@ -97,7 +97,7 @@
 
 ### G3 (in progress)
 - X31 resolved: the volume grows automatically (1 → 5 GB). **The first growth is slow** (130 M rows in 434 s while growing vs 21 s once grown, ~10 MB/s growth over the bind mount), so the cold-start cost will be documented in BENCHMARKS.
-- Provenance proven: RUN_LOG (session, statement) ids match `EXA_DBA_AUDIT_SQL` by exact SQL text (6/6) after D-017 (one transaction per step).
+- Provenance verified: RUN_LOG (session, statement) ids match `EXA_DBA_AUDIT_SQL` by exact SQL text (6/6) after D-017 (one transaction per step).
 - SQL steps 040 clean → 050 segments → 060 events → 070 uncertainty claims → 080 daily (full calendar) → 090 monthly, all reading thresholds from PARAMS. Reserved words hit: STATE, DAY (renamed SUPPLY_STATE, CAL_DAY).
 - Real UP sample (98 locations with data, 2018 Jun–Aug, scope = Uttar Pradesh): 10,424,400 minutes → 188,544 segments → 52,810 outage events → 7,794 location-days → 270 location-months.
 - **First oracle-vs-SQL differential on real data: PASS.** 4 UP locations, 4,930 events, 365 days, 12 months identical in every field (`tests/differential/test_real_slice.py`).

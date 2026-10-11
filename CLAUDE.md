@@ -1,8 +1,8 @@
 # VoltProof — project rules for Claude Code
 
 ExaThon India 2026, Track 3. Turns ESMI minute-wise voltage records (Prayas Energy Group) into traceable
-evidence of power cuts and poor supply. The analysis runs **inside Exasol Personal**. Full brief:
-`docs/private/MASTER_PROMPT.md` (gitignored; source of truth for goals and acceptance criteria).
+evidence of power cuts and poor supply. The analysis runs **inside Exasol Personal**. The full brief is private
+(not in the repository); local pointers are in the gitignored `CLAUDE.local.md`.
 
 ## Resume rule (every session)
 1. Read this file, `docs/PROGRESS.md`, `docs/DECISIONS.md`.
@@ -50,8 +50,10 @@ Tag each passed gate (`gate-N-name`). Deadline: submit by Sat 24 Oct 2026 IST (h
 - No coordinates in the source → no geospatial features; coincidence groups are administrative (district).
 
 ## Claims vocabulary
-- Say "potential shared supply event", never "transformer fault"/"feeder fault"/"proven common cause".
-- Say "may warrant review through …", never "compensation due", "entitled to", "proves".
+- Say "potential shared supply event"; never name an equipment fault or assert a common cause.
+- Say "may warrant review through …"; never state an amount owed, an entitlement or a certainty claim.
+- The exact blocked phrases (and internal-only terms) are in `tests/support/claims.py`; every tracked file is
+  scanned by `tests/unit/test_published_text.py`.
 - Label anything illustrative/simulated as **Illustrative**. Measured ≠ inferred, in every UI string and doc.
 - Attribute "Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI)" wherever the data appears.
 
@@ -61,7 +63,7 @@ Tag each passed gate (`gate-N-name`). Deadline: submit by Sat 24 Oct 2026 IST (h
 - The first push to origin needs explicit user approval (not yet given as of 2026-10-11).
 
 ## Never do
-- Never commit raw ESMI data, `.env`, `secrets.json`, `docs/private/`, or anything under `data/`.
+- Never commit raw ESMI data, `.env`, `secrets.json`, the private docs folder (see `.gitignore`), or anything under `data/`.
 - Never print or log credentials (Exasol `secrets.json`, guestbook details in `.env`).
 - Never run `exasol destroy` / `exasol remove` (deny-listed; the human runs them if ever needed).
 - Never change git remotes, create/rename repos, edit `.wslconfig`, or relocate WSL/Podman disks without approval.

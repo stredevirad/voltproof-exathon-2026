@@ -79,4 +79,5 @@ NUL
 nul
 
 # --- Claude Code local-only settings ---
+CLAUDE.local.md
 .claude/settings.local.json
