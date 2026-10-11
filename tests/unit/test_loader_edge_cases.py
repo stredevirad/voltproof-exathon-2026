@@ -86,3 +86,65 @@ def test_readings_header_on_location_kind_is_rejected(tmp_path):
     p = _write(tmp_path, "mixup.csv", (",".join(READINGS_HEADER) + "\r\n").encode())
     with pytest.raises(RawFileError, match="unexpected header"):
         check_header(p, "locations")
+
+
+class _FakeConn:
+    """Just enough of a pyexasol connection to drive load_file; IMPORT fails `fail_times` times first."""
+
+    def __init__(self, error: str, fail_times: int, rows: int):
+        self.error, self.fail_times, self.rows = error, fail_times, rows
+        self.imports = self.rollbacks = self.commits = 0
+        self.ext = self
+
+    def execute(self, sql):
+        return self
+
+    def fetchval(self):
+        return self.rows
+
+    def insert_multi(self, *a, **k):
+        pass
+
+    def import_from_callback(self, *a, **k):
+        self.imports += 1
+        if self.imports <= self.fail_times:
+            raise RuntimeError(self.error)
+
+    def rollback(self):
+        self.rollbacks += 1
+
+    def commit(self):
+        self.commits += 1
+
+
+_ETL5105 = ("ETL-5105: Following error occured while reading data from external connection [https://x/000.csv "
+            "failed after 174960452 bytes. [OpenSSL SSL_read: SSL_ERROR_SYSCALL, errno 0],[56],[Failure when "
+            "receiving data from the peer]]")
+
+
+def _readings_file(tmp_path):
+    row = ",".join(["X", "01-06-2018", "0"] + ["230"] * 60)
+    return _write(tmp_path, "r.csv", (",".join(READINGS_HEADER) + "\r\n" + row + "\r\n" + row + "\r\n").encode())
+
+
+def test_transient_import_error_is_retried_once_after_rollback(tmp_path):
+    from pipeline.load_raw import load_file
+    conn = _FakeConn(_ETL5105, fail_times=1, rows=2)
+    r = load_file(conn, "S", 1, _readings_file(tmp_path), "readings", None, None)
+    assert (conn.imports, conn.rollbacks, conn.commits, r["attempts"], r["rows"]) == (2, 1, 1, 2, 2)
+
+
+def test_transient_import_error_twice_fails(tmp_path):
+    from pipeline.load_raw import load_file
+    conn = _FakeConn(_ETL5105, fail_times=2, rows=2)
+    with pytest.raises(RuntimeError, match="ETL-5105"):
+        load_file(conn, "S", 1, _readings_file(tmp_path), "readings", None, None)
+    assert conn.commits == 0
+
+
+def test_data_errors_are_not_retried(tmp_path):
+    from pipeline.load_raw import load_file
+    conn = _FakeConn("ETL-3050: [Column=5 Row=7] data exception - invalid character value", fail_times=1, rows=2)
+    with pytest.raises(RuntimeError, match="ETL-3050"):
+        load_file(conn, "S", 1, _readings_file(tmp_path), "readings", None, None)
+    assert (conn.imports, conn.rollbacks) == (1, 0)

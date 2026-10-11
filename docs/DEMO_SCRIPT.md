@@ -20,17 +20,20 @@ It is one example selected by a rule, not a typical month. The UI says so in a b
 
 | Time | Screen | Narration (plain English) |
 |---|---|---|
-| 0:00–0:20 | Start page | "A shopkeeper in a small Uttar Pradesh town can't get a fix for daily power cuts, because her memory is the only record, against the utility's own reports. Prayas, which runs independent voltage monitors, reports more than four hours of outage a day in rural Uttar Pradesh. VoltProof turns those minute-by-minute voltage records into traceable evidence." |
+| 0:00–0:20 | Start page; caption **"Illustrative example"** while the shopkeeper is mentioned | "Imagine a shopkeeper in a small Uttar Pradesh town who can't get a fix for daily power cuts, because her memory is the only record, against the utility's own reports. Prayas, which ran independent voltage monitors, reports more than four hours of outage a day in rural Uttar Pradesh. VoltProof turns those minute-by-minute voltage records into traceable evidence." |
 | 0:20–0:35 | Click **Start guided demo**; banner | "The demo opens one real monitor and month, chosen by a fixed rule shown here, not hand-picked." |
-| 0:35–1:05 | Month dashboard: KPI tiles, calendar, quality badge | "This month the monitor recorded N interruptions and at least H hours without usable supply. The headline is a lower bound: hatched days had too few readings, and missing readings are never counted as outage. The range shows what the gaps *could* add." |
+| 0:35–1:05 | Month dashboard: KPI tiles, calendar, quality badge | "In July 2018 this monitor in Bahraich recorded 320 interruptions and at least 366 hours without usable supply. That headline is a lower bound: missing readings are never counted as outage, and hatched days had too few readings. The range shows what the gaps *could* add: here, about one more hour." |
 | 1:05–1:35 | Click the demo day; voltage trace | "Minute by minute: the grey line is measured voltage. Orange blocks are outages; hatched grey means no reading, not counted. On 25 July at 18:27 the supply drops to zero." |
 | 1:35–2:10 | Open the event; certainty; **How was this computed?**; coincidence panel | "Exact start and end, and how certain they are. Every number traces to the source file line and to the SQL statement Exasol ran; its audit log shows the same SQL. Sixteen other monitors in Bahraich lost supply within two minutes. That is a *potential* shared supply event: against a chance baseline it is far more common than shifted timings would give, but VoltProof does not claim a cause." |
 | 2:10–2:35 | Back to month, **Generate evidence report**, open PDF, scroll to appendix | "One click gives a PDF a consumer can take to the distribution company's grievance forum. It has the calendar, every event with bounds, data quality, methodology and a reproducibility appendix with file checksums and statement ids. It is not legal advice and claims no entitlement." |
 | 2:35–2:55 | Data & sources page (2019 file excluded), then a terminal running `scripts\load.ps1` (or BENCHMARKS table) | "The whole analysis runs as versioned SQL inside Exasol Personal on this laptop: about X million minutes of Uttar Pradesh data, loaded with native IMPORT and segmented with window functions in Y seconds. We even caught defects in the published data, like a file that lost its hour column, and excluded it with the reason shown." |
 | 2:55–3:00 | Start page with footer | "VoltProof: traceable evidence of power cuts. Data: Prayas Energy Group, ESMI." |
 
-Numbers N, H, X, Y are read from the app and from docs/BENCHMARKS.md at recording time. Never quote a
-number that is not on screen or in those files.
+Numbers checked against the build on 2026-10-12. Huzurpur-Bahraich, 2018-07: 320 interruptions; outage at
+least 21,970 minutes (366.2 h), up to 22,030 minutes (367.2 h); 90.7% of minutes read (comparable). The
+scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. Never quote a number that
+is not on screen or in those files. The shopkeeper is an illustrative example, not a real person in the
+data; the video must caption her as "Illustrative example".
 
 ## Live demo (Stage 2, 15 minutes) and backup
 

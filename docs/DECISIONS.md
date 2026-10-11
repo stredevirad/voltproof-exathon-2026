@@ -298,3 +298,17 @@ real-data oracle tests are re-run on the new formulations.
 - **For the record:** the 2016–2018-only variant was already reported in VALIDATION §3.3 before this
   decision (outage min/day 56.3 / 189.5 / 566.3, against 55.6 / 174.4 / 555.2 for the primary definition).
   VALIDATION §3 keeps its pre-stated primary definition (2016-01 to 2019-06).
+
+## D-032 · 2026-10-12 · Retry a dropped IMPORT transfer once
+
+- **Observed:** during a benchmark build (2026-10-12, docs/BENCHMARKS.md), IMPORT of one file failed with
+  `ETL-5105 … failed after 174960452 bytes … SSL_ERROR_SYSCALL … Failure when receiving data from the
+  peer`. The HTTP transport between the Windows client and the database VM dropped mid-file. Free host
+  RAM was low (about 0.5 GiB) during these builds.
+- **Effect:** the file's transaction rolled back, including its DELETE, so the raw and analytical tables
+  stayed intact. The build failed loudly.
+- **Choice:** `load_file` retries a file **once** after rolling it back, and only for this transport error
+  (`is_transient_import_error`). Data errors (for example ETL-3050) are never retried. The row-count
+  check (loaded = data lines) still runs after the retry, and each file records `attempts`.
+- **Tests:** `tests/unit/test_loader_edge_cases.py` checks that a transient error is retried once, that a
+  second failure is raised, and that a data error is not retried.

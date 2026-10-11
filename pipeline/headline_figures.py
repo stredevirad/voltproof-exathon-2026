@@ -28,7 +28,7 @@ def _git() -> str:
 
 
 def collect(c) -> dict:
-    one = lambda sql: c.execute(sql).fetchone()  # noqa: E731
+    one = lambda sql: c.execute(sql).fetchone()
     f = {}
     f["scale"] = one("""SELECT (SELECT COUNT(*) FROM SOURCE_FILE WHERE FILE_KIND = 'readings'),
                                (SELECT COUNT(*) FROM RAW_HOURLY),
@@ -62,7 +62,7 @@ def collect(c) -> dict:
 
 
 def render(f: dict, schema: str) -> str:
-    n = lambda v: f"{int(v):,}"  # noqa: E731
+    n = lambda v: f"{int(v):,}"
     s = f["scale"]
     a = f["all_up"]
     co = f["coincidence"]

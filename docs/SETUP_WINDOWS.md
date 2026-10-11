@@ -27,7 +27,8 @@ cd D:\Projects\VoltProof
 ## 2. Bootstrap (Python, tools, browser, web build): one command
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\bootstrap.ps1
+Set-ExecutionPolicy -Scope Process Bypass    # this terminal only; repeat in every new terminal
+scripts\bootstrap.ps1
 ```
 
 All of this goes into the repository's own gitignored folders (`.cache\`, `.tools\`, `.venv\`). Nothing is
@@ -47,9 +48,16 @@ Open a **new** terminal afterwards so `podman` is on PATH.
 
 ## 4. Start Exasol Personal (one-time install, then start/stop)
 
+First check whether a deployment already exists and is running:
+
+```powershell
+scripts\exa.ps1 status                            # database_ready → skip to step 5
+```
+
+Only if there is no deployment yet:
+
 ```powershell
 scripts\exa.ps1 install local --auto-approve     # first time: about 2 minutes
-scripts\exa.ps1 status                            # → database_ready
 ```
 
 - This creates Podman's default WSL machine and starts a single-node Exasol Personal database.
@@ -87,6 +95,10 @@ scripts\get-data.ps1 -Set first     # or -Set up
 ```powershell
 scripts\load.ps1 -Set first     # minimum set; or -Set up for all of Uttar Pradesh 2016-2019
 ```
+
+To build into a separate schema next to an existing build (for example a clean-start test), first set
+`$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_CLEAN'` in the terminal. `load.ps1`, `start.ps1` and `test.ps1` all
+use it.
 
 This:
 1. verifies the files;
