@@ -167,10 +167,12 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
                 end_cert, end_ext = "bounded", min(gap, cap)
             else:
                 end_cert, end_ext = "exact", 0
+            zero = sum(1 for idx in range(s, end_idx + 1) if seq[idx][1] == OUTAGE and seq[idx][2] == 0)
             events.append({
                 "location": loc,
                 "start": seq[s][0],
                 "end": seq[end_idx][0],  # last outage minute (inclusive)
+                "zero_minutes": zero,
                 "min_duration": measured,
                 "max_duration": measured + bridged + start_ext + end_ext,
                 "bridged_minutes": bridged,
@@ -250,6 +252,7 @@ def run(rows: list[RawRow], p: Params, date_format: str) -> Result:
             calendar_minutes = (nxt - dt.date(year, month, 1)).days * 1440
             mth["coverage_window"] = mth["observed"] / mth["expected"]
             mth["coverage_calendar"] = mth["observed"] / calendar_minutes
-            mth["comparable"] = mth["coverage_calendar"] > p.comparable_min_coverage_exclusive
+            # same arithmetic as the SQL: observed > threshold x calendar minutes (no ratio rounding)
+            mth["comparable"] = mth["observed"] > p.comparable_min_coverage_exclusive * calendar_minutes
             res.monthly[(loc, key)] = mth
     return res

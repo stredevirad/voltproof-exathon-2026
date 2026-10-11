@@ -126,6 +126,43 @@ One entry per significant decision: context, options, choice, why. Newest at the
   in-database unpivot. The long form is what window functions need for gaps-and-islands across hour
   boundaries. The wide form is kept only as the untouched raw layer, where it is 60× fewer rows to import.
 
+## D-017 · 2026-10-11 · One transaction per SQL step; statement ids proven against the audit log
+
+- **Finding:** in autocommit mode Exasol inserts `COMMIT /* AUTO */` after every statement, so a
+  "current statement − 1" lookup pointed at COMMITs (caught by `pipeline/check_provenance.py`: 6 of 11
+  RUN_LOG ids were wrong).
+- **Choice:** `run_steps` requires `autocommit=False` and commits once per step. A step that fails then
+  rolls back as a unit, and `CURRENT_STATEMENT + 1` taken before each statement is exact. Result: 6/6 RUN_LOG
+  rows match `EXA_DBA_AUDIT_SQL` by exact SQL text hash. The pre-fix dev RUN_LOG rows were deleted.
+
+## D-018 · 2026-10-11 · NO_DATA represented as runs, not per-minute rows
+
+- **Context:** the master prompt's `MINUTE_STATE` would synthesise one row per missing minute
+  (hundreds of millions of rows for UP 2016–19).
+- **Choice:** `SEGMENT` holds maximal runs per location: measured state runs (gaps-and-islands over
+  readings, breaking on a state change **or** a non-consecutive minute) plus NO_DATA runs derived
+  from the gaps between them (`LEAD`). The semantics are identical (R-6); storage is O(runs). Daily
+  measures use interval-overlap arithmetic over a full **location × day calendar** covering each
+  monitoring window, so days with no readings at all are kept (coverage 0).
+
+## D-019 · 2026-10-11 · Analytical subset filter
+
+- Raw files are always loaded whole. The unpivot (step 030) keeps only the subset in PARAMS:
+  `subset.states` (comma-separated `STATE_NAME`s; empty = all) and `subset.locations` (optional source
+  names, for small dev runs). Default: `Uttar Pradesh`. The fixture schema overrides it to all.
+
+## D-020 · 2026-10-11 · Precise definitions for coincidence (R-19 to R-21)
+
+- R-19 pair: two interruptions at different locations in the same district with
+  `|start_A − start_B| ≤ Δ` and measured overlap `≥ θ` minutes.
+- R-20 group: start-time chains per district (a chain breaks when consecutive starts are > Δ apart).
+  A chain is a potential shared supply event if it contains ≥ 1 coincident pair. Its members are the
+  chain's events that take part in at least one such pair. One window pass, no graph algorithm.
+- R-21 baseline: per district and calendar month (D days), locations ordered by LOCATION_ID get
+  index j = 0…L−1. For k = 1…N, every event of location j moves by `(j·k) mod D` days, wrapping within
+  the month. Expected = mean coincident-pair count over the N shifts. Empirical p = share of shifts
+  whose count ≥ observed. Details and caveats are in METHODOLOGY.
+
 ## D-009 · 2026-10-11 · No geospatial features
 
 - **Context:** the location metadata has no coordinates.

@@ -95,8 +95,16 @@
 - **G2 passed**: VERIFICATION_LOG G2a–G2d, X22 update, X31 (new risk: 1 GB preallocated volume).
 - Working-tree gitleaks scan (`gitleaks dir .`) flagged 14 items, **all in ignored third-party files** (`.venv`, `.cache/uv`, gitleaks' own README). None are trackable. Pre-push scans will cover history + tracked files only.
 
+### G3 (in progress)
+- X31 resolved: the volume grows automatically (1 → 5 GB). **The first growth is slow** (130 M rows in 434 s while growing vs 21 s once grown, ~10 MB/s growth over the bind mount), so the cold-start cost will be documented in BENCHMARKS.
+- Provenance proven: RUN_LOG (session, statement) ids match `EXA_DBA_AUDIT_SQL` by exact SQL text (6/6) after D-017 (one transaction per step).
+- SQL steps 040 clean → 050 segments → 060 events → 070 uncertainty claims → 080 daily (full calendar) → 090 monthly, all reading thresholds from PARAMS. Reserved words hit: STATE, DAY (renamed SUPPLY_STATE, CAL_DAY).
+- Real UP sample (98 locations with data, 2018 Jun–Aug, scope = Uttar Pradesh): 10,424,400 minutes → 188,544 segments → 52,810 outage events → 7,794 location-days → 270 location-months.
+- **First oracle-vs-SQL differential on real data: PASS.** 4 UP locations, 4,930 events, 365 days, 12 months identical in every field (`tests/differential/test_real_slice.py`).
+- User asked (via the G2 checkpoint) to download the 9 remaining UP-period files.
+
 ### Next
-1. G3: SQL steps 040+ (clean, states, events, aggregates), fixtures for R-1..R-21, oracle-vs-SQL differential runs.
-2. Before the full UP load: test the persistent-volume growth beyond 1 GB (X31).
+1. Hand-written fixtures for R-1..R-21 + fixture runner (schema VP_TEST); Hypothesis differential.
+2. Quality summary table; load the full UP subset when the files arrive (profile the 2019 CSVs first).
 2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
 3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.

@@ -123,6 +123,9 @@ def ensure_schema(conn, schema: str) -> None:
 
 def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None = None,
               quiet: bool = False) -> list[dict]:
+    if conn.attr.get("autocommit"):
+        raise RuntimeError("run_steps needs a connection opened with autocommit=False "
+                           "(statement ids for provenance are only exact without auto-commits).")
     ensure_schema(conn, schema)
     run_id = dt.datetime.now().strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:6]
     commit, man = git_commit(), manifest_sha()
@@ -135,12 +138,17 @@ def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None
             # PARAMS exists once 010 has run; load parameters before the first analytical step
             params_sha = load_params(conn, overrides=params_override)
         for idx, stmt in enumerate(split_statements(sql), start=1):
+            # The probe SELECT is statement n, so the pipeline statement is n + 1. This holds only with
+            # autocommit OFF: in autocommit mode Exasol inserts "COMMIT /* AUTO */" after every statement
+            # (probe included), which shifts the numbering. run_steps therefore requires a non-autocommit
+            # connection and commits once per step. Verified against EXA_DBA_AUDIT_SQL by
+            # pipeline/check_provenance.py.
+            stmt_id = int(conn.execute("SELECT CURRENT_STATEMENT").fetchval()) + 1
             started = dt.datetime.now()
             t0 = time.perf_counter()
             st = conn.execute(stmt)
             wall = time.perf_counter() - t0
             rows = st.rowcount() if st.result_type == "rowCount" else None
-            stmt_id = int(conn.execute("SELECT CURRENT_STATEMENT").fetchval()) - 1
             session_id = int(conn.session_id())
             rec = {
                 "run_id": run_id, "step": path.name, "stmt_index": idx, "sql_file_sha256": file_sha,
@@ -166,6 +174,7 @@ def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None
                      "STARTED_AT", "FINISHED_AT", "WALL_SECONDS", "ROWS_AFFECTED", "EXA_SESSION_ID",
                      "EXA_STMT_ID", "APP_GIT_COMMIT", "DATA_MANIFEST_SHA256"],
         )
+        conn.commit()  # one transaction per step: a failing step leaves the previous state intact
     return results
 
 
@@ -175,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("steps", nargs="*", help="step prefixes, e.g. 010 020 (default: all)")
     args = ap.parse_args(argv)
     steps = resolve_steps(args.steps)
-    with connect() as conn:
+    with connect(autocommit=False) as conn:
         res = run_steps(conn, args.schema.upper(), steps)
     total = sum(r["wall_seconds"] for r in res)
     print(f"ran {len(res)} statements from {len(steps)} step(s) in {total:.2f}s")

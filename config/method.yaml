@@ -7,6 +7,11 @@
 method_version: "0.1.0"
 profile: prayas_esmi
 
+subset:
+  # Which locations the analytical pipeline unpivots (raw files are always loaded whole). D-019.
+  states: "Uttar Pradesh"   # '|'-separated STATE_NAME values; empty = all states
+  locations: ""             # optional '|'-separated SOURCE_NAME values for small dev runs; empty = all
+
 classification:
   # Prayas (Energy Group), "How does ESMI work?", https://energy.prayaspune.org/how-does-esmi-work
   # retrieved 2026-10-11. Quote: "a broad voltage range of 205 to 270 V ... is marked as 'Normal'.

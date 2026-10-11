@@ -88,14 +88,28 @@ reports no invalid (blank) minute cells, so missing data normally appears as **a
   inside the monitoring window is not comparable. Non-comparable periods are greyed out in the UI and
   excluded from cross-location comparisons.
 
-## 6. Potential shared supply events (G4; draft)
+## 6. Potential shared supply events (G4)
 
-- **R-19** Two outage events at different locations in the same district are **coincident** if their
-  starts differ by ≤ Δ minutes and they overlap by ≥ θ minutes.
-- **R-20** Coincident pairs are grouped into connected components, and each group's id is its earliest
-  member event. These are called "potential shared supply events", never faults.
-- **R-21 Chance baseline.** Recompute coincidences after circularly shifting each location's events
-  by whole days (N shifts), then report observed vs mean expected count.
+Only interruptions (R-11) take part. Δ = `max_start_offset_minutes`, θ = `min_overlap_minutes`,
+N = `baseline_shifts`.
+
+- **R-19 Coincident pair.** Interruptions A and B at different locations in the same district with
+  `|start_A − start_B| ≤ Δ` and `overlap(A, B) ≥ θ`, where
+  `overlap = max(0, min(end_A, end_B) − max(start_A, start_B) + 1)` minutes over measured spans
+  (start and end are first and last outage minutes, inclusive).
+- **R-20 Grouping.** Within a district, interruptions are ordered by start (ties by LOCATION_ID). A
+  chain breaks when a start is more than Δ minutes after the previous start. A chain that contains at
+  least one coincident pair is a **potential shared supply event**. Its members are the chain's events
+  that belong to at least one coincident pair inside the chain. Group key = district + earliest member
+  start. These are never called faults: a shared cause is possible, but so are chance and
+  independent local causes.
+- **R-21 Chance baseline.** For each district and calendar month with D days, order its locations by
+  LOCATION_ID with index j = 0…L−1. For k = 1…N, shift every interruption of location j by
+  `(j·k) mod D` whole days, wrapping within the month (start day d → `((d − 1 + shift) mod D) + 1`,
+  same time of day, same duration). Then count coincident pairs (R-19) among the shifted events of
+  that month. Reported per district-month: observed pairs (no shift), expected pairs (mean over k),
+  and empirical p (share of k whose count ≥ observed). Whole-day shifts keep each location's
+  time-of-day pattern (e.g. scheduled evening cuts), so the baseline is not inflated by daily routine.
 
 ## 7. Known limitations
 
