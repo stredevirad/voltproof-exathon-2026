@@ -128,6 +128,17 @@ No differences from the prompt found.
 | G1m | Time zone | About the initiative.pdf | ⚠️ Not stated ("Hour of the day (0 to 23)"). Treated as local IST (D-015) |
 | G1n | Dataset citation | Dataverse citation API | ✅ "Prayas, Energy Group, 2019, "Minute-wise voltage data collected in Electricity Supply Monitoring Initiative", https://doi.org/10.7910/DVN/CLLZZM, Harvard Dataverse, V2, UNF:6:CQzM5yPH9GilZHSqyRRyEQ== [fileUNF]" |
 
+### G2 load and first query (2026-10-11, measured)
+
+| # | Claim / measurement | How | Result |
+|---|---|---|---|
+| G2a | Native IMPORT of the raw sample | `pipeline/load_raw.py` (pyexasol `import_from_callback`, i.e. Exasol `IMPORT … FROM CSV` over the HTTP transport; lines streamed unchanged, prefixed with file id + physical line number) | ✅ 542,518 rows in **1.23 s** (~440,000 rows/s, ~114 MB/s); loaded = counted lines (hard check). Location file 528 rows in 0.20 s |
+| G2b | In-database unpivot | `sql/030_unpivot.sql` via `pipeline/run_sql.py` | ✅ 32,551,080 minute rows (= 542,518 × 60) in **4.77 s**; typed `MINUTE_READING` in 3.92 s; 0 row-level and 0 value-level quarantines (consistent with the G1 profile) |
+| G2c | **First real gaps-and-islands query** (LAG + running SUM) | `pipeline/g2_first_query.py "80 feet road- Dhule" 2018-06-16` | ✅ Islands: NORMAL 00:00–00:59 (60) · gap · **OUTAGE 17:00–17:36 (37 min)** · NORMAL 17:37–23:59 (383). An independent plain-Python check on the raw CSV gives **identical** islands. Raw line confirms 37 zero minutes, first non-zero at minute 37 |
+| G2d | Storage | `EXA_ALL_OBJECT_SIZES` | MINUTE_READING 305.0 MiB stored (776.1 MiB raw), 9.82 bytes/row; RAW_HOURLY 52.7 MiB stored |
+| X22 (update) | Windows→WSL bind-mount write path | volume file timestamps + run without errors | ✅ No I/O errors or visible slowness at this scale (persistent volume `storage\vol_1000.dat` written at 15:08:33 during the load) |
+| X31 | Persistent volume sizing | file listing of `<deployment>\local\runtime\exa\storage` | ⚠️ `vol_1000.dat` is a **preallocated 1,024 MB** file (plus `vol_1001.dat` 1,024 MB). Current data is 358 MiB stored. **What happens when data exceeds it is untested.** Test before the full UP load |
+
 ### Not yet verified (carried forward)
 
 - ⏳ Electricity (Rights of Consumers) Rules, 2020: official gazette text and amendments (G1/G7).

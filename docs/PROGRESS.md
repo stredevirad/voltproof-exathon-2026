@@ -6,7 +6,7 @@
 |---|---|---|
 | G0 Environment & repo | ✅ passed 2026-10-11 (commit pending) | Environment report below; scaffold staged. The local `git commit` was denied twice at the permission prompt, so it awaits user approval. Tag `gate-0-env` follows the commit |
 | G1 Data access & licence | ✅ passed 2026-10-11 | Terms + exact citation in `docs/data/SOURCE_TERMS.md`; 3 sample files MD5-verified (original CSV); 542,518 rows confirmed; outage = 0 V, missing = absent hours; corrections D-013 to D-016. Tag `gate-1-data` |
-| G2 Exasol | 🟡 DB running; needs the real sample | Exasol 2026.2.0-nano.3 installed via `scripts\exa.ps1 install local`; pyexasol 2.4.1 connects; feature probes recorded (`reports/exasol_probes.json`). Pass criterion (one real ESMI query) pending the sample |
+| G2 Exasol | ✅ passed 2026-10-11 | Native IMPORT 542,518 rows in 1.23 s; in-DB unpivot to 32,551,080 minutes in 4.8 s; first LAG+SUM islands query on real data identical to an independent raw-CSV check (Dhule 16-06-2018: 37-min outage 17:00–17:36). Tag `gate-2-exasol` |
 | G3 Correctness core | ⬜ not started | — |
 | G4 Coincidence | ⬜ not started | — |
 | G5 Product | ⬜ not started | — |
@@ -91,7 +91,12 @@
   3. **Disk:** no concern. Data grows on D: (406 GB free); C: only grows with images/SLCs.
   4. **Connections:** 18 usable. The app uses a small pool (≤4), tests ≤2.
 
+- **G1 passed** (commit `a988ce8`, tag `gate-1-data`): see VERIFICATION_LOG G1f–G1n and DECISIONS D-013 to D-016.
+- **G2 passed**: VERIFICATION_LOG G2a–G2d, X22 update, X31 (new risk: 1 GB preallocated volume).
+- Working-tree gitleaks scan (`gitleaks dir .`) flagged 14 items, **all in ignored third-party files** (`.venv`, `.cache/uv`, gitleaks' own README). None are trackable. Pre-push scans will cover history + tracked files only.
+
 ### Next
-1. G1 inspection + G2 load and first real query (files landed 14:50–14:54, MD5-verified).
+1. G3: SQL steps 040+ (clean, states, events, aggregates), fixtures for R-1..R-21, oracle-vs-SQL differential runs.
+2. Before the full UP load: test the persistent-volume growth beyond 1 GB (X31).
 2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
 3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.
