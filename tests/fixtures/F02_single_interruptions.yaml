@@ -1,0 +1,29 @@
+description: Interruptions of 1 minute, 5 minutes and 3 hours, all with measured normal supply on both sides.
+rules: [R-1, R-7, R-9, R-10, R-11, R-13, R-14, R-16b]
+params: {}
+locations:
+  - {name: F02 Bravo, district: F02 District}
+hours:
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 9,  values: "230*60"}
+  # 10:10 one minute; 10:31-10:35 five minutes
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 10, values: "230*10 0*1 230*20 0*5 230*24"}
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 11, values: "0*60"}
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 12, values: "0*60"}
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 13, values: "0*60"}
+  - {loc: F02 Bravo, date: 02-06-2018, hour: 14, values: "230*60"}
+expected:
+  events_count: {F02 Bravo: 3}
+  events:
+    - {loc: F02 Bravo, start: "2018-06-02 10:10", end: "2018-06-02 10:10", min_duration: 1, max_duration: 1,
+       bridged_minutes: 0, start_certainty: exact, end_certainty: exact, is_interruption: true, zero_minutes: 1,
+       why: "10:09 and 10:11 are measured 230 V"}
+    - {loc: F02 Bravo, start: "2018-06-02 10:31", end: "2018-06-02 10:35", min_duration: 5, max_duration: 5,
+       bridged_minutes: 0, start_certainty: exact, end_certainty: exact, is_interruption: true, zero_minutes: 5,
+       why: "minutes 31..35 are 0 V; neighbours measured"}
+    - {loc: F02 Bravo, start: "2018-06-02 11:00", end: "2018-06-02 13:59", min_duration: 180, max_duration: 180,
+       bridged_minutes: 0, start_certainty: exact, end_certainty: exact, is_interruption: true, zero_minutes: 180,
+       why: "three full 0 V hours; 10:59 and 14:00 measured 230 V; one event across hour boundaries"}
+  daily:
+    - {loc: F02 Bravo, day: 2018-06-02, expected: 360, observed: 360, outage_lower: 186, outage_upper: 186,
+       outage_zero: 186, low: 0, high: 0, evening_lower: 0, evening_upper: 0, interruptions: 3, longest: 180,
+       why: "window 09:00-14:59; 1+5+180 outage minutes, all 0 V; nothing in 17:00-22:59"}

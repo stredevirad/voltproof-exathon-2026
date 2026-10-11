@@ -1,0 +1,24 @@
+description: Outages bordering a missing hour (bounded edges, union claim) and a long gap between normal readings (never outage).
+rules: [R-6, R-9, R-10, R-14, R-15, R-17]
+params: {}
+locations:
+  - {name: F05 Echo, district: F05 District}
+hours:
+  - {loc: F05 Echo, date: 04-06-2018, hour: 17, values: "230*50 0*10"}   # outage 17:50-17:59
+  # hour 18 missing (NO_DATA 18:00-18:59)
+  - {loc: F05 Echo, date: 04-06-2018, hour: 19, values: "0*5 230*55"}    # outage 19:00-19:04
+  # hours 20-21 missing (NO_DATA 20:00-21:59, between normal readings)
+  - {loc: F05 Echo, date: 04-06-2018, hour: 22, values: "230*60"}
+expected:
+  events_count: {F05 Echo: 2}
+  events:
+    - {loc: F05 Echo, start: "2018-06-04 17:50", end: "2018-06-04 17:59", min_duration: 10, max_duration: 70,
+       start_certainty: exact, end_certainty: bounded, is_interruption: true,
+       why: "followed by a 60-minute gap: upper bound adds min(60, cap 60)"}
+    - {loc: F05 Echo, start: "2018-06-04 19:00", end: "2018-06-04 19:04", min_duration: 5, max_duration: 65,
+       start_certainty: bounded, end_certainty: exact, is_interruption: true,
+       why: "preceded by the same 60-minute gap"}
+  daily:
+    - {loc: F05 Echo, day: 2018-06-04, expected: 360, observed: 180, outage_lower: 15, outage_upper: 75,
+       outage_zero: 15, evening_lower: 15, evening_upper: 75, interruptions: 2, longest: 10,
+       why: "window 17:00-22:59; the 18:00-18:59 gap is claimed by both neighbours but counted once (+60); the 20:00-21:59 gap lies between normal minutes and adds nothing; everything is inside 17:00-22:59"}

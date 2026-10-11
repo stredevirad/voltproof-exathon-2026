@@ -29,6 +29,36 @@ IMPORT_PARAMS = {"column_separator": ",", "row_separator": "LF", "encoding": "UT
 CHUNK_LINES = 20000
 
 
+READINGS_HEADER = ["Location name", "Date", "Hour"] + [f"Min {i}" for i in range(60)]
+LOCATIONS_HEADER = ["Location name", "From date", "To date", "District", "State", "Category",
+                    "Connection Type"]
+
+
+class RawFileError(ValueError):
+    """A raw file cannot be loaded as-is (empty, wrong encoding, unexpected header)."""
+
+
+def check_header(path: Path, kind: str) -> None:
+    """Fail early and clearly instead of loading a file whose layout we would misread."""
+    raw = path.read_bytes()[:4096]
+    if not raw:
+        raise RawFileError(f"{path.name}: the file is empty (0 bytes); expected a header row.")
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")) or b"\x00" in raw[:200]:
+        raise RawFileError(f"{path.name}: looks like UTF-16 (byte-order mark / NUL bytes). Save it as UTF-8/ASCII CSV.")
+    try:  # header line only; data lines are checked while streaming (with their line number)
+        first = raw.split(b"\n", 1)[0].decode("utf-8").lstrip("﻿").rstrip("\r")
+    except UnicodeDecodeError as e:
+        raise RawFileError(f"{path.name}: header is not valid UTF-8 ({e.reason} at byte {e.start}).") from None
+    header = [c.strip() for c in first.split(",")]
+    expected = LOCATIONS_HEADER if kind == "locations" else READINGS_HEADER
+    if header != expected:
+        diff_at = next((i for i, (a, b) in enumerate(zip(header, expected)) if a != b), min(len(header), len(expected)))
+        raise RawFileError(
+            f"{path.name}: unexpected header (column {diff_at + 1}: got "
+            f"{header[diff_at] if diff_at < len(header) else '<missing>'!r}, expected "
+            f"{expected[diff_at] if diff_at < len(expected) else '<none>'!r}; {len(header)} columns vs {len(expected)}).")
+
+
 def count_data_lines(path: Path) -> int:
     with path.open("rb") as fh:
         return max(sum(1 for _ in fh) - 1, 0)
@@ -37,9 +67,14 @@ def count_data_lines(path: Path) -> int:
 def _stream_with_line_numbers(pipe, src, file_id: int):
     """pyexasol import callback: write '<file_id>,<line_no>,<original line>\\n' for every data line."""
     buf = []
-    with open(src, "r", encoding="utf-8", newline="") as fh:
+    with open(src, "rb") as fh:
         next(fh)  # header = line 1
-        for line_no, line in enumerate(fh, start=2):
+        for line_no, raw_line in enumerate(fh, start=2):
+            try:
+                line = raw_line.decode("utf-8")
+            except UnicodeDecodeError as e:
+                raise RawFileError(f"{Path(src).name}: line {line_no} is not valid UTF-8 "
+                                   f"({e.reason} at byte {e.start} of the line).") from None
             buf.append(f"{file_id},{line_no},{line.rstrip(chr(13) + chr(10))}\n")
             if len(buf) >= CHUNK_LINES:
                 pipe.write("".join(buf).encode("utf-8"))
@@ -51,12 +86,14 @@ def _stream_with_line_numbers(pipe, src, file_id: int):
 def load_file(conn, schema: str, file_id: int, path: Path, kind: str, md5: str | None,
               sha256: str | None) -> dict:
     table = "RAW_LOCATION" if kind == "locations" else "RAW_HOURLY"
+    check_header(path, kind)
     expected = count_data_lines(path)
     conn.execute(f"DELETE FROM {table} WHERE FILE_ID = {int(file_id)}")
     conn.execute(f"DELETE FROM SOURCE_FILE WHERE FILE_ID = {int(file_id)}")
     t0 = time.perf_counter()
-    conn.import_from_callback(_stream_with_line_numbers, str(path), (schema, table),
-                              callback_params={"file_id": int(file_id)}, import_params=IMPORT_PARAMS)
+    if expected > 0:  # a header-only file is valid and simply contributes no rows
+        conn.import_from_callback(_stream_with_line_numbers, str(path), (schema, table),
+                                  callback_params={"file_id": int(file_id)}, import_params=IMPORT_PARAMS)
     seconds = time.perf_counter() - t0
     loaded = int(conn.execute(f"SELECT COUNT(*) FROM {table} WHERE FILE_ID = {int(file_id)}").fetchval())
     conn.ext.insert_multi(
@@ -72,6 +109,14 @@ def load_file(conn, schema: str, file_id: int, path: Path, kind: str, md5: str |
     return {"file": path.name, "table": table, "rows": loaded, "seconds": round(seconds, 3),
             "rows_per_second": round(loaded / seconds) if seconds else None,
             "mb_per_second": round(path.stat().st_size / 1e6 / seconds, 2) if seconds else None}
+
+
+def load_paths(conn, schema: str, files: list[tuple[int, Path, str]]) -> list[dict]:
+    """Load explicit (file_id, path, kind) entries into `schema` (used by fixtures and tests).
+    The connection must have autocommit off; raw tables are created first."""
+    run_steps(conn, schema, resolve_steps(["010"]), quiet=True)
+    ensure_schema(conn, schema)
+    return [load_file(conn, schema, fid, path, kind, None, None) for fid, path, kind in files]
 
 
 def main(argv: list[str] | None = None) -> int:

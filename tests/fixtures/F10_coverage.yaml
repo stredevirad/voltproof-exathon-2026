@@ -1,0 +1,24 @@
+description: Coverage and the strict ">90% of the calendar month" comparability rule; a whole missing day inside the window.
+rules: [R-4, R-6, R-12, R-15, R-18]
+params: {}
+locations:
+  - {name: F10 Juliet C1, district: F10 District}
+  - {name: F10 Juliet C2, district: F10 District}
+  - {name: F10 Juliet C3, district: F10 District}
+hours:
+  - {loc: F10 Juliet C1, dates: "01-06-2018..28-06-2018", hour: "0-23", values: "230*60"}
+  - {loc: F10 Juliet C2, dates: "01-06-2018..27-06-2018", hour: "0-23", values: "230*60"}
+  - {loc: F10 Juliet C3, date: 01-06-2018, hour: "0-23", values: "230*60"}
+  - {loc: F10 Juliet C3, date: 03-06-2018, hour: "0-23", values: "230*60"}
+expected:
+  events_count: {F10 Juliet C1: 0, F10 Juliet C2: 0, F10 Juliet C3: 0}
+  daily:
+    - {loc: F10 Juliet C3, day: 2018-06-02, expected: 1440, observed: 0, outage_lower: 0, outage_upper: 0,
+       interruptions: 0, why: "a day with no readings inside the window is kept, coverage 0; a gap between normal readings is never outage"}
+  monthly:
+    - {loc: F10 Juliet C1, month: "2018-06", expected: 40320, observed: 40320, comparable: true,
+       why: "28 full days = 40,320 > 0.9 x 43,200 = 38,880"}
+    - {loc: F10 Juliet C2, month: "2018-06", expected: 38880, observed: 38880, comparable: false,
+       why: "27 full days = exactly 90%, not MORE than 90%"}
+    - {loc: F10 Juliet C3, month: "2018-06", expected: 4320, observed: 2880, comparable: false,
+       why: "window 1-3 June (3 days expected), 2 days observed"}

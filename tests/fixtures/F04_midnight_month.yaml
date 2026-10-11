@@ -1,0 +1,25 @@
+description: One outage crossing midnight and a month boundary (30 June 23:30 to 1 July 00:14).
+rules: [R-7, R-12, R-13, R-17]
+params: {}
+locations:
+  - {name: F04 Delta, district: F04 District}
+hours:
+  - {loc: F04 Delta, date: 30-06-2018, hour: 23, values: "230*30 0*30"}
+  - {loc: F04 Delta, date: 01-07-2018, hour: 0,  values: "0*15 230*45"}
+expected:
+  events_count: {F04 Delta: 1}
+  events:
+    - {loc: F04 Delta, start: "2018-06-30 23:30", end: "2018-07-01 00:14", min_duration: 45, max_duration: 45,
+       start_certainty: exact, end_certainty: exact, is_interruption: true,
+       why: "one event_id across midnight; 23:29 and 00:15 measured normal"}
+  daily:
+    - {loc: F04 Delta, day: 2018-06-30, expected: 60, observed: 60, outage_lower: 30, outage_upper: 30,
+       evening_lower: 0, interruptions: 1, longest: 45,
+       why: "30 minutes fall on 30 June (R-12); the event counts on its start day (R-13); 23:30-23:59 is outside 17:00-22:59"}
+    - {loc: F04 Delta, day: 2018-07-01, expected: 60, observed: 60, outage_lower: 15, outage_upper: 15,
+       interruptions: 0, longest: 0, why: "15 minutes fall on 1 July but the event is not counted again"}
+  monthly:
+    - {loc: F04 Delta, month: "2018-06", outage_lower: 30, interruptions: 1, longest: 45, comparable: false,
+       why: "June share of the minutes; the count belongs to June"}
+    - {loc: F04 Delta, month: "2018-07", outage_lower: 15, interruptions: 0, longest: 0, comparable: false,
+       why: "July share of the minutes; no new interruption"}

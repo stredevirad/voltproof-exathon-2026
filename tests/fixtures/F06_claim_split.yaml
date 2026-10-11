@@ -1,0 +1,20 @@
+description: A 3-hour gap between two outages; each side may claim at most the cap (60), so two separate claims.
+rules: [R-9, R-10, R-15]
+params: {}
+locations:
+  - {name: F06 Foxtrot, district: F06 District}
+hours:
+  - {loc: F06 Foxtrot, date: 05-06-2018, hour: 10, values: "230*59 0*1"}  # outage 10:59
+  # hours 11, 12, 13 missing (NO_DATA 11:00-13:59, 180 minutes)
+  - {loc: F06 Foxtrot, date: 05-06-2018, hour: 14, values: "0*2 230*58"}  # outage 14:00-14:01
+expected:
+  events_count: {F06 Foxtrot: 2}
+  events:
+    - {loc: F06 Foxtrot, start: "2018-06-05 10:59", end: "2018-06-05 10:59", min_duration: 1, max_duration: 61,
+       start_certainty: exact, end_certainty: bounded, why: "gap of 180 is capped at 60"}
+    - {loc: F06 Foxtrot, start: "2018-06-05 14:00", end: "2018-06-05 14:01", min_duration: 2, max_duration: 62,
+       start_certainty: bounded, end_certainty: exact, why: "gap capped at 60"}
+  daily:
+    - {loc: F06 Foxtrot, day: 2018-06-05, expected: 300, observed: 120, outage_lower: 3, outage_upper: 123,
+       interruptions: 2, longest: 2,
+       why: "claims 11:00-11:59 and 13:00-13:59 (60+60, disjoint); 12:00-12:59 is too far from either outage"}

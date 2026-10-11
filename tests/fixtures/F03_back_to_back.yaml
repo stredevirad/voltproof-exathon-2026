@@ -1,0 +1,21 @@
+description: Back-to-back outages separated by one normal minute, and an outage ending directly in LOW voltage.
+rules: [R-5, R-7, R-9, R-13, R-16]
+params: {}
+locations:
+  - {name: F03 Charlie, district: F03 District}
+hours:
+  # 08:05-08:07 outage | 08:08 normal | 08:09-08:10 outage | 08:11-08:13 LOW 150 V | 08:14 outage | rest normal
+  - {loc: F03 Charlie, date: 03-06-2018, hour: 8, values: "230*5 0*3 230*1 0*2 150*3 0*1 230*45"}
+expected:
+  events_count: {F03 Charlie: 3}
+  events:
+    - {loc: F03 Charlie, start: "2018-06-03 08:05", end: "2018-06-03 08:07", min_duration: 3, max_duration: 3,
+       start_certainty: exact, end_certainty: exact, is_interruption: true, why: "08:04 and 08:08 measured normal"}
+    - {loc: F03 Charlie, start: "2018-06-03 08:09", end: "2018-06-03 08:10", min_duration: 2, max_duration: 2,
+       start_certainty: exact, end_certainty: exact, is_interruption: true,
+       why: "a single normal minute separates it from the previous event; it ends into measured LOW (still exact)"}
+    - {loc: F03 Charlie, start: "2018-06-03 08:14", end: "2018-06-03 08:14", min_duration: 1, max_duration: 1,
+       start_certainty: exact, end_certainty: exact, is_interruption: true, why: "preceded by measured LOW"}
+  daily:
+    - {loc: F03 Charlie, day: 2018-06-03, expected: 60, observed: 60, outage_lower: 6, outage_upper: 6,
+       outage_zero: 6, low: 3, high: 0, interruptions: 3, longest: 3, why: "3+2+1 outage minutes; 3 LOW minutes"}

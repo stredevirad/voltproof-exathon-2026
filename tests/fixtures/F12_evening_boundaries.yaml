@@ -1,0 +1,21 @@
+description: Evening window edges. 16:59 and 23:00 are outside 17:00-22:59; 17:00 and 22:59 are inside.
+rules: [R-7, R-15, R-17]
+params: {}
+locations:
+  - {name: F12 Lima, district: F12 District}
+hours:
+  - {loc: F12 Lima, date: 11-06-2018, hour: 16, values: "230*59 0*1"}   # 16:59
+  - {loc: F12 Lima, date: 11-06-2018, hour: 17, values: "0*1 230*59"}   # 17:00
+  - {loc: F12 Lima, date: 11-06-2018, hour: 22, values: "230*59 0*1"}   # 22:59
+  - {loc: F12 Lima, date: 11-06-2018, hour: 23, values: "0*1 230*59"}   # 23:00
+expected:
+  events_count: {F12 Lima: 2}
+  events:
+    - {loc: F12 Lima, start: "2018-06-11 16:59", end: "2018-06-11 17:00", min_duration: 2, max_duration: 2,
+       start_certainty: exact, end_certainty: exact, why: "one event spanning the start of the evening window"}
+    - {loc: F12 Lima, start: "2018-06-11 22:59", end: "2018-06-11 23:00", min_duration: 2, max_duration: 2,
+       start_certainty: exact, end_certainty: exact, why: "one event spanning the end of the evening window"}
+  daily:
+    - {loc: F12 Lima, day: 2018-06-11, expected: 480, observed: 240, outage_lower: 4, outage_upper: 4,
+       evening_lower: 2, evening_upper: 2, interruptions: 2, longest: 2,
+       why: "only 17:00 and 22:59 count as evening; the 18:00-21:59 gap lies between normal readings"}

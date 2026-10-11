@@ -1,0 +1,23 @@
+description: Gap bridging switched on (G = 2). A 2-minute blank gap between outages is bridged; a 3-minute one is not.
+rules: [R-6, R-8, R-9, R-10, R-15]
+params: {events.gap_bridge_max_minutes: 2}
+locations:
+  - {name: F07 Golf, district: F07 District}
+hours:
+  # N 09:00-09:09 | O 09:10-09:14 | blank 09:15-09:16 | O 09:17-09:19 | N 09:20-09:24 | O 09:25-09:26 |
+  # blank 09:27-09:29 | O 09:30-09:31 | N 09:32-09:59
+  - {loc: F07 Golf, date: 06-06-2018, hour: 9, values: "230*10 0*5 _*2 0*3 230*5 0*2 _*3 0*2 230*28"}
+expected:
+  events_count: {F07 Golf: 3}
+  events:
+    - {loc: F07 Golf, start: "2018-06-06 09:10", end: "2018-06-06 09:19", min_duration: 8, max_duration: 10,
+       bridged_minutes: 2, start_certainty: exact, end_certainty: exact, is_interruption: true,
+       why: "gap of 2 <= G=2 between two outages is bridged; lower bound counts only the 5+3 measured minutes"}
+    - {loc: F07 Golf, start: "2018-06-06 09:25", end: "2018-06-06 09:26", min_duration: 2, max_duration: 5,
+       bridged_minutes: 0, start_certainty: exact, end_certainty: bounded, why: "gap of 3 > G is not bridged; +3"}
+    - {loc: F07 Golf, start: "2018-06-06 09:30", end: "2018-06-06 09:31", min_duration: 2, max_duration: 5,
+       bridged_minutes: 0, start_certainty: bounded, end_certainty: exact, why: "preceded by the 3-minute gap"}
+  daily:
+    - {loc: F07 Golf, day: 2018-06-06, expected: 60, observed: 55, outage_lower: 12, outage_upper: 17,
+       interruptions: 3, longest: 8,
+       why: "5 blank minutes, all adjacent to outages on both sides, so all 5 are possibly outage"}

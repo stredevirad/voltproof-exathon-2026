@@ -27,3 +27,6 @@ tests/fixtures/**/*.csv text eol=lf
 *.pptx binary
 *.woff binary
 *.woff2 binary
+
+# Rendered fixtures reproduce the real ESMI byte layout (CRLF); keep their bytes exactly.
+tests/fixtures/rendered/**/*.csv -text

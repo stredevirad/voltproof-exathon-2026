@@ -1,0 +1,19 @@
+description: The alternative interruption threshold (2 minutes, ESMI's shortest band). Events still exist, but 1-minute ones are not counted as interruptions.
+rules: [R-11, R-13]
+params: {events.interruption_min_minutes: 2}
+locations:
+  - {name: F11 Kilo, district: F11 District}
+hours:
+  - {loc: F11 Kilo, date: 03-06-2018, hour: 8, values: "230*5 0*3 230*1 0*2 150*3 0*1 230*45"}
+expected:
+  events_count: {F11 Kilo: 3}
+  events:
+    - {loc: F11 Kilo, start: "2018-06-03 08:05", end: "2018-06-03 08:07", min_duration: 3, is_interruption: true,
+       why: "3 >= 2"}
+    - {loc: F11 Kilo, start: "2018-06-03 08:09", end: "2018-06-03 08:10", min_duration: 2, is_interruption: true,
+       why: "2 >= 2"}
+    - {loc: F11 Kilo, start: "2018-06-03 08:14", end: "2018-06-03 08:14", min_duration: 1, is_interruption: false,
+       why: "1 < 2: still an outage event, but not an interruption"}
+  daily:
+    - {loc: F11 Kilo, day: 2018-06-03, outage_lower: 6, interruptions: 2, longest: 3,
+       why: "outage minutes are unaffected; only the count and the longest change"}

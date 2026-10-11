@@ -1,0 +1,24 @@
+description: Chance baseline by circular whole-day shifts (G4), small enough to compute by hand.
+rules: [R-21]
+params: {}   # defaults: baseline_shifts N = 20, max_start_offset_minutes 2, min_overlap_minutes 1
+locations:
+  - {name: F14 X1, district: F14 District X}
+  - {name: F14 X2, district: F14 District X}
+hours:
+  - {loc: F14 X1, date: 01-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F14 X1, date: 03-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F14 X2, date: 01-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F14 X2, date: 02-06-2018, hour: 10, values: "0*1 230*59"}
+  - {loc: F14 X2, date: 03-06-2018, hour: 10, values: "0*1 230*59"}
+expected:
+  baseline:
+    - district: F14 District X
+      month: "2018-06"
+      observed_pairs: 2
+      expected_pairs: 0.1
+      p_value: 0.0
+      why: >-
+        X1 (j=0) is never shifted: interruptions on days {1, 3} at 10:00. X2 (j=1) moves k days for
+        k = 1..20, so its days {1, 2, 3} become {1+k, 2+k, 3+k} (no wrap for k <= 20 in 30-day June).
+        Unshifted pairs: day 1 and day 3 -> 2. k=1: {2,3,4} meets {1,3} once; k=2: {3,4,5} once;
+        k>=3: none. Expected = (1+1)/20 = 0.1; no shift reaches 2 pairs -> p = 0/20 = 0.0

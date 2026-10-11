@@ -1,0 +1,47 @@
+description: Every classification boundary in one hour; an outage at the very first minute of the window.
+rules: [R-1, R-4, R-5, R-9, R-10, R-11, R-14, R-16, R-16b, R-18]
+params: {}
+locations:
+  - {name: F01 Alpha, district: F01 District}
+hours:
+  # m0=130 OUTAGE, m1=131 LOW, m2=204 LOW, m3=205 NORMAL, m4=270 NORMAL, m5=271 HIGH, m6..59 NORMAL
+  - {loc: F01 Alpha, date: 01-06-2018, hour: 10, values: "130 131 204 205 270 271 230*54"}
+expected:
+  events_count: {F01 Alpha: 1}
+  events:
+    - loc: F01 Alpha
+      start: "2018-06-01 10:00"
+      end: "2018-06-01 10:00"
+      min_duration: 1
+      max_duration: 61
+      bridged_minutes: 0
+      start_certainty: censored
+      end_certainty: exact
+      is_interruption: true
+      zero_minutes: 0
+      why: "130 V <= 130 is OUTAGE (R-5); first window minute -> censored start adds cap 60 (R-9/R-10); next minute 131 V is a measured LOW -> exact end; 130 != 0 so zero_minutes 0 (R-16b)"
+  daily:
+    - loc: F01 Alpha
+      day: 2018-06-01
+      expected: 60
+      observed: 60
+      outage_lower: 1
+      outage_upper: 1
+      outage_zero: 0
+      low: 2
+      high: 1
+      evening_lower: 0
+      evening_upper: 0
+      interruptions: 1
+      longest: 1
+      why: "window 10:00-10:59; LOW = 131 and 204; HIGH = 271 only (270 is NORMAL); no NO_DATA so upper = lower"
+  monthly:
+    - loc: F01 Alpha
+      month: "2018-06"
+      expected: 60
+      observed: 60
+      outage_lower: 1
+      outage_upper: 1
+      interruptions: 1
+      comparable: false
+      why: "60 observed minutes are far below 90% of June's 43,200 minutes"

@@ -1,0 +1,39 @@
+description: Coincident pairs and grouping (G4). Within and outside the start offset, a failed overlap test, a three-location chain, and the same times in another district.
+rules: [R-19, R-20]
+params: {}   # defaults: max_start_offset_minutes 2, min_overlap_minutes 1
+locations:
+  - {name: F13 A1, district: F13 District A}
+  - {name: F13 A2, district: F13 District A}
+  - {name: F13 A3, district: F13 District A}
+  - {name: F13 B1, district: F13 District B}
+hours:
+  - {loc: F13 A1, date: 10-06-2018, hour: 10, values: "230*10 0*10 230*40"}   # 10:10-10:19
+  - {loc: F13 A2, date: 10-06-2018, hour: 10, values: "230*12 0*5 230*43"}    # 10:12-10:16
+  - {loc: F13 A3, date: 10-06-2018, hour: 10, values: "230*13 0*3 230*44"}    # 10:13-10:15
+  - {loc: F13 B1, date: 10-06-2018, hour: 10, values: "230*10 0*10 230*40"}   # 10:10-10:19 (other district)
+  - {loc: F13 A1, date: 10-06-2018, hour: 11, values: "230*5 0*5 230*50"}     # 11:05-11:09
+  - {loc: F13 A2, date: 10-06-2018, hour: 11, values: "230*8 0*5 230*47"}     # 11:08-11:12
+  - {loc: F13 A3, date: 10-06-2018, hour: 11, values: "230*3 0*1 230*56"}     # 11:03
+expected:
+  coincidence:
+    pairs:
+      - {a: F13 A1, a_start: "2018-06-10 10:10", b: F13 A2, b_start: "2018-06-10 10:12",
+         why: "starts 2 min apart (<= 2), overlap 10:12-10:16 = 5 min"}
+      - {a: F13 A2, a_start: "2018-06-10 10:12", b: F13 A3, b_start: "2018-06-10 10:13",
+         why: "starts 1 min apart, overlap 10:13-10:15 = 3 min"}
+    not_pairs:
+      - {a: F13 A1, a_start: "2018-06-10 10:10", b: F13 A3, b_start: "2018-06-10 10:13", why: "starts 3 min apart"}
+      - {a: F13 A1, a_start: "2018-06-10 10:10", b: F13 B1, b_start: "2018-06-10 10:10", why: "different district"}
+      - {a: F13 A3, a_start: "2018-06-10 11:03", b: F13 A1, b_start: "2018-06-10 11:05",
+         why: "starts 2 min apart but no overlap (11:03 vs 11:05-11:09)"}
+      - {a: F13 A1, a_start: "2018-06-10 11:05", b: F13 A2, b_start: "2018-06-10 11:08", why: "starts 3 min apart"}
+    groups:
+      - district: F13 District A
+        start: "2018-06-10 10:10"
+        members:
+          - {loc: F13 A1, start: "2018-06-10 10:10"}
+          - {loc: F13 A2, start: "2018-06-10 10:12"}
+          - {loc: F13 A3, start: "2018-06-10 10:13"}
+        why: "chain 10:10, 10:12, 10:13 (gaps 2, 1); every member is in a pair. The 11:03/11:05 chain has no pair (overlap fails) and 11:08 is alone"
+    group_count: 1
+    pair_count: 2

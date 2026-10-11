@@ -1,0 +1,24 @@
+description: An hour repeated with identical values (duplicates) and an hour repeated with half the minutes different (conflicts).
+rules: [R-3, R-6, R-9, R-15]
+params: {}
+locations:
+  - {name: F08 Hotel, district: F08 District}
+hours:
+  - {loc: F08 Hotel, date: 07-06-2018, hour: 10, values: "230*60"}
+  - {loc: F08 Hotel, date: 07-06-2018, hour: 10, values: "230*60"}           # identical duplicate
+  - {loc: F08 Hotel, date: 07-06-2018, hour: 11, values: "230*60"}
+  - {loc: F08 Hotel, date: 07-06-2018, hour: 11, values: "230*30 240*30"}    # 11:30-11:59 conflict
+  - {loc: F08 Hotel, date: 07-06-2018, hour: 12, values: "0*10 230*50"}
+expected:
+  events_count: {F08 Hotel: 1}
+  events:
+    - {loc: F08 Hotel, start: "2018-06-07 12:00", end: "2018-06-07 12:09", min_duration: 10, max_duration: 40,
+       start_certainty: bounded, end_certainty: exact,
+       why: "conflicting minutes 11:30-11:59 become NO_DATA (30), so the start is bounded and +30"}
+  daily:
+    - {loc: F08 Hotel, day: 2018-06-07, expected: 180, observed: 150, outage_lower: 10, outage_upper: 40,
+       interruptions: 1, longest: 10, why: "30 conflict minutes are not observed; all 30 lie next to the outage"}
+  quality:
+    duplicate_minutes: {F08 Hotel: 90}
+    conflict_minutes: {F08 Hotel: 30}
+    why: "hour 10: 60 identical repeats; hour 11: 30 identical repeats + 30 conflicting minutes"

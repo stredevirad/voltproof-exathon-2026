@@ -1,0 +1,25 @@
+description: Malformed cells and rows are quarantined with reason codes and become NO_DATA, never outage.
+rules: [R-2, R-4, R-6, R-9, R-10, R-15]
+params: {}
+locations:
+  - {name: F09 India, district: F09 District}
+hours:
+  - {loc: F09 India, date: 08-06-2018, hour: 10, values: "230*58 abc -5"}           # m58 non-numeric, m59 negative
+  - {loc: F09 India, date: 32-06-2018, hour: 11, values: "230*60"}                  # impossible date
+  - {loc: F09 India, date: 08-06-2018, hour: "24", values: "230*60"}                # hour 24
+  - {loc: F09 Nowhere, date: 08-06-2018, hour: 11, values: "230*60"}                 # not in the location file
+  - {loc: F09 India, date: 08-06-2018, hour: 12, values: "0*60"}
+expected:
+  events_count: {F09 India: 1}
+  events:
+    - {loc: F09 India, start: "2018-06-08 12:00", end: "2018-06-08 12:59", min_duration: 60, max_duration: 180,
+       start_certainty: bounded, end_certainty: censored,
+       why: "preceded by NO_DATA 10:58-11:59 (62, capped 60); last minute of the window -> censored (+60)"}
+  daily:
+    - {loc: F09 India, day: 2018-06-08, expected: 180, observed: 118, outage_lower: 60, outage_upper: 120,
+       interruptions: 1, longest: 60,
+       why: "window 10:00-12:59; 2 quarantined cells + hour 11 missing; claim = the 60 minutes before 12:00"}
+  quality:
+    value_quarantine: {non_numeric: 1, out_of_range: 1}
+    row_quarantine: {bad_date: 1, bad_hour: 1, unknown_location: 1}
+    why: "abc and -5 in hour 10; 32-06-2018; hour 24; F09 Nowhere is not in the location file"
