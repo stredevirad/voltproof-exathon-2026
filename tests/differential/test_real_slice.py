@@ -49,6 +49,43 @@ def _raw_rows(names: set[str]) -> list[RawRow]:
 
 
 @pytest.mark.skipif(not RAW.exists(), reason="real data file not downloaded (data/raw)")
+def test_coincidence_sql_matches_oracle_on_two_real_districts():
+    """R-19..R-21 on real data: every location of the two districts with the most coincident pairs."""
+    import yaml
+
+    from tests.support.compare import diff_coincidence, fetch_coincidence, oracle_coincidence
+
+    co = yaml.safe_load((REPO_ROOT / "config" / "method.yaml").read_text(encoding="utf-8"))["coincidence"]
+    with connect() as conn:
+        districts = [r[0] for r in conn.execute(
+            f"SELECT DISTRICT FROM {SCHEMA}.COINCIDENT_PAIR GROUP BY DISTRICT ORDER BY COUNT(*) DESC, 1 LIMIT 2"
+        ).fetchall()]
+        locs = dict(conn.execute(
+            f"""SELECT l.SOURCE_NAME, l.DISTRICT FROM {SCHEMA}.LOCATION l
+                JOIN {SCHEMA}.MONITOR_WINDOW w ON w.LOCATION_ID = l.LOCATION_ID
+                WHERE l.DISTRICT IN ({{d}})""", {"d": districts}).fetchall())
+        sql = fetch_coincidence(conn, SCHEMA, districts)
+        # district_of must cover every name so the location order (LOCATION_ID = rank of name) matches
+        all_names = dict(conn.execute(f"SELECT SOURCE_NAME, DISTRICT FROM {SCHEMA}.LOCATION").fetchall())
+    ref_events = oracle_as_comparable(run(_raw_rows(set(locs)), params_from_yaml(), "%d-%m-%Y"))["events"]
+    ref = oracle_coincidence(ref_events, all_names, co["max_start_offset_minutes"], co["min_overlap_minutes"],
+                             co["baseline_shifts"])
+    problems = diff_coincidence(sql, ref)
+    print(f"districts={districts} locations={len(locs)} pairs SQL={len(sql['pairs'])} oracle={len(ref['pairs'])} "
+          f"groups={len(sql['groups'])} baseline rows={len(sql['baseline'])}")
+    assert len(ref["pairs"]) > 0
+    assert not problems, "\n".join(problems[:40])
+
+
+def test_coincidence_diff_detects_a_missing_pair():
+    from tests.support.compare import diff_coincidence
+
+    a = {"pairs": {("x", 1, "y", 2)}, "groups": {}, "baseline": {}}
+    b = {"pairs": set(), "groups": {}, "baseline": {}}
+    assert any("[R-19]" in p for p in diff_coincidence(a, b))
+
+
+@pytest.mark.skipif(not RAW.exists(), reason="real data file not downloaded (data/raw)")
 def test_sql_matches_oracle_on_real_up_slice():
     with connect() as conn:
         names = _pick_locations(conn)

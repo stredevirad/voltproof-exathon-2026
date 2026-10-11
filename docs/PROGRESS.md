@@ -7,8 +7,8 @@
 | G0 Environment & repo | ✅ passed 2026-10-11 (commit pending) | Environment report below; scaffold staged. The local `git commit` was denied twice at the permission prompt, so it awaits user approval. Tag `gate-0-env` follows the commit |
 | G1 Data access & licence | ✅ passed 2026-10-11 | Terms + exact citation in `docs/data/SOURCE_TERMS.md`; 3 sample files MD5-verified (original CSV); 542,518 rows confirmed; outage = 0 V, missing = absent hours; corrections D-013 to D-016. Tag `gate-1-data` |
 | G2 Exasol | ✅ passed 2026-10-11 | Native IMPORT 542,518 rows in 1.23 s; in-DB unpivot to 32,551,080 minutes in 4.8 s; first LAG+SUM islands query on real data identical to an independent raw-CSV check (Dhule 16-06-2018: 37-min outage 17:00–17:36). Tag `gate-2-exasol` |
-| G3 Correctness core | ⬜ not started | — |
-| G4 Coincidence | ⬜ not started | — |
+| G3 Correctness core | 🟡 all tests green; full-subset load pending | Fixtures 14/14 (hand expectations + SQL = oracle), Hypothesis 40/40, real slice identical, quality report renders. **Remaining:** load the full UP 2016–19 subset (user is downloading 9 files) |
+| G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ⬜ not started | — |
 | G6 Validation & hardening | ⬜ not started | — |
 | G7 Submission | ⬜ not started | — |
@@ -103,8 +103,13 @@
 - **First oracle-vs-SQL differential on real data: PASS.** 4 UP locations, 4,930 events, 365 days, 12 months identical in every field (`tests/differential/test_real_slice.py`).
 - User asked (via the G2 checkpoint) to download the 9 remaining UP-period files.
 
+- Fixtures F01–F14 + harness (`tests/integration/test_fixtures.py`); sensitivity checks; loader edge cases (14 unit tests).
+- Hypothesis differential: 40 random batches identical (VALIDATION §1).
+- `sql/095_quality.sql`; `scripts\load.ps1` (verify → IMPORT → SQL → quality guard → provenance 55/55); `scripts\test.ps1`.
+- **G4:** `sql/100_coincidence.sql` (pairs, chains/groups, shift baseline). Baseline went from 348 s to 1.8 s via bucketed equality joins (D-021). Real data: 26,075 pairs → 9,347 potential shared supply events. Bahraich 2018-07: 4,322 observed vs 2,149.6 expected pairs; example group of 17 monitors at 18:27–18:29 on 25 July 2018 (raw-CSV checked).
+
 ### Next
-1. Hand-written fixtures for R-1..R-21 + fixture runner (schema VP_TEST); Hypothesis differential.
-2. Quality summary table; load the full UP subset when the files arrive (profile the 2019 CSVs first).
+1. When the 9 UP files land: profile the 2019 CSVs, run `scripts\load.ps1 -Set up`, re-run all suites → G3 pass.
+2. G5 product: FastAPI + React/ECharts + evidence report (PDF) + Playwright e2e.
 2. G1: download the location file + `About the initiative.pdf` + one data file; inspect the real encodings; write `docs/data/SOURCE_TERMS.md`.
 3. G2: install the launcher, have the user install Podman, run `exasol install local` into `D:\ExasolDeployments\voltproof`, measure C:, load the sample, run the first window-function query.

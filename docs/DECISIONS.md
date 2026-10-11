@@ -163,6 +163,22 @@ One entry per significant decision: context, options, choice, why. Newest at the
   the month. Expected = mean coincident-pair count over the N shifts. Empirical p = share of shifts
   whose count ≥ observed. Details and caveats are in METHODOLOGY.
 
+## D-021 · 2026-10-11 · Band joins via time buckets (coincidence)
+
+- **Measured problem:** the R-21 baseline as one statement with a non-equality time band over 1.1 M
+  shifted copies took **348 s** on the 2018 Jun–Aug UP sample, and a "cross join to two keys" variant
+  was slower still (killed after 10 min).
+- **Choice:** materialise the shifted copies, give every interruption a time bucket of width ≥ Δ, and
+  run two plain equality joins (bucket + 0, bucket + 1) with the exact band filter applied afterwards.
+  Each pair is found exactly once. Result: the whole coincidence step takes **1.8 s** (pairs 0.15 s, was 9.2 s).
+  Unchanged results: 26,075 pairs; the k = 0 baseline count equals `COINCIDENT_PAIR` (26,075), and
+  everything still equals the independent oracle.
+
+## D-022 · 2026-10-11 · Baseline resolution and reporting
+
+- With N = 20 shifts the smallest resolvable empirical p is 1/20. A p of 0 is reported as "< 0.05"
+  ("none of 20 shifted versions reached the observed count"), never as "p = 0".
+
 ## D-009 · 2026-10-11 · No geospatial features
 
 - **Context:** the location metadata has no coordinates.

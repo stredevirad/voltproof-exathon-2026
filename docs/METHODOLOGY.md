@@ -103,8 +103,10 @@ N = `baseline_shifts`.
   that belong to at least one coincident pair inside the chain. Group key = district + earliest member
   start. These are never called faults: a shared cause is possible, but so are chance and
   independent local causes.
-- **R-21 Chance baseline.** For each district and calendar month with D days, order its locations by
-  LOCATION_ID with index j = 0…L−1. For k = 1…N, shift every interruption of location j by
+- **R-21 Chance baseline.** For each district and calendar month with D days, take the locations of
+  that district with at least one interruption starting in that month, and order them by LOCATION_ID
+  with index j = 0…L−1. Only pairs whose two interruptions both start in that month are counted,
+  both for the observed count and for the shifted counts. For k = 1…N, shift every interruption of location j by
   `(j·k) mod D` whole days, wrapping within the month (start day d → `((d − 1 + shift) mod D) + 1`,
   same time of day, same duration). Then count coincident pairs (R-19) among the shifted events of
   that month. Reported per district-month: observed pairs (no shift), expected pairs (mean over k),

@@ -19,11 +19,15 @@ from pipeline.load_raw import load_paths
 from pipeline.run_sql import resolve_steps, run_steps
 from tests.fixtures.render import all_specs, render
 from tests.oracle.reference import RawRow, run
-from tests.support.compare import diff, fetch_sql, oracle_as_comparable, params_from_yaml
+from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
+                                   oracle_coincidence, params_from_yaml)
 
 pytestmark = pytest.mark.exasol
 
 SPECS = all_specs()
+COINC = __import__("yaml").safe_load(
+    (__import__("pathlib").Path(__file__).resolve().parents[2] / "config" / "method.yaml").read_text(encoding="utf-8")
+)["coincidence"]
 BASE_OVERRIDES = {"subset.states": "", "subset.locations": ""}
 
 
@@ -62,8 +66,9 @@ def built():
                 files += [(base + 1, lp, "locations"), (base + 2, rp, "readings")]
             load_paths(conn, schema, files)
             overrides = dict(BASE_OVERRIDES, **json.loads(pkey))
-            run_steps(conn, schema, resolve_steps(["020", "030", "040", "050", "060", "070", "080", "090"]),
+            run_steps(conn, schema, resolve_steps(["020", "030", "040", "050", "060", "070", "080", "090", "100"]),
                       params_override=overrides, quiet=True)
+            all_districts = {loc["name"]: loc["district"] for s2 in specs for loc in s2["locations"]}
             for si, s in enumerate(specs):
                 names = [loc["name"] for loc in s["locations"]]
                 base = 9_000_000 + (gi * 100 + si) * 10
@@ -71,6 +76,10 @@ def built():
                 oracle = oracle_as_comparable(
                     run(_oracle_rows(rendered[s["id"]][1], set(names)), params_from_yaml(json.loads(pkey)),
                         "%d-%m-%Y"))
+                districts = sorted({loc["district"] for loc in s["locations"]})
+                co_sql = fetch_coincidence(conn, schema, districts)
+                co_ref = oracle_coincidence(oracle["events"], all_districts, COINC["max_start_offset_minutes"],
+                                            COINC["min_overlap_minutes"], COINC["baseline_shifts"])
                 q = {
                     "duplicate_minutes": dict(conn.execute(
                         f"SELECT l.SOURCE_NAME, SUM(c.DUPLICATE_COUNT) FROM {schema}.READING_CLEAN c "
@@ -87,7 +96,8 @@ def built():
                         f"SELECT REASON, COUNT(*) FROM {schema}.ROW_QUARANTINE "
                         f"WHERE FILE_ID = {base + 2} GROUP BY 1").fetchall()),
                 }
-                out[s["id"]] = {"spec": s, "sql": sql, "oracle": oracle, "quality": q}
+                out[s["id"]] = {"spec": s, "sql": sql, "oracle": oracle, "quality": q,
+                                "co_sql": co_sql, "co_ref": co_ref}
     return out
 
 
@@ -161,6 +171,42 @@ def test_harness_detects_a_wrong_expectation(built):
     b = copy.deepcopy(built["F07_bridging"])
     b["spec"]["expected"]["events"][0]["bridged_minutes"] = 0
     assert any("bridged_minutes" in p for p in check_expectations(b))
+
+
+@pytest.mark.parametrize("fid", [s["id"] for s in SPECS if "coincidence" in s.get("expected", {})
+                                 or "baseline" in s.get("expected", {})])
+def test_coincidence_expectations(built, fid):
+    b = built[fid]
+    exp = b["spec"]["expected"]
+    co = b["co_sql"]
+    problems = []
+    c = exp.get("coincidence")
+    if c:
+        want_pairs = {(p["a"], _ts(p["a_start"]), p["b"], _ts(p["b_start"])) for p in c["pairs"]}
+        if co["pairs"] != want_pairs:
+            problems.append(f"[R-19] pairs SQL={sorted(co['pairs'])} expected={sorted(want_pairs)}")
+        for p in c.get("not_pairs", []):
+            k1 = (p["a"], _ts(p["a_start"]), p["b"], _ts(p["b_start"]))
+            k2 = (p["b"], _ts(p["b_start"]), p["a"], _ts(p["a_start"]))
+            if k1 in co["pairs"] or k2 in co["pairs"]:
+                problems.append(f"[R-19] unexpected pair {k1} ({p['why']})")
+        want_groups = {(g["district"], _ts(g["start"])): frozenset((m["loc"], _ts(m["start"])) for m in g["members"])
+                       for g in c["groups"]}
+        if co["groups"] != want_groups:
+            problems.append(f"[R-20] groups SQL={co['groups']} expected={want_groups}")
+    for bl in exp.get("baseline", []):
+        got = co["baseline"].get((bl["district"], bl["month"]))
+        want = (bl["observed_pairs"], round(bl["expected_pairs"], 6), round(bl["p_value"], 6))
+        if got is None or (got[2], got[3], got[4]) != want:
+            problems.append(f"[R-21] baseline {bl['district']} {bl['month']}: SQL={got} expected "
+                            f"(observed, expected, p)={want}")
+    assert not problems, "\n".join(problems)
+
+
+@pytest.mark.parametrize("fid", [s["id"] for s in SPECS])
+def test_coincidence_sql_equals_oracle(built, fid):
+    problems = diff_coincidence(built[fid]["co_sql"], built[fid]["co_ref"])
+    assert not problems, "\n".join(problems[:40])
 
 
 def test_oracle_diff_detects_a_changed_event(built):

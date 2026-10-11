@@ -107,6 +107,74 @@ def fetch_sql(conn, schema: str, location_names: list[str] | None = None) -> dic
     return out
 
 
+def fetch_coincidence(conn, schema: str, districts: list[str] | None = None) -> dict:
+    """Pairs, groups and baseline from the SQL tables, keyed by location NAME (ids are schema-specific)."""
+    where, params = "", {}
+    if districts:
+        where, params = "WHERE p.DISTRICT IN ({d})", {"d": districts}
+    pairs = conn.execute(
+        f"""SELECT la.SOURCE_NAME AS NAME_A, p.START_A, lb.SOURCE_NAME AS NAME_B, p.START_B
+            FROM {schema}.COINCIDENT_PAIR p
+            JOIN {schema}.LOCATION la ON la.LOCATION_ID = p.LOCATION_A
+            JOIN {schema}.LOCATION lb ON lb.LOCATION_ID = p.LOCATION_B {where}""", params).fetchall()
+    gwhere = where.replace("p.DISTRICT", "g.DISTRICT")
+    members = conn.execute(
+        f"""SELECT g.DISTRICT, g.START_TS AS GROUP_START, l.SOURCE_NAME, m.START_TS AS MEMBER_START
+            FROM {schema}.POTENTIAL_SHARED_EVENT g
+            JOIN {schema}.POTENTIAL_SHARED_MEMBER m ON m.GROUP_ID = g.GROUP_ID
+            JOIN {schema}.LOCATION l ON l.LOCATION_ID = m.LOCATION_ID {gwhere}""", params).fetchall()
+    bwhere = where.replace("p.DISTRICT", "b.DISTRICT")
+    base = conn.execute(
+        f"""SELECT b.DISTRICT, b.MONTH_KEY, b.N_LOCATIONS, b.N_INTERRUPTIONS, b.OBSERVED_PAIRS, b.EXPECTED_PAIRS,
+                   b.P_VALUE FROM {schema}.COINCIDENCE_BASELINE b {bwhere}""", params).fetchall()
+    groups: dict = {}
+    for d, gs, loc, ms in members:
+        groups.setdefault((d, _ts(gs)), set()).add((loc, _ts(ms)))
+    return {
+        "pairs": {(a, _ts(sa), b, _ts(sb)) for a, sa, b, sb in pairs},
+        "groups": {k: frozenset(v) for k, v in groups.items()},
+        "baseline": {(d, mk): (int(nl), int(ni), int(o), round(float(e), 6), round(float(pv), 6))
+                     for d, mk, nl, ni, o, e, pv in base},
+    }
+
+
+def oracle_coincidence(events: list[dict], district_of: dict[str, str], delta: int, theta: int,
+                       n_shifts: int) -> dict:
+    """Run tests/oracle/coincidence.py on oracle events (interruptions only) in the same comparable shape."""
+    from tests.oracle import coincidence as oc
+
+    order = {name: i for i, name in enumerate(sorted(district_of))}
+    ints = [dict(location=e["location"], district=district_of[e["location"]], start=e["start"], end=e["end"],
+                 order=order[e["location"]]) for e in events if e["is_interruption"]]
+    pairs = oc.pairs(ints, delta, theta)
+    groups = oc.groups(ints, delta, theta)
+    base = oc.baseline(ints, delta, theta, n_shifts)
+    return {
+        "pairs": {(a["location"], a["start"], b["location"], b["start"]) for a, b in pairs},
+        "groups": {(g["district"], g["start"]): frozenset((m["location"], m["start"]) for m in g["members"])
+                   for g in groups},
+        "baseline": {(b["district"], b["month"]): (b["n_locations"], b["n_interruptions"], b["observed_pairs"],
+                                                   round(b["expected_pairs"], 6), round(b["p_value"], 6))
+                     for b in base},
+    }
+
+
+def diff_coincidence(sql: dict, ref: dict, label_ref: str = "oracle") -> list[str]:
+    problems = []
+    for p in sorted(sql["pairs"] - ref["pairs"], key=str)[:20]:
+        problems.append(f"[R-19] pair only in SQL: {p}")
+    for p in sorted(ref["pairs"] - sql["pairs"], key=str)[:20]:
+        problems.append(f"[R-19] pair only in {label_ref}: {p}")
+    for k in sorted(set(sql["groups"]) | set(ref["groups"]), key=str):
+        if sql["groups"].get(k) != ref["groups"].get(k):
+            problems.append(f"[R-20] group {k}: SQL={sorted(sql['groups'].get(k, []))} "
+                            f"{label_ref}={sorted(ref['groups'].get(k, []))}")
+    for k in sorted(set(sql["baseline"]) | set(ref["baseline"]), key=str):
+        if sql["baseline"].get(k) != ref["baseline"].get(k):
+            problems.append(f"[R-21] baseline {k}: SQL={sql['baseline'].get(k)} {label_ref}={ref['baseline'].get(k)}")
+    return problems
+
+
 def oracle_as_comparable(res) -> dict:
     out = {"events": [], "daily": {}, "monthly": {}}
     for e in res.events:

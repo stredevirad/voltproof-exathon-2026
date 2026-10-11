@@ -17,7 +17,7 @@ from pipeline.db import connect
 from pipeline.run_sql import resolve_steps, run_steps
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ANALYTICAL_STEPS = ["020", "030", "040", "050", "060", "070", "080", "090", "095"]
+ANALYTICAL_STEPS = ["020", "030", "040", "050", "060", "070", "080", "090", "095", "100"]
 MAX_QUARANTINE_SHARE = 0.5
 
 
