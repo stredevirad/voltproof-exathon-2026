@@ -215,9 +215,10 @@ def download(entry: dict) -> Path:
             _request(url, data=data, headers={"Content-Type": "application/json"}), timeout=120
         ) as resp:
             payload = resp.read()
-    except urllib.error.HTTPError as e:  # body may explain a validation failure; it contains no secrets
-        raise RuntimeError(f"Guestbook/download request for file {entry['id']} failed: HTTP {e.code} "
-                           f"{e.read()[:300]!r}") from None
+    except urllib.error.HTTPError as e:
+        # The body is not printed: a validation error can repeat the submitted Guestbook details.
+        raise RuntimeError(f"Guestbook/download request for file {entry['id']} failed: HTTP {e.code} {e.reason}. "
+                           "Check the DATAVERSE_GB_* values in your .env.") from None
     try:
         signed = _find_signed_url(json.loads(payload.decode("utf-8")))
     except (UnicodeDecodeError, json.JSONDecodeError):
@@ -238,7 +239,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--set", choices=sorted(SETS), default="first", help="which files are wanted")
     ap.add_argument("--download", action="store_true", help="download missing files (needs your Guestbook details)")
     ap.add_argument("--refresh-metadata", action="store_true")
+    ap.add_argument("--dest", help="folder for the files and their manifest (default data/raw + data/manifest.json); "
+                                   "used to test the download without touching data/raw")
     args = ap.parse_args(argv)
+    global RAW_DIR, MANIFEST
+    if args.dest:
+        RAW_DIR = Path(args.dest).resolve()
+        MANIFEST = RAW_DIR / "manifest.json"
 
     meta = fetch_dataset_metadata(refresh=args.refresh_metadata)
     cat = file_catalogue(meta)
@@ -279,7 +286,8 @@ def main(argv: list[str] | None = None) -> int:
     body = json.dumps(manifest["files"], sort_keys=True).encode("utf-8")
     manifest["files_sha256"] = hashlib.sha256(body).hexdigest()
     MANIFEST.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print(f"manifest: {MANIFEST.relative_to(REPO_ROOT)}  files_sha256={manifest['files_sha256'][:16]}...")
+    shown = MANIFEST.relative_to(REPO_ROOT) if MANIFEST.is_relative_to(REPO_ROOT) else MANIFEST
+    print(f"manifest: {shown}  files_sha256={manifest['files_sha256'][:16]}...")
     return 1 if problems else 0
 
 

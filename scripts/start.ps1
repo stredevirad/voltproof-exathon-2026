@@ -27,12 +27,12 @@ if ($status -notmatch 'database_ready') {
     Write-Host $status
     throw 'Exasol is not ready. Start it with: scripts\exa.ps1 start   (first time: scripts\exa.ps1 install local --auto-approve)'
 }
-$schema = if ($env:VOLTPROOF_SCHEMA) { $env:VOLTPROOF_SCHEMA } else { 'VOLTPROOF' }
+$schema = Resolve-VoltProofSchema
 $ErrorActionPreference = 'Continue'
 $probe = & $py -c "from pipeline.db import connect; c = connect(schema='$schema'); print(c.execute('SELECT COUNT(*) FROM QUALITY_LOCATION').fetchval())" 2>&1
 $ErrorActionPreference = 'Stop'
 if ($LASTEXITCODE -ne 0) {
-    throw "The analysis tables are missing. Build them first: scripts\get-data.ps1 then scripts\load.ps1`n$probe"
+    throw "The analysis tables are missing. Build them first: scripts\load.ps1 -Set demo (no download) or scripts\load.ps1 -Set first`n$probe"
 }
 Write-Host "  analysed locations: $probe"
 

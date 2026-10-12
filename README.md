@@ -15,7 +15,7 @@ Technology, Kochi.
 | Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README) |
 | Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
 | Demo video (narrated, under 3:00) | `docs/deliverables/VoltProof_demo.mp4`, **pending the team's voice-over**. Script: [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md); how it is made: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
-| Run guide | [Quick start](#quick-start-windows-1011-amd64) below and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md) |
+| Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md) |
 | Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
 | Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
@@ -64,7 +64,7 @@ analysis is versioned SQL that runs **inside Exasol**.
 
 The report says this in plain words and is not legal advice.
 
-## Quick start (Windows 10/11, AMD64)
+## Quick start (Windows 10/11, AMD64): no data download
 
 You need Git, [uv](https://docs.astral.sh/uv/), Node.js 20 or newer, WSL 2 and about 16 GB RAM. Keep
 Docker Desktop closed while the database runs. Full details and troubleshooting are in
@@ -92,42 +92,66 @@ scripts\exa.ps1 status
   scripts\exa.ps1 install local --auto-approve     # about 2 minutes; accepts the Exasol Personal EULA
   ```
 
-**2. Data (minimum set, about 141 MB).** The ESMI files are on Harvard Dataverse. Each download asks for a
-short Guestbook form, so you download them yourself.
-1. Open https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/CLLZZM.
-2. Download these three files into `data\raw\` (create the folder) without renaming them:
-   - `ESMI location information`
-   - `About the initiative.pdf`
-   - `ESMI minute-wise voltage data 2018 June-Aug`
-
-   For tabular files, choose "Original File Format (Comma Separated Values)". This set is enough for the
-   guided demo and the tests.
-
-**3. Build the analysis inside Exasol.** This verifies checksums against Dataverse, loads with native
-`IMPORT`, runs every SQL step and checks provenance. It took 27 seconds in the clean-start test.
+**2. Build the SYNTHETIC demo set.** This needs no download and takes seconds.
 
 ```powershell
-scripts\load.ps1 -Set first
+scripts\load.ps1 -Set demo
 ```
 
-**4. Open the app** at http://127.0.0.1:8000/ and press **Start guided demo**:
+- `pipeline/synthetic.py` writes 20 invented monitors in the ESMI file format (one month, about 4 MB, the
+  same every time). They are built into their own schema, `VOLTPROOF_DEMO`, by the same SQL that analyses
+  the real data.
+- Every name carries "SYNTHETIC", and the app and reports show a **SYNTHETIC DEMO DATA** banner. No figure in
+  this build describes real supply, and synthetic and real data never share a schema
+  ([DECISIONS D-033](docs/DECISIONS.md)).
+
+**3. Open the app** at http://127.0.0.1:8000/ and press **Start guided demo**:
 
 ```powershell
 scripts\start.ps1                # stop it with Ctrl+C; stop it before rebuilding with load.ps1
 ```
 
-**5. Run the tests** (unit, integration, differential, end-to-end; about 3 minutes on the minimum set):
+**4. Run the tests** (unit, integration, differential, end-to-end):
 
 ```powershell
 scripts\test.ps1
 ```
 
-To build next to an existing build without touching it, set a schema name before steps 3–5, for example
-`$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_CLEAN'`. To use another port, run `scripts\start.ps1 -Port 8090`.
+The tests that need the real files skip cleanly on a demo-only machine. The synthetic set is also checked
+against the independent oracle in full.
+
+## Real data (ESMI, Harvard Dataverse)
+
+The real readings are published by Prayas (Energy Group) on Harvard Dataverse. Each file download records a
+short Guestbook response, so you download them under your own name.
+
+**Minimum set (about 141 MB, the 2018 June–August file; enough for the guided demo on real data).**
+Choose one of these:
+
+- **Scripted:** copy `.env.example` to `.env` (gitignored), fill in **your own** `DATAVERSE_GB_NAME`,
+  `_EMAIL`, `_INSTITUTION`, `_POSITION` and `_INTENDED_USE`, then run the commands below. Downloading and
+  verifying took 56 seconds on the build laptop.
+
+  ```powershell
+  scripts\get-data.ps1 -Set first -Download      # one Guestbook response per file; checksums verified against Dataverse
+  scripts\load.ps1 -Set first                     # builds schema VOLTPROOF (it took 27 s in the clean-start test)
+  ```
+
+- **Browser:**
+  1. Open https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/CLLZZM.
+  2. Download `ESMI location information`, `About the initiative.pdf` and
+     `ESMI minute-wise voltage data 2018 June-Aug` into `data\raw\`, without renaming them. For tabular
+     files, choose "Original File Format (Comma Separated Values)".
+  3. Run `scripts\load.ps1 -Set first`.
+
+Once `VOLTPROOF` is built, `start.ps1`, `test.ps1` and `warmup.ps1` use it. To look at the demo set again,
+set `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_DEMO'` first. To build next to an existing build without touching it,
+set another schema name the same way. To use another port, run `scripts\start.ps1 -Port 8090`.
 
 **Optional: all of Uttar Pradesh (about 1.9 GB; gives the headline figures below).**
 1. Also download 2016 Jan-June, 2016 July-Dec, 2017 Jan-April, 2017 May-Aug, 2017 Sept-Dec, 2018 Jan-May,
-   2018 Sep-Dec, 2019 Jan-June and 2019 July-Dec.
+   2018 Sep-Dec, 2019 Jan-June and 2019 July-Dec. For the scripted download, use
+   `scripts\get-data.ps1 -Set up -Download`.
 2. Then run:
 
    ```powershell

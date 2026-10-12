@@ -28,7 +28,8 @@
 param(
     [ValidateSet('meta', 'first', 'up', 'all')][string]$Set = 'first',
     [switch]$Download,
-    [switch]$RefreshMetadata
+    [switch]$RefreshMetadata,
+    [string]$Dest = ''
 )
 
 . "$PSScriptRoot\_common.ps1"
@@ -40,8 +41,9 @@ if (-not (Test-Path $py)) { throw "Python environment missing. Run scripts\boots
 $argsList = @('-m', 'pipeline.get_data', '--set', $Set)
 if ($Download) { $argsList += '--download' }
 if ($RefreshMetadata) { $argsList += '--refresh-metadata' }
+if ($Dest) { $argsList += @('--dest', $Dest) }
 
-Write-Step "Checking ESMI files ($Set) in data\raw"
+Write-Step "Checking ESMI files ($Set) in $(if ($Dest) { $Dest } else { 'data\raw' })"
 $ErrorActionPreference = 'Continue'
 & $py @argsList
 $code = $LASTEXITCODE

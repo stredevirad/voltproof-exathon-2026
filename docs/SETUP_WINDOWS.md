@@ -69,7 +69,22 @@ scripts\exa.ps1 install local --auto-approve     # first time: about 2 minutes
   without asking when scripted, so run them yourself if you ever need them.
 - After a Windows reboot the database is stopped: `scripts\exa.ps1 start`.
 
-## 5. Get the data (Harvard Dataverse, Guestbook required)
+## 5. Fastest path: the SYNTHETIC demo set (no download)
+
+```powershell
+scripts\load.ps1 -Set demo      # seconds; schema VOLTPROOF_DEMO
+scripts\start.ps1               # → http://127.0.0.1:8000/
+```
+
+- `pipeline\synthetic.py` writes 20 invented monitors in the ESMI file format (one month, about 4 MB, the
+  same every time) into `data\demo\`. They are built into their own schema, `VOLTPROOF_DEMO`, by the same
+  SQL that analyses the real data.
+- The app and every report show a **SYNTHETIC DEMO DATA** banner. Synthetic and real data never share a
+  schema, and the tools that compute published figures refuse a synthetic schema (DECISIONS D-033).
+- Steps 6–8 below build the real data. Once `VOLTPROOF` is built, `start.ps1`, `test.ps1` and `warmup.ps1`
+  use it. To use the demo set again, set `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_DEMO'` in the terminal first.
+
+## 6. Get the real data (Harvard Dataverse, Guestbook required)
 
 The ESMI data is published by Prayas (Energy Group) on Harvard Dataverse (doi:10.7910/DVN/CLLZZM,
 CC0 1.0; see docs/data/SOURCE_TERMS.md). Each download asks for a short Guestbook form. Choose one way:
@@ -84,13 +99,13 @@ CC0 1.0; see docs/data/SOURCE_TERMS.md). Each download asks for a short Guestboo
 - **Script:** copy `.env.example` to `.env`, fill in **your own** `DATAVERSE_GB_*` details, then
   `scripts\get-data.ps1 -Set first -Download`.
 
-Then verify the checksums against Dataverse (also run automatically by step 6):
+Then verify the checksums against Dataverse (also run automatically by step 7):
 
 ```powershell
 scripts\get-data.ps1 -Set first     # or -Set up
 ```
 
-## 6. Build the analysis inside Exasol: one command
+## 7. Build the analysis inside Exasol: one command
 
 ```powershell
 scripts\load.ps1 -Set first     # minimum set; or -Set up for all of Uttar Pradesh 2016-2019
@@ -110,7 +125,7 @@ This:
 
 **The first large load is slower:** Exasol grows its data volume file the first time.
 
-## 7. Start the app: one command
+## 8. Start the app: one command
 
 ```powershell
 scripts\start.ps1               # → http://127.0.0.1:8000/
@@ -119,10 +134,10 @@ scripts\start.ps1               # → http://127.0.0.1:8000/
 Open the URL and press **Start guided demo**. Stop with Ctrl+C. Don't run `load.ps1` while the app is
 running.
 
-## 8. Run the tests
+## 9. Run the tests
 
 ```powershell
-scripts\test.ps1                 # unit, integration, differential, e2e (needs the database and step 6)
+scripts\test.ps1                 # unit, integration, differential, e2e (needs the database and step 5 or 7)
 scripts\test.ps1 -Suite unit     # no database needed
 ```
 
@@ -135,5 +150,5 @@ scripts\test.ps1 -Suite unit     # no database needed
 | `Port 8000 is already in use` | `scripts\start.ps1 -Port 8010` |
 | A load step is very slow the first time | expected while the database volume grows; later loads are much faster (docs/BENCHMARKS.md) |
 | Windows becomes sluggish during a full load | close other heavy apps and Docker Desktop; the database uses most of the WSL memory |
-| `Raw files missing or not verified` | download the files into `data\raw\` with unchanged names (step 5) |
+| `Raw files missing or not verified` | download the files into `data\raw\` with unchanged names (step 6) |
 | Report generation fails | rerun `scripts\bootstrap.ps1` (installs Playwright Chromium) |

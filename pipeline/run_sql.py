@@ -23,7 +23,7 @@ from pathlib import Path
 
 import yaml
 
-from pipeline.db import DEFAULT_SCHEMA, connect
+from pipeline.db import DEFAULT_SCHEMA, connect, schema_dataset
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SQL_DIR = REPO_ROOT / "sql"
@@ -184,6 +184,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("steps", nargs="*", help="step prefixes, e.g. 010 020 (default: all)")
     args = ap.parse_args(argv)
     steps = resolve_steps(args.steps)
+    with connect() as c:
+        if schema_dataset(c, args.schema)["synthetic"]:
+            raise SystemExit(f"Schema {args.schema.upper()} holds the SYNTHETIC demo set; rebuild it with "
+                             "scripts\\load.ps1 -Set demo (running steps here would apply the real-data parameters).")
     with connect(autocommit=False) as conn:
         res = run_steps(conn, args.schema.upper(), steps)
     total = sum(r["wall_seconds"] for r in res)

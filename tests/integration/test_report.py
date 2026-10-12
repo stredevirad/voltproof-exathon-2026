@@ -115,7 +115,10 @@ def test_report_uses_only_allowed_wording(generated):
     hits = forbidden_hits(text)
     assert not hits, "\n".join(hits)
     assert "not legal advice" in text
-    assert "Prayas" in text and "doi.org/10.7910/DVN/CLLZZM" in text
+    if generated["side"].get("synthetic"):  # the SYNTHETIC demo set is never cited as ESMI data (D-033)
+        assert "SYNTHETIC DEMO DATA" in text and "doi.org/10.7910/DVN/CLLZZM" not in text
+    else:
+        assert "Prayas" in text and "doi.org/10.7910/DVN/CLLZZM" in text
 
 
 def test_pdf_is_written(generated):

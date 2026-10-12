@@ -12,15 +12,13 @@ from __future__ import annotations
 
 import json
 import os
-import socket
-import subprocess
-import sys
 import time
 import urllib.request
 from pathlib import Path
 
 import pytest
 
+from tests.support.appserver import app_server, get_json
 from tests.support.claims import forbidden_hits
 
 pytestmark = [pytest.mark.e2e, pytest.mark.exasol]
@@ -31,35 +29,20 @@ TIMELINE_FILE = REPO_ROOT / "docs" / "deliverables" / "video_timeline.json"
 ACTUAL_FILE = REPO_ROOT / "reports" / "video-run" / "timeline_actual.json"
 
 
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
+_STATE = {"synthetic": False}
 
 
 @pytest.fixture(scope="module")
 def server():
     if not (REPO_ROOT / "app" / "web" / "dist" / "index.html").exists():
         pytest.skip("web app not built (npm run build in app/web)")
-    port = _free_port()
-    env = dict(os.environ, PYTHONUNBUFFERED="1")
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.api.main:app", "--host", "127.0.0.1",
-                             "--port", str(port)], cwd=REPO_ROOT, env=env,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    base = f"http://127.0.0.1:{port}"
-    for _ in range(60):
-        try:
-            with urllib.request.urlopen(base + "/api/health", timeout=5) as r:
-                if r.status == 200:
-                    break
-        except Exception:
-            time.sleep(0.5)
-    else:
-        proc.kill()
-        pytest.fail("server did not become healthy")
-    yield base
-    proc.terminate()
-    proc.wait(timeout=10)
+    try:
+        with app_server() as base:
+            # on the SYNTHETIC demo set, screenshots never replace the real ones in docs (D-033)
+            _STATE["synthetic"] = bool(get_json(base, "/api/meta").get("synthetic"))
+            yield base
+    except RuntimeError as e:
+        pytest.fail(str(e))
 
 
 @pytest.fixture(scope="module")
@@ -89,8 +72,9 @@ def _check_wording(pg, where: str):
 
 
 def _shot(pg, name: str):
-    SHOTS.mkdir(parents=True, exist_ok=True)
-    pg.screenshot(path=str(SHOTS / f"{name}.png"), full_page=False)
+    target = REPO_ROOT / "reports" / "screenshots-synthetic" if _STATE["synthetic"] else SHOTS
+    target.mkdir(parents=True, exist_ok=True)
+    pg.screenshot(path=str(target / f"{name}.png"), full_page=False)
 
 
 RECORDING = os.environ.get("VOLTPROOF_RECORD_VIDEO") == "1"

@@ -6,11 +6,12 @@
   unit          no database needed
   integration   hand-written fixtures through the real SQL pipeline (schemas VP_TEST_n)
   differential  oracle vs SQL: Hypothesis random batches (schema VP_HYPO) and a real-data slice
-                (needs the VOLTPROOF schema built by scripts\load.ps1 and the 2018 June-Aug file)
-  e2e           Playwright drives the guided demo in Chromium against a real server (needs VOLTPROOF and
-                app\web\dist); saves screenshots to docs\deliverables\screenshots
+                (needs the VOLTPROOF schema built by scripts\load.ps1 and its files in data\raw; skips otherwise)
+  e2e           Playwright drives the guided demo in Chromium against a real server (needs a built schema and
+                app\web\dist); saves screenshots to docs\deliverables\screenshots, or to
+                reports\screenshots-synthetic on the SYNTHETIC demo set
   The database must be running for integration, differential and e2e suites.
-  The schema is VOLTPROOF unless $env:VOLTPROOF_SCHEMA names another.
+  Schema: VOLTPROOF_SCHEMA if set, else VOLTPROOF if built, else VOLTPROOF_DEMO (the synthetic demo set).
 
 .PARAMETER Suite
   all (default) | unit | integration | differential | e2e
@@ -35,6 +36,7 @@ New-Item -ItemType Directory -Force -Path $out | Out-Null
 $env:VOLTPROOF_HYPOTHESIS_EXAMPLES = "$Examples"
 
 if ($Part -and $Suite -eq 'all') { throw "-Part needs a single -Suite" }
+if ($Suite -ne 'unit') { $null = Resolve-VoltProofSchema }  # the app/report/e2e tests use this schema
 $suites = if ($Suite -eq 'all') { @('unit', 'integration', 'differential', 'e2e') } else { @($Suite) }
 $tag = if ($Part) { '+' + ($Part -replace '[^A-Za-z0-9_.-]', '_') } else { '' }
 $failed = @()

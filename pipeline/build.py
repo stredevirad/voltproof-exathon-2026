@@ -12,9 +12,11 @@ import sys
 import time
 from pathlib import Path
 
-from pipeline import load_raw
-from pipeline.db import DEFAULT_SCHEMA, connect
-from pipeline.run_sql import resolve_steps, run_steps
+import yaml
+
+from pipeline import load_raw, synthetic
+from pipeline.db import DEFAULT_SCHEMA, REAL_SCHEMA, connect, schema_dataset
+from pipeline.run_sql import flatten_params, resolve_steps, run_steps
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ANALYTICAL_STEPS = ["020", "030", "040", "050", "060", "070", "080", "090", "095", "100"]
@@ -25,13 +27,31 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     ap.add_argument("--skip-load", action="store_true", help="reuse raw tables already loaded")
+    ap.add_argument("--demo", action="store_true",
+                    help="the SYNTHETIC demo set (pipeline/synthetic.py) with config/method.demo.yaml (D-033)")
     args = ap.parse_args(argv)
     schema = args.schema.upper()
     t0 = time.perf_counter()
+    # Synthetic and real data never share a schema (D-033)
+    if args.demo and schema == REAL_SCHEMA:
+        raise SystemExit(f"Refusing: the synthetic demo set never goes into {REAL_SCHEMA} (use VOLTPROOF_DEMO).")
+    with connect() as c:
+        held = schema_dataset(c, schema)
+    if args.demo and held["real_files"]:
+        raise SystemExit(f"Refusing: schema {schema} holds real ESMI files; build the synthetic set elsewhere.")
+    if not args.demo and (held["synthetic_files"] or held["synthetic"]):
+        raise SystemExit(f"Refusing: schema {schema} holds the SYNTHETIC demo set; load real data into another schema.")
+    override = None
+    load_args = ["--schema", schema]
+    if args.demo:
+        if not args.skip_load:
+            synthetic.generate()
+        load_args += ["--manifest", str(synthetic.OUT_DIR / "manifest.json"), "--raw-dir", str(synthetic.OUT_DIR)]
+        override = flatten_params(yaml.safe_load((REPO_ROOT / "config" / "method.demo.yaml").read_text(encoding="utf-8")))
     if not args.skip_load:
-        load_raw.main(["--schema", schema])
+        load_raw.main(load_args)
     with connect(autocommit=False) as conn:
-        res = run_steps(conn, schema, resolve_steps(ANALYTICAL_STEPS))
+        res = run_steps(conn, schema, resolve_steps(ANALYTICAL_STEPS), params_override=override)
         files = conn.execute(
             f"SELECT FILE_NAME, FILE_KIND, ROWS_LOADED, ROWS_QUARANTINED, VALUES_QUARANTINED, MINUTES_IN_SCOPE "
             f"FROM {schema}.QUALITY_FILE ORDER BY FILE_ID").fetchall()

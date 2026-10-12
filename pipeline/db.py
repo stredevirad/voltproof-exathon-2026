@@ -57,6 +57,48 @@ def _password(ddir: Path) -> str:
 
 # Analytical schema: VOLTPROOF unless VOLTPROOF_SCHEMA names another (e.g. a clean-start test next to the main build).
 DEFAULT_SCHEMA = os.environ.get("VOLTPROOF_SCHEMA", "VOLTPROOF")
+REAL_SCHEMA, DEMO_SCHEMA = "VOLTPROOF", "VOLTPROOF_DEMO"
+SYNTHETIC_FILE_ID_MIN = 900000000  # pipeline/synthetic.py file ids; real files carry Dataverse ids (D-033)
+
+
+def schema_dataset(conn, schema: str) -> dict:
+    """What a schema holds: {'built': bool, 'synthetic': bool, 'real_files': n, 'synthetic_files': n}."""
+    schema = schema.upper()
+    tables = {r[0] for r in conn.execute(
+        f"SELECT TABLE_NAME FROM EXA_ALL_TABLES WHERE TABLE_SCHEMA = '{schema}'").fetchall()}
+    out = {"built": "QUALITY_LOCATION" in tables, "synthetic": False, "real_files": 0, "synthetic_files": 0}
+    if "SOURCE_FILE" in tables:
+        real, synth = conn.execute(
+            f"SELECT SUM(CASE WHEN FILE_ID < {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END), "
+            f"SUM(CASE WHEN FILE_ID >= {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END) FROM {schema}.SOURCE_FILE").fetchone()
+        out["real_files"], out["synthetic_files"] = int(real or 0), int(synth or 0)
+    if "PARAMS" in tables:
+        v = conn.execute(f"SELECT NUM_VALUE FROM {schema}.PARAMS WHERE NAME = 'dataset.synthetic'").fetchval()
+        out["synthetic"] = bool(v) or out["synthetic_files"] > 0
+    else:
+        out["synthetic"] = out["synthetic_files"] > 0
+    return out
+
+
+def require_real_data(schema: str, what: str) -> None:
+    """Real-data-only tools (headline figures, benchmarks, Prayas validation) refuse a synthetic schema."""
+    with connect() as c:
+        info = schema_dataset(c, schema)
+    if info["synthetic"]:
+        raise SystemExit(f"{what} works on the real ESMI build only; schema {schema} holds SYNTHETIC demo data. "
+                         f"Set VOLTPROOF_SCHEMA={REAL_SCHEMA} (built by scripts\\load.ps1 -Set first|up).")
+
+
+def resolve_schema() -> str:
+    """The schema the scripts use: VOLTPROOF_SCHEMA if set; else the real build if it exists; else the demo build."""
+    if os.environ.get("VOLTPROOF_SCHEMA"):
+        return os.environ["VOLTPROOF_SCHEMA"].upper()
+    with connect() as c:
+        if schema_dataset(c, REAL_SCHEMA)["built"]:
+            return REAL_SCHEMA
+        if schema_dataset(c, DEMO_SCHEMA)["built"]:
+            return DEMO_SCHEMA
+    return REAL_SCHEMA
 
 
 def connect(schema: str | None = None, fetch_dict: bool = False, **kwargs) -> pyexasol.ExaConnection:

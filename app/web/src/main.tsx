@@ -9,8 +9,10 @@ import EventView from "./pages/EventView";
 import GroupView from "./pages/GroupView";
 import Methodology from "./pages/Methodology";
 import Sources from "./pages/Sources";
+import { SyntheticBanner, useDataset } from "./ui";
 
 function Layout() {
+  const ds = useDataset();
   return (
     <>
       <header className="top">
@@ -21,6 +23,7 @@ function Layout() {
           <NavLink to="/sources">Data &amp; sources</NavLink>
         </nav>
       </header>
+      <SyntheticBanner />
       <main className="shell">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -34,10 +37,16 @@ function Layout() {
         </Routes>
       </main>
       <footer className="bottom">
-        Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI), Harvard Dataverse
-        doi:10.7910/DVN/CLLZZM (CC0 1.0), cited as the dataset page requires. All figures are computed from these
-        real measurements; no figure in this app is illustrative or simulated. VoltProof is an evidence-analysis aid,
-        not legal advice or an official determination.
+        {ds?.synthetic ? (
+          <>SYNTHETIC DEMO DATA: every figure in this build comes from invented readings (pipeline/synthetic.py) in the
+            ESMI file format; none describes real supply. VoltProof is an evidence-analysis aid, not legal advice or an
+            official determination.</>
+        ) : (
+          <>Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI), Harvard Dataverse
+            doi:10.7910/DVN/CLLZZM (CC0 1.0), cited as the dataset page requires. All figures are computed from these
+            real measurements; no figure in this app is illustrative or simulated. VoltProof is an evidence-analysis aid,
+            not legal advice or an official determination.</>
+        )}
       </footer>
     </>
   );

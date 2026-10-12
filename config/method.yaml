@@ -78,3 +78,15 @@ coincidence:
   # "expected" and overstates the coincidence ratio (D-023). Pairs and groups themselves are not filtered.
   baseline_comparable_only: true
   provisional: true
+
+demo:
+  # Guided-demo window (app/api/service.py demo()): the evening potential shared supply event with the most
+  # monitors inside this window. Real data: 2018 June-August, the file in the smallest download set.
+  window_from: "2018-06-01"
+  window_to_exclusive: "2018-09-01"
+
+dataset:
+  # true only in the SYNTHETIC demo schema (config/method.demo.yaml, D-033): the app and reports then show
+  # a persistent SYNTHETIC banner, and real-data-only scripts refuse to run.
+  synthetic: false
+  label: "ESMI minute-wise voltage data, Prayas (Energy Group)"

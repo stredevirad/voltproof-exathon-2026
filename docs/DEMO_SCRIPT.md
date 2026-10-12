@@ -30,6 +30,11 @@ Rule (`app/api/service.py`, `DEMO_RULE`):
 
 It is one example selected by a rule, not a typical month. The UI says so in a banner.
 
+On the SYNTHETIC demo set (`scripts\load.ps1 -Set demo`, no download), the same rule runs over January 2030.
+It lands on the shared interruption the generator was designed to contain: Synthpur (SYNTHETIC),
+17 January 2030 at 18:42, nine invented monitors. Every page then carries the SYNTHETIC DEMO DATA banner.
+This script and the recorded video use the real data.
+
 ## Script
 
 | Time | Screen | Narration (plain English) |

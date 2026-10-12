@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "reports" / "evidence"
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
-REPORT_ID = re.compile(r"^VP-\d{1,9}-\d{6}-[0-9a-f]{8}$")
+REPORT_ID = re.compile(r"^VP-(DEMO-)?\d{1,9}-\d{6}-[0-9a-f]{8}$")  # VP-DEMO-...: SYNTHETIC demo data (D-033)
 S = SCHEMA
 
 REDRESS_TEXT = (
@@ -50,6 +50,16 @@ LIMITATIONS = [
 ]
 
 
+SYNTHETIC_LIMITATION = ("SYNTHETIC demo data: the monitors, districts and readings in this report are invented "
+                        "(pipeline/synthetic.py); no figure describes real electricity supply.")
+
+
+def _limitations(synthetic: bool) -> list[str]:
+    if not synthetic:
+        return LIMITATIONS
+    return [SYNTHETIC_LIMITATION] + [x for x in LIMITATIONS if not x.startswith("The data are historical")]
+
+
 def _env() -> Environment:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=select_autoescape(["html"]))
     env.filters["mins"] = lambda m: "-" if m is None else f"{int(m) // 60} h {int(m) % 60:02d} min"
@@ -75,6 +85,7 @@ def build_data(location_id: int, month_key: str) -> dict:
     mo = m["month"]
     data = {
         "report_version": 1,
+        "synthetic": bool(meta["synthetic"]),
         "location": m["location"],
         "period": {"month": month_key, "first_day": m["days"][0]["cal_day"] if m["days"] else None,
                    "last_day": m["days"][-1]["cal_day"] if m["days"] else None},
@@ -109,7 +120,8 @@ def build_data(location_id: int, month_key: str) -> dict:
                            "normal_max_v": params.get("classification.normal_max_v")},
             "threshold_source": params.get("classification.source_url"),
             "params": params,
-            "limitations": LIMITATIONS + ([f"Source-file data defect: {m['data_warning']}"] if m["data_warning"] else []),
+            "limitations": _limitations(meta["synthetic"]) + ([f"Source-file data defect: {m['data_warning']}"]
+                                                            if m["data_warning"] else []),
         },
         "provenance": {
             "app_commit": service.git_commit(),
@@ -135,7 +147,8 @@ def build_data(location_id: int, month_key: str) -> dict:
 
 def _report_id(location_id: int, month_key: str, data: dict) -> str:
     digest = hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()[:8]
-    return f"VP-{location_id}-{month_key.replace('-', '')}-{digest}"
+    prefix = "VP-DEMO" if data.get("synthetic") else "VP"
+    return f"{prefix}-{location_id}-{month_key.replace('-', '')}-{digest}"
 
 
 def path_for(report_id: str, ext: str) -> Path | None:
@@ -184,11 +197,11 @@ def generate(location_id: int, month_key: str, pdf: bool = True, reuse: bool = T
     html_path = OUT_DIR / f"{rid}.html"
     html_path.write_text(render_html(data), encoding="utf-8")
     if pdf:
-        _pdf(html_path, OUT_DIR / f"{rid}.pdf")
+        _pdf(html_path, OUT_DIR / f"{rid}.pdf", synthetic=bool(data.get("synthetic")))
     return {**_links(rid, pdf), "generated_at_ist": data["generated_at_ist"], "reused": False}
 
 
-def _pdf(html_path: Path, pdf_path: Path) -> None:
+def _pdf(html_path: Path, pdf_path: Path, synthetic: bool = False) -> None:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -201,7 +214,8 @@ def _pdf(html_path: Path, pdf_path: Path) -> None:
                      display_header_footer=True,
                      header_template="<div></div>",
                      footer_template='<div style="font-size:7px;width:100%;text-align:center;color:#555">'
-                                     'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
+                                     + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
+                                     + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
                                      '<span class="totalPages"></span></div>')
         finally:
             browser.close()

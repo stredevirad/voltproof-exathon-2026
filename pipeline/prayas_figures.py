@@ -18,7 +18,7 @@ import base64
 import urllib.request
 from pathlib import Path
 
-from pipeline.db import DEFAULT_SCHEMA, connect
+from pipeline.db import DEFAULT_SCHEMA, connect, require_real_data
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CACHE = REPO_ROOT / ".cache" / "prayas"
@@ -214,6 +214,7 @@ def compare_profiles() -> None:
 
 
 def main() -> None:
+    require_real_data(DEFAULT_SCHEMA, "The comparison with Prayas's published figures")
     fig, (pooled, monthly) = figure8_estimate(), voltproof_by_slot()
     print("Hours of outage per 6-h slot. Prayas Figure 8 read from its colour scale (estimate, month columns averaged);")
     print("VoltProof equal weight per month (like-for-like) and pooled over location-months.")

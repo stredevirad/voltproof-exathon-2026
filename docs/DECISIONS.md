@@ -312,3 +312,36 @@ real-data oracle tests are re-run on the new formulations.
   check (loaded = data lines) still runs after the retry, and each file records `attempts`.
 - **Tests:** `tests/unit/test_loader_edge_cases.py` checks that a transient error is retried once, that a
   second failure is raised, and that a data error is not retried.
+
+## D-033 · 2026-10-12 · SYNTHETIC demo data set for a no-download quick start
+
+- **Need:** judges should be able to try the app without the Dataverse Guestbook download.
+- **Choice:** `pipeline/synthetic.py` writes invented monitors in the exact ESMI file format into
+  `data/demo/` (gitignored):
+  - 20 monitors in 3 invented districts of an invented state, January 2030;
+  - a fixed seed and CRLF line endings, so the output is byte-identical every time, about 4 MB;
+  - outages, low and high voltage, missing hours, one duplicate hour, and one evening interruption shared
+    by all 9 monitors of the largest district, which the guided demo picks.
+
+  `scripts\load.ps1 -Set demo` builds it into its own schema, **VOLTPROOF_DEMO**, with
+  `config/method.demo.yaml`. That file changes only the scope, the guided-demo window and the dataset
+  label; every analytical threshold is unchanged.
+- **Kept apart from real data:**
+  - **Names:** SYNTHETIC appears in every file, location, district and state name. File ids are
+    900000001+, never Dataverse ids. Dates are outside every real file's period.
+  - **Builds:** the build refuses to put the demo set into VOLTPROOF, and refuses to mix synthetic and
+    real files in one schema.
+  - **Real-data tools:** headline figures, benchmarks, the Prayas comparison and standalone SQL steps all
+    refuse a synthetic schema.
+  - **App and reports:** a persistent banner on every page, a SYNTHETIC footer, a SYNTHETIC citation and
+    attribution, and dataset-aware page text. Reports get a `VP-DEMO-` id, a banner, a footer label and
+    a SYNTHETIC limitation.
+- **Tests:**
+  - **Unit:** the files are byte-identical every time, and the format matches the real files.
+  - **Integration:** the set builds, holds only synthetic data, the guided demo lands on the designed
+    event, and reports are labelled. The independent oracle equals the SQL on the **whole** synthetic
+    set (events, aggregates, coincidence).
+  - **e2e:** every page shows the banner and passes the claims scan, and no distinctive real-data value
+    or real place name appears.
+- **Schema used by the scripts:** `start`, `test` and `warmup` use VOLTPROOF_SCHEMA if set, otherwise
+  VOLTPROOF if it is built, otherwise VOLTPROOF_DEMO.

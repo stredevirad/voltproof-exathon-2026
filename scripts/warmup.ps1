@@ -22,6 +22,7 @@ if ($status -notmatch 'database_ready') {
     throw 'Exasol is not ready. Start it with: scripts\exa.ps1 start'
 }
 
+$null = Resolve-VoltProofSchema
 Write-Step 'Warming the guided demo path and pre-rendering its report'
 $ErrorActionPreference = 'Continue'
 & $py -m pipeline.warmup

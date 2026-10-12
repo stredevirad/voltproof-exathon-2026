@@ -158,24 +158,33 @@ def load_paths(conn, schema: str, files: list[tuple]) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--schema", default=DEFAULT_SCHEMA)
+    ap.add_argument("--manifest", default=str(MANIFEST), help="verified-file manifest (default data/manifest.json)")
+    ap.add_argument("--raw-dir", default=str(RAW_DIR), help="folder holding the manifest's files")
     args = ap.parse_args(argv)
     schema = args.schema.upper()
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    raw_dir = Path(args.raw_dir)
+    manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
     files = [f for f in manifest["files"]
              if f.get("status") in ("verified", "verified-size-and-rows")
              and f["dataverse_file_id"] not in NON_DATA_FILES]
     if not files:
-        raise SystemExit("No verified data files in data/manifest.json. Run scripts\\get-data.ps1 first.")
-    files.sort(key=lambda f: f["dataverse_file_id"] != LOCATION_FILE_ID)  # locations first
-    declared = declared_periods()
+        raise SystemExit(f"No verified data files in {args.manifest}. Run scripts\\get-data.ps1 first.")
+
+    def kind_of(f: dict) -> str:  # the synthetic manifest names the kind; real files are known by Dataverse id
+        return f.get("kind") or ("locations" if f["dataverse_file_id"] == LOCATION_FILE_ID else "readings")
+
+    files.sort(key=lambda f: kind_of(f) != "locations")  # locations first
+    config_declared = declared_periods()
+    declared = {int(f["dataverse_file_id"]): (f["declared"] if "declared" in f
+                                              else config_declared.get(int(f["dataverse_file_id"])))
+                for f in files}
     results = []
     with connect(autocommit=False) as conn:
         run_steps(conn, schema, resolve_steps(["010"]), quiet=True)
         conn.commit()
         ensure_schema(conn, schema)
         for f in files:
-            kind = "locations" if f["dataverse_file_id"] == LOCATION_FILE_ID else "readings"
-            r = load_file(conn, schema, f["dataverse_file_id"], RAW_DIR / f["file"], kind, f.get("md5"),
+            r = load_file(conn, schema, f["dataverse_file_id"], raw_dir / f["file"], kind_of(f), f.get("md5"),
                           f.get("sha256"), declared.get(int(f["dataverse_file_id"])))
             results.append(r)
             print(f"loaded {r['file']}: {r['rows']:,} rows in {r['seconds']:.2f}s "

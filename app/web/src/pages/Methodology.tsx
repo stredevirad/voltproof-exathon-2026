@@ -45,7 +45,9 @@ export default function Methodology() {
       <h2>Known limitations</h2>
       <ul>
         <li>A plug-in monitor is not the utility's meter. It sees one socket, and an outage there may also come from the premises or the monitor.</li>
-        <li>The data are historical (2016–2019 for Uttar Pradesh); they show a method, not today's supply.</li>
+        {data.synthetic
+          ? <li>This build runs on SYNTHETIC demo data: invented readings that show the method and describe no real supply.</li>
+          : <li>The data are historical (2016–2019 for Uttar Pradesh); they show a method, not today's supply.</li>}
         <li>Monitor accuracy is ±4 V, so readings within 4 V of a class boundary are sensitive.</li>
         <li>Some monitors report a floor value (about 101 V or 99 V) during deep sags; Prayas counts these as no supply, and VoltProof shows the 0 V share separately.</li>
         <li>The published 2019 July–December file lost its hour column and is excluded (see Data &amp; sources).</li>

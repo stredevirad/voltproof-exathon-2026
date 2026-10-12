@@ -72,3 +72,17 @@ function Get-DatabaseStatus([int]$Tries = 4, [int]$DelaySeconds = 5) {
     }
     return $text
 }
+
+# Analytical schema for start/test/warmup: VOLTPROOF_SCHEMA if set; else VOLTPROOF (real data) if it is built;
+# else VOLTPROOF_DEMO (the SYNTHETIC demo set, D-033) if it is built. Exported so child processes agree.
+function Resolve-VoltProofSchema {
+    $py = Join-Path $script:RepoRoot '.venv\Scripts\python.exe'
+    $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $s = (& $py -m pipeline.schema 2>$null | Select-Object -Last 1)
+    $ErrorActionPreference = $prev
+    if (-not $s) { $s = 'VOLTPROOF' }
+    $env:VOLTPROOF_SCHEMA = "$s".Trim().ToUpper()
+    $kind = if ($env:VOLTPROOF_SCHEMA -eq 'VOLTPROOF_DEMO') { 'SYNTHETIC demo data' } else { 'real ESMI data unless built from the demo set' }
+    Write-Host "  schema: $($env:VOLTPROOF_SCHEMA) ($kind)"
+    return $env:VOLTPROOF_SCHEMA
+}

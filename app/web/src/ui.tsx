@@ -1,5 +1,31 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ApiError } from "./api";
+import { api, ApiError } from "./api";
+
+export type Dataset = { synthetic: boolean; dataset_label: string };
+let datasetPromise: Promise<Dataset> | null = null;
+
+/** Which data this build holds (real ESMI data or the SYNTHETIC demo set, D-033); fetched once per page load. */
+export function useDataset(): Dataset | null {
+  const [ds, setDs] = useState<Dataset | null>(null);
+  useEffect(() => {
+    if (!datasetPromise) datasetPromise = api.meta().then((m) => ({ synthetic: !!m.synthetic, dataset_label: m.dataset_label }));
+    datasetPromise.then(setDs).catch(() => setDs(null));
+  }, []);
+  return ds;
+}
+
+/** Shown on every page while the app runs on the SYNTHETIC demo set. */
+export function SyntheticBanner() {
+  const ds = useDataset();
+  if (!ds?.synthetic) return null;
+  return (
+    <div className="synthetic-banner" role="status" data-testid="synthetic-banner">
+      <strong>SYNTHETIC DEMO DATA</strong>: invented monitors and readings, so VoltProof can be tried without a
+      download. Not ESMI data; no figure here describes real electricity supply. To analyse the real data, see the
+      README section "Real data".
+    </div>
+  );
+}
 
 /** Load data; keep the previous result visible (dimmed) while refetching instead of flashing a skeleton. */
 export function useApi<T>(load: () => Promise<T>, deps: unknown[]) {

@@ -26,7 +26,7 @@ import threading
 import time
 from pathlib import Path
 
-from pipeline.db import DEFAULT_SCHEMA, connect
+from pipeline.db import DEFAULT_SCHEMA, connect, require_real_data
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = REPO_ROOT / "docs" / "benchmarks"
@@ -271,7 +271,10 @@ def main(argv: list[str] | None = None) -> int:
                "free_ram_gib": free_ram_gib(), "disk_free_gib": disk_free_gib()}
         _save("env", rec)
         print(rec)
-    elif a.what == "build":
+        return 0
+    if a.what in ("build", "queries"):
+        require_real_data(a.schema.upper(), "Benchmarks")
+    if a.what == "build":
         bench_build(a.runs, a.cold, a.schema.upper())
     elif a.what == "queries":
         bench_queries(a.runs, a.cold, a.warmup)

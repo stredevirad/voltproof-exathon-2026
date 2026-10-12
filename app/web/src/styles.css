@@ -106,3 +106,5 @@ details summary { cursor: pointer; color: var(--ink-2); }
 @media (max-width: 960px) { .hero { grid-template-columns: 1fr; } }
 .chips { display: flex; gap: var(--space-3); flex-wrap: wrap; margin: var(--space-2) 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.synthetic-banner { position: sticky; top: 0; z-index: 20; background: var(--warn-bg); border-bottom: 3px solid var(--ink-1);
+  padding: var(--space-2) var(--space-4); font-size: var(--fs-sm); color: var(--ink-1); text-align: center; }

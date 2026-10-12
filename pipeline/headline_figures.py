@@ -12,7 +12,7 @@ import datetime as dt
 import subprocess
 from pathlib import Path
 
-from pipeline.db import DEFAULT_SCHEMA, connect
+from pipeline.db import DEFAULT_SCHEMA, connect, require_real_data
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUT = REPO_ROOT / "docs" / "HEADLINE_FIGURES.md"
@@ -121,6 +121,7 @@ def render(f: dict, schema: str) -> str:
 
 
 def main() -> None:
+    require_real_data(DEFAULT_SCHEMA, "Headline figures")
     with connect(schema=DEFAULT_SCHEMA) as c:
         f = collect(c)
     OUT.write_text(render(f, DEFAULT_SCHEMA), encoding="utf-8", newline="\n")
