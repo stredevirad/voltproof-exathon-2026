@@ -11,13 +11,13 @@
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ✅ passed 2026-10-12 | Prayas comparison (VALIDATION §3); 2019 defect handled (D-031); benchmarks 3 cold + 3 warm full-UP builds and query timings (BENCHMARKS.md); WHY_EXASOL; README; clean start from GitHub passed every README step (VALIDATION §4); TEST_REPORT 94/94 on 3889f1a. Tag `gate-6-validation` |
-| G7 Submission | 🟡 submission candidate 2026-10-12 (tag `gate-7-submission-candidate`) | Problem statement, deck (team, 1080p review), clean warm benchmarks, warm-up + live-demo runbook, voice-over script + paced recording + TTS draft, README deliverables, TEST_REPORT 99/99 on a57c903. Left: the team's voice-over → final MP4 committed |
+| G7 Submission | 🟡 submission candidate 2 2026-10-12 (tag `gate-7-submission-candidate-2`) | Problem statement, deck (team, 1080p review), clean warm benchmarks, warm-up + live-demo runbook, voice-over script + paced recording + TTS draft, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033): clone to working app in 5 min 28 s (VALIDATION §4.4). GitHub Actions CI (ruff + unit) green; CONTRIBUTING. TEST_REPORT 108/108 on a150710. Left: the team's voice-over → final MP4 committed |
 
 ## Remaining risks (top 5)
 
 1. **C: disk.** 32.2 GB free; Exasol data will live in Podman's WSL disk on C:. Docker Desktop already uses 22.7 GB there. Growth per million rows must be measured before sizing the load.
 2. **RAM.** 15.6 GB total (not 24 GB); WSL2 is capped at 11 GB and shared with Docker Desktop. The UP subset should fit; the full national load may not.
-3. **Data download gate.** A Guestbook response is required per download. Judges will need to supply their own details (the reproducibility story must cover this).
+3. **Data download gate.** A Guestbook response is required per download. Mitigated: the README quick start uses the SYNTHETIC demo set (no download), and the scripted download (`get-data.ps1 -Download`, the user's own `.env` details) was tested end to end.
 4. **New platform path.** Windows local deployment is new in launcher 2.3.0 (released 2026-09-21); expect rough edges.
 5. **Schedule.** ~7 build days; SHOULD items only after G6.
 
@@ -161,6 +161,21 @@
 - **Live demo:** LIVE_DEMO_RUNBOOK.md has the checklist, click path, fallbacks and the 15-minute outline.
 - **Robustness:** a status check retry (`Get-DatabaseStatus`), and a compile check for Python sources.
 - **Cleanup:** VOLTPROOF_CLEAN dropped; the D:\Temp clones deleted.
+
+### G7 work order 2 (2026-10-12, while the team records the voice-over)
+- **No-download quick start (D-033):** `pipeline/synthetic.py` writes 20 invented monitors in three invented
+  districts (January 2030, about 4 MB, fixed seed) in the ESMI file format. `scripts\load.ps1 -Set demo`
+  builds them into `VOLTPROOF_DEMO`. Guards keep synthetic and real data apart. Every page and report carries
+  a SYNTHETIC DEMO DATA banner, and the guided demo lands on the designed shared interruption.
+- **Clean start from GitHub (35bc78a):** clone to working app in 328 s with no download; all suites passed
+  in 139 s with the real-data tests skipped (VALIDATION §4.4).
+- **Scripted Guestbook download:** `get-data.ps1 -Set first -Download` with the team's `.env` was tested
+  into a separate folder (56 s; three files, MD5 verified against Dataverse), and the copies were deleted.
+- **CI:** `.github/workflows/ci.yml` (windows-latest, actions pinned by SHA): ruff + unit tests, green on
+  a150710. The database suites stay local. CONTRIBUTING.md added. Repository description and topics are not
+  set: `gh repo edit` was denied at the permission prompt, so the owner runs it.
+- **JUDGE_QA:** "Most consumers don't have a monitor. Who can use this today?" and "Is the demo data real?"
+- **Tests:** TEST_REPORT 108/108 on a150710 (clean tree; the differential suite run in parts).
 
 ### Next (G7, after the voice-over)
 1. Merge the team's recording: `python -m pipeline.video merge --audio voice`; if a piece runs long, raise the
