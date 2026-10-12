@@ -172,8 +172,8 @@
 - **Scripted Guestbook download:** `get-data.ps1 -Set first -Download` with the team's `.env` was tested
   into a separate folder (56 s; three files, MD5 verified against Dataverse), and the copies were deleted.
 - **CI:** `.github/workflows/ci.yml` (windows-latest, actions pinned by SHA): ruff + unit tests, green on
-  a150710. The database suites stay local. CONTRIBUTING.md added. Repository description and topics are not
-  set: `gh repo edit` was denied at the permission prompt, so the owner runs it.
+  a150710. The database suites stay local. CONTRIBUTING.md added. The owner set the repository
+  description and topics (exasol, sql, open-data, electricity, india, hackathon) with `gh repo edit`.
 - **JUDGE_QA:** "Most consumers don't have a monitor. Who can use this today?" and "Is the demo data real?"
 - **Tests:** TEST_REPORT 108/108 on a150710 (clean tree; the differential suite run in parts).
 
