@@ -2,9 +2,20 @@
 
 **Setup before recording:** `scripts\exa.ps1 status` shows `database_ready`; `scripts\start.ps1`; browser
 at http://127.0.0.1:8000/, window about 1366 × 860; Docker Desktop closed. A silent screen recording of
-this exact flow can be produced automatically:
-`$env:VOLTPROOF_RECORD_VIDEO='1'; scripts\test.ps1 -Suite e2e` (writes a .webm to
-`docs\deliverables\video\`). Record the voice-over on top of it.
+this exact flow can be produced automatically. While recording, the test holds each screen for its segment
+of the timeline below:
+
+```powershell
+$env:VOLTPROOF_RECORD_VIDEO = '1'
+scripts\test.ps1 -Suite e2e -Part 'test_demo_flow.py::test_guided_demo_workflow'
+```
+
+This writes a .webm (1366 × 860, no audio) to `docs\deliverables\video\`. Record the voice-over on top of it.
+
+**Recorded 2026-10-12** on the full Uttar Pradesh build:
+- file: `docs\deliverables\video\voltproof_demo_silent_2026-10-12.webm`;
+- length 2:53, 11.4 MB, nothing else running;
+- not committed (over the 5 MB check; the team decides where to host it).
 
 ## How the guided-demo example is chosen (say this, it pre-empts "cherry-picked?")
 

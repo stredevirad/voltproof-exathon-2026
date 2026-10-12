@@ -89,6 +89,16 @@ def _shot(pg, name: str):
     pg.screenshot(path=str(SHOTS / f"{name}.png"), full_page=False)
 
 
+RECORDING = os.environ.get("VOLTPROOF_RECORD_VIDEO") == "1"
+
+
+def _hold(pg, seconds: float):
+    """While recording the silent demo video, keep each screen up for its narration (docs/DEMO_SCRIPT.md
+    timeline, about 3:00 in total). No effect on normal test runs."""
+    if RECORDING:
+        pg.wait_for_timeout(int(seconds * 1000))
+
+
 def test_guided_demo_workflow(page, server):
     pg = page
     pg.goto(server + "/")
@@ -96,6 +106,7 @@ def test_guided_demo_workflow(page, server):
     pg.get_by_test_id("location-table").wait_for()
     _check_wording(pg, "home")
     _shot(pg, "01_home")
+    _hold(pg, 18)  # 0:00-0:20 start page
 
     # 1. guided demo -> location-month dashboard with KPIs and calendar
     pg.get_by_test_id("guided-demo").click()
@@ -107,6 +118,7 @@ def test_guided_demo_workflow(page, server):
     _check_wording(pg, "month")
     _shot(pg, "02_month_calendar")
     month_url = pg.url
+    _hold(pg, 43)  # 0:20-1:05 banner, KPI tiles, calendar
 
     # 2. the demo day: minute-by-minute trace with the selected outage
     pg.get_by_test_id("demo-next-day").click()
@@ -115,6 +127,7 @@ def test_guided_demo_workflow(page, server):
     pg.wait_for_timeout(600)
     _check_wording(pg, "day")
     _shot(pg, "03_day_trace")
+    _hold(pg, 28)  # 1:05-1:35 voltage trace
 
     # 3. the selected event: timestamps, certainty, provenance, coincidence panel
     pg.get_by_test_id("open-selected-event").click()
@@ -129,6 +142,12 @@ def test_guided_demo_workflow(page, server):
     assert "line" in pg.get_by_test_id("provenance").inner_text()
     _check_wording(pg, "event")
     _shot(pg, "04_event_evidence")
+    if RECORDING:  # 1:35-2:10 evidence: show the provenance table, then come back to the top
+        _hold(pg, 14)
+        pg.mouse.wheel(0, 500)
+        _hold(pg, 12)
+        pg.mouse.wheel(0, -500)
+        _hold(pg, 6)
 
     # 4. back to the month: generate and download the evidence report
     pg.goto(month_url)
@@ -139,6 +158,18 @@ def test_guided_demo_workflow(page, server):
     path = dl.value.path()
     assert Path(path).read_bytes()[:4] == b"%PDF"
     _shot(pg, "05_report_ready")
+    _hold(pg, 8)  # 2:10-2:35 report ready (generation itself takes about 16 s)
+
+    if RECORDING:  # 2:35-3:00 data and sources (2019 files), then the start page
+        pg.goto(server + "/sources")
+        pg.get_by_test_id("files-table").wait_for()
+        _hold(pg, 5)
+        warning = pg.get_by_test_id("file-data-warning")
+        (warning if warning.count() else pg.get_by_test_id("files-table")).scroll_into_view_if_needed()
+        _hold(pg, 13)  # the 2019 rows: one file excluded, one marked as lower bounds
+        pg.goto(server + "/")
+        pg.get_by_test_id("guided-demo").wait_for()
+        _hold(pg, 5)
 
 
 def test_methodology_and_sources_pages(page, server):
