@@ -16,7 +16,8 @@ DIR = REPO_ROOT / "reports" / "tests"
 OUT = REPO_ROOT / "docs" / "TEST_REPORT.md"
 SUITES = ["unit", "integration", "differential", "e2e"]
 WHAT = {
-    "unit": "No database: claims vocabulary, published-text scan, download checks, loader edge cases",
+    "unit": "No database: claims vocabulary, published-text scan, tracked-file sizes, source compile check, "
+            "download checks, loader edge cases",
     "integration": "Hand-written fixtures through the real SQL in Exasol, oracle equality, harness sensitivity, "
                    "evidence-report consistency",
     "differential": "Independent oracle vs SQL on random Hypothesis batches and on real Uttar Pradesh slices",
