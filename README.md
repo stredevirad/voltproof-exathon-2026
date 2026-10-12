@@ -189,7 +189,8 @@ Test results are in [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
 
 Measured on an Intel Core Ultra 5 125H laptop with 15.6 GB RAM ([docs/BENCHMARKS.md](docs/BENCHMARKS.md);
 medians of 3 runs). The full Uttar Pradesh build, from IMPORT through every SQL step, takes:
-- 252.8 s warm and 238.6 s cold (first run after a database restart);
+- 252.8 s warm and 238.6 s cold (first run after a database restart). The cold runs came out faster
+  because they had more free host memory: an unrelated service was stopped before them (BENCHMARKS.md);
 - of which 37.3 s is the native IMPORT of 7,367,581 raw rows;
 - 19.6 s the in-database unpivot to 102,927,720 minute rows;
 - 49.1 s run detection over 102.8 million readings with one window function.
