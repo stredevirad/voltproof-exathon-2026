@@ -9,6 +9,7 @@ Precondition: VOLTPROOF built (scripts\\load.ps1), web app built (app/web/dist).
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
@@ -146,8 +147,16 @@ def test_methodology_and_sources_pages(page, server):
         pg.goto(server + route)
         pg.get_by_text(marker).first.wait_for()
         _check_wording(pg, route)
-    assert "Excluded" in pg.get_by_test_id("files-table").inner_text()
-    assert "lower bounds" in pg.get_by_test_id("file-data-warning").inner_text()  # D-031
+    # What the Sources page must show depends on which files this build loaded (README minimum set vs full UP)
+    with urllib.request.urlopen(server + "/api/meta", timeout=30) as r:
+        files = [f for f in json.loads(r.read())["files"] if f["file_kind"] == "readings"]
+    table = pg.get_by_test_id("files-table").inner_text()
+    if any(f.get("exclude_reason") for f in files):  # 2019 July-Dec loaded: excluded with its reason (D-026)
+        assert "Excluded" in table
+    if any(f.get("data_warning") for f in files):  # 2019 Jan-June loaded: lower-bound warning (D-031)
+        assert "lower bounds" in pg.get_by_test_id("file-data-warning").inner_text()
+    else:
+        assert pg.get_by_test_id("file-data-warning").count() == 0
     _shot(pg, "06_sources")
 
 
