@@ -60,4 +60,7 @@ Write-Host ''
 Write-Host "  VoltProof is starting at  http://127.0.0.1:$Port/" -ForegroundColor Green
 Write-Host '  (press Ctrl+C to stop)'
 Write-Host ''
+# uvicorn logs to stderr; Windows PowerShell 5.1 turns redirected native stderr into error records, which would
+# stop the script (and the server) under 'Stop' when the output is captured to a file (clean-start test, 2026-10-12)
+$ErrorActionPreference = 'Continue'
 & $py -m uvicorn app.api.main:app --host 127.0.0.1 --port $Port
