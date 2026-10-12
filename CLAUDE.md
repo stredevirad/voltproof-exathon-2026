@@ -59,7 +59,9 @@ Tag each passed gate (`gate-N-name`). Deadline: submit by Sat 24 Oct 2026 IST (h
 
 ## Git
 - Small commits at stable milestones; at least one per gate; tag gates. Never force-push or rewrite pushed history.
-- Before every push: secret scan (gitleaks in `.tools\`), size check (>5 MB flagged), no raw data/private docs tracked.
+- Before every push: secret scan (gitleaks in `.tools\`), size check (>5 MB flagged; the one exception is the
+  final narrated video `docs/deliverables/VoltProof_demo.mp4`, up to 40 MB, enforced by
+  `tests/unit/test_tracked_sizes.py`), no raw data/private docs tracked.
 - The first push to origin needs explicit user approval (not yet given as of 2026-10-11).
 
 ## Never do

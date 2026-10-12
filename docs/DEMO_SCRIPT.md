@@ -1,21 +1,24 @@
 # Demo script (video ≤ 3:00, and the live demo on Demo Day)
 
-**Setup before recording:** `scripts\exa.ps1 status` shows `database_ready`; `scripts\start.ps1`; browser
-at http://127.0.0.1:8000/, window about 1366 × 860; Docker Desktop closed. A silent screen recording of
-this exact flow can be produced automatically. While recording, the test holds each screen for its segment
-of the timeline below:
+**The submission video** is made from one timeline file, `docs/deliverables/video_timeline.json`. For each
+screen it holds the narration and how long the screen stays up. The narration to read aloud is
+`docs/deliverables/VOICEOVER_SCRIPT.md` (generated from the timeline).
 
 ```powershell
-$env:VOLTPROOF_RECORD_VIDEO = '1'
-scripts\test.ps1 -Suite e2e -Part 'test_demo_flow.py::test_guided_demo_workflow'
+scripts\get-ffmpeg.ps1                                   # once: pinned, SHA-256-verified ffmpeg in .tools\ (video only)
+.venv\Scripts\python.exe -m pipeline.video tts --update-holds   # draft narration; raises holds that are too short
+.venv\Scripts\python.exe -m pipeline.video record        # warm-up, then the paced silent recording (1366 x 860)
+.venv\Scripts\python.exe -m pipeline.video merge --audio tts    # DRAFT with the built-in Windows voice
+.venv\Scripts\python.exe -m pipeline.video merge --audio voice  # the team's one-take recording, split at its pauses
 ```
 
-This writes a .webm (1366 × 860, no audio) to `docs\deliverables\video\`. Record the voice-over on top of it.
+Each narration piece starts at its screen's actual start in the recording. If a piece is longer than its
+screen, the tool says which hold to raise. Then re-record; the audio is never sped up. The silent take and
+the drafts stay in the gitignored `reports\video-run\`. Only the final narrated MP4 is committed, as
+`docs/deliverables/VoltProof_demo.mp4`, once the team confirms it.
 
-**Recorded 2026-10-12** on the full Uttar Pradesh build:
-- file: `docs\deliverables\video\voltproof_demo_silent_2026-10-12.webm`;
-- length 2:53, 11.4 MB, nothing else running;
-- not committed (over the 5 MB check; the team decides where to host it).
+**Live demo:** see docs/deliverables/LIVE_DEMO_RUNBOOK.md. The table below is the original 3-minute plan
+that the timeline implements.
 
 ## How the guided-demo example is chosen (say this, it pre-empts "cherry-picked?")
 

@@ -2,7 +2,8 @@
 
 Starts uvicorn on a free port, drives Chromium through the judge's workflow, checks the claims vocabulary on
 every page, and saves screenshots to docs/deliverables/screenshots/ for the README and deck.
-Set VOLTPROOF_RECORD_VIDEO=1 to also record a silent video of the flow (docs/deliverables/video/).
+Set VOLTPROOF_RECORD_VIDEO=1 to also record a silent video of the flow (reports/video-run/raw/, gitignored),
+paced by docs/deliverables/video_timeline.json (see pipeline/video.py).
 
 Precondition: VOLTPROOF built (scripts\\load.ps1), web app built (app/web/dist).
 """
@@ -25,7 +26,9 @@ from tests.support.claims import forbidden_hits
 pytestmark = [pytest.mark.e2e, pytest.mark.exasol]
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SHOTS = REPO_ROOT / "docs" / "deliverables" / "screenshots"
-VIDEO = REPO_ROOT / "docs" / "deliverables" / "video"
+VIDEO = REPO_ROOT / "reports" / "video-run" / "raw"
+TIMELINE_FILE = REPO_ROOT / "docs" / "deliverables" / "video_timeline.json"
+ACTUAL_FILE = REPO_ROOT / "reports" / "video-run" / "timeline_actual.json"
 
 
 def _free_port() -> int:
@@ -73,6 +76,7 @@ def page(server):
             ctx_args["record_video_size"] = {"width": 1366, "height": 860}
         ctx = browser.new_context(**ctx_args)
         pg = ctx.new_page()
+        _REC["t0"] = time.monotonic()  # the recording starts with the page
         pg.set_default_timeout(30_000)
         yield pg
         ctx.close()
@@ -90,13 +94,44 @@ def _shot(pg, name: str):
 
 
 RECORDING = os.environ.get("VOLTPROOF_RECORD_VIDEO") == "1"
+_REC: dict = {"t0": time.monotonic(), "marks": {}}
 
 
-def _hold(pg, seconds: float):
-    """While recording the silent demo video, keep each screen up for its narration (docs/DEMO_SCRIPT.md
-    timeline, about 3:00 in total). No effect on normal test runs."""
+def _segment(seg_id: str):
+    """While recording: a narration segment starts now (offset from the start of the video is logged)."""
     if RECORDING:
-        pg.wait_for_timeout(int(seconds * 1000))
+        _REC["marks"][seg_id] = round(time.monotonic() - _REC["t0"], 2)
+
+
+def _hold(pg, seg_id: str, share: float = 1.0):
+    """While recording: wait until `share` of the segment's hold (video_timeline.json) has passed since the
+    segment started, so slow or fast page actions never shift later segments. No effect on normal runs."""
+    if not RECORDING:
+        return
+    segments = json.loads(TIMELINE_FILE.read_text(encoding="utf-8"))["segments"]
+    hold = {s["id"]: s for s in segments}[seg_id]["hold"]
+    wait = _REC["marks"][seg_id] + hold * share - (time.monotonic() - _REC["t0"])
+    if wait > 0:
+        pg.wait_for_timeout(int(wait * 1000))
+
+
+def _caption(pg, text: str | None):
+    """While recording: a visible caption (e.g. 'Illustrative example') over the page; None removes it."""
+    if not RECORDING:
+        return
+    if text is None:
+        pg.evaluate("() => document.getElementById('vp-caption')?.remove()")
+        return
+    pg.evaluate("""t => { const d = document.createElement('div'); d.id = 'vp-caption'; d.textContent = t;
+        Object.assign(d.style, {position: 'fixed', right: '28px', bottom: '28px', padding: '10px 16px',
+          background: 'rgba(11,11,11,.78)', color: '#fff', font: '600 18px Segoe UI, sans-serif',
+          borderRadius: '6px', zIndex: 9999}); document.body.appendChild(d); }""", text)
+
+
+def _save_marks():
+    if RECORDING:
+        ACTUAL_FILE.parent.mkdir(parents=True, exist_ok=True)
+        ACTUAL_FILE.write_text(json.dumps({"segments": _REC["marks"]}, indent=1), encoding="utf-8")
 
 
 def test_guided_demo_workflow(page, server):
@@ -106,10 +141,14 @@ def test_guided_demo_workflow(page, server):
     pg.get_by_test_id("location-table").wait_for()
     _check_wording(pg, "home")
     _shot(pg, "01_home")
-    _hold(pg, 18)  # 0:00-0:20 start page
+    _segment("intro")
+    _caption(pg, "Illustrative example")
+    _hold(pg, "intro")
+    _caption(pg, None)
 
     # 1. guided demo -> location-month dashboard with KPIs and calendar
     pg.get_by_test_id("guided-demo").click()
+    _segment("month")
     pg.get_by_test_id("demo-banner").wait_for()
     pg.get_by_test_id("calendar").wait_for()
     assert pg.get_by_test_id("kpi-interruptions").inner_text().strip()
@@ -118,19 +157,21 @@ def test_guided_demo_workflow(page, server):
     _check_wording(pg, "month")
     _shot(pg, "02_month_calendar")
     month_url = pg.url
-    _hold(pg, 43)  # 0:20-1:05 banner, KPI tiles, calendar
+    _hold(pg, "month")
 
     # 2. the demo day: minute-by-minute trace with the selected outage
     pg.get_by_test_id("demo-next-day").click()
+    _segment("day")
     pg.get_by_test_id("voltage-trace").wait_for()
     pg.get_by_test_id("day-events").wait_for()
     pg.wait_for_timeout(600)
     _check_wording(pg, "day")
     _shot(pg, "03_day_trace")
-    _hold(pg, 28)  # 1:05-1:35 voltage trace
+    _hold(pg, "day")
 
     # 3. the selected event: timestamps, certainty, provenance, coincidence panel
     pg.get_by_test_id("open-selected-event").click()
+    _segment("event")
     pg.get_by_test_id("event-details").wait_for()
     assert pg.get_by_test_id("event-start").inner_text().strip()
     assert pg.get_by_test_id("start-certainty").inner_text().strip()
@@ -142,15 +183,16 @@ def test_guided_demo_workflow(page, server):
     assert "line" in pg.get_by_test_id("provenance").inner_text()
     _check_wording(pg, "event")
     _shot(pg, "04_event_evidence")
-    if RECORDING:  # 1:35-2:10 evidence: show the provenance table, then come back to the top
-        _hold(pg, 14)
+    if RECORDING:  # show the provenance table, then come back to the panel of other monitors
+        _hold(pg, "event", 0.45)
         pg.mouse.wheel(0, 500)
-        _hold(pg, 12)
+        _hold(pg, "event", 0.8)
         pg.mouse.wheel(0, -500)
-        _hold(pg, 6)
+        _hold(pg, "event")
 
     # 4. back to the month: generate and download the evidence report
     pg.goto(month_url)
+    _segment("report")
     pg.get_by_test_id("generate-report").click()
     pg.get_by_test_id("report-links").wait_for(timeout=120_000)
     with pg.expect_download() as dl:
@@ -158,18 +200,21 @@ def test_guided_demo_workflow(page, server):
     path = dl.value.path()
     assert Path(path).read_bytes()[:4] == b"%PDF"
     _shot(pg, "05_report_ready")
-    _hold(pg, 8)  # 2:10-2:35 report ready (generation itself takes about 16 s)
+    _hold(pg, "report")
 
-    if RECORDING:  # 2:35-3:00 data and sources (2019 files), then the start page
+    if RECORDING:  # data and sources (the 2019 files), then the start page
         pg.goto(server + "/sources")
+        _segment("sources")
         pg.get_by_test_id("files-table").wait_for()
-        _hold(pg, 5)
+        _hold(pg, "sources", 0.25)
         warning = pg.get_by_test_id("file-data-warning")
         (warning if warning.count() else pg.get_by_test_id("files-table")).scroll_into_view_if_needed()
-        _hold(pg, 13)  # the 2019 rows: one file excluded, one marked as lower bounds
+        _hold(pg, "sources")
         pg.goto(server + "/")
+        _segment("close")
         pg.get_by_test_id("guided-demo").wait_for()
-        _hold(pg, 5)
+        _hold(pg, "close")
+        _save_marks()
 
 
 def test_methodology_and_sources_pages(page, server):
