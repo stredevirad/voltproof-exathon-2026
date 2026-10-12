@@ -66,7 +66,7 @@ def split_statements(sql: str) -> list[str]:
             stmts.append(text[:-1].rstrip())
             buf = []
     tail = "\n".join(buf).strip()
-    if tail and not all(l.strip().startswith("--") or not l.strip() for l in buf):
+    if tail and not all(ln.strip().startswith("--") or not ln.strip() for ln in buf):
         stmts.append(tail)
     return stmts
 

@@ -20,8 +20,15 @@ from pipeline import build, synthetic
 from pipeline.db import connect, schema_dataset
 from tests.oracle.reference import run
 from tests.support.claims import forbidden_hits
-from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
-                                   oracle_coincidence, params_from_yaml)
+from tests.support.compare import (
+    diff,
+    diff_coincidence,
+    fetch_coincidence,
+    fetch_sql,
+    oracle_as_comparable,
+    oracle_coincidence,
+    params_from_yaml,
+)
 from tests.support.rawfiles import name_matcher, read_rows
 
 pytestmark = pytest.mark.exasol

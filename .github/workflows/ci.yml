@@ -1,0 +1,35 @@
+# Lint and unit tests on every push and pull request. These need no database.
+# The integration, differential and end-to-end suites need a running Exasol Personal deployment
+# (Podman/WSL 2 and about 9 GB of RAM for the database), which a hosted runner does not provide. Run them
+# locally with scripts\test.ps1; docs/TEST_REPORT.md records the latest full run.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Lint and unit tests (no database)
+    runs-on: windows-latest  # the target platform: the scripts and the app run on Windows 10/11
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --frozen
+      - name: Ruff
+        run: uv run --frozen ruff check .
+      - name: Unit tests
+        run: uv run --frozen pytest tests/unit -q -p no:cacheprovider

@@ -8,7 +8,6 @@ Coincidence expectations (R-19..R-21, fixtures F13/F14) are asserted by the G4 t
 
 from __future__ import annotations
 
-import csv
 import datetime as dt
 import json
 
@@ -19,9 +18,16 @@ from pipeline.load_raw import load_paths
 from pipeline.run_sql import resolve_steps, run_steps
 from tests.fixtures.render import all_specs, render
 from tests.oracle.reference import run
+from tests.support.compare import (
+    diff,
+    diff_coincidence,
+    fetch_coincidence,
+    fetch_sql,
+    oracle_as_comparable,
+    oracle_coincidence,
+    params_from_yaml,
+)
 from tests.support.rawfiles import name_matcher, read_rows
-from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
-                                   oracle_coincidence, params_from_yaml)
 
 pytestmark = pytest.mark.exasol
 

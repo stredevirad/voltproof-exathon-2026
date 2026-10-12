@@ -30,7 +30,7 @@ def main() -> int:
             try:
                 st = c.execute(q)
                 cols = st.column_names()
-                out[name] = [dict(zip(cols, map(str, r))) for r in st.fetchall()]
+                out[name] = [dict(zip(cols, map(str, r), strict=False)) for r in st.fetchall()]
             except Exception as e:
                 out[name] = f"error: {' '.join(str(getattr(e, 'message', e)).split())[:300]}"
     print(json.dumps(out, indent=1)[:8000])

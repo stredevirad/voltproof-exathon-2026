@@ -17,11 +17,12 @@ OUT = REPO_ROOT / "docs" / "TEST_REPORT.md"
 SUITES = ["unit", "integration", "differential", "e2e"]
 WHAT = {
     "unit": "No database: claims vocabulary, published-text scan, tracked-file sizes, source compile check, "
-            "download checks, loader edge cases",
+            "download checks, loader edge cases, SYNTHETIC demo generator (deterministic, labelled)",
     "integration": "Hand-written fixtures through the real SQL in Exasol, oracle equality, harness sensitivity, "
-                   "evidence-report consistency",
+                   "evidence-report consistency, SYNTHETIC demo set (separation guards, oracle equality)",
     "differential": "Independent oracle vs SQL on random Hypothesis batches and on real Uttar Pradesh slices",
-    "e2e": "Playwright drives the guided demo in Chromium against a real server; wording scan on every page",
+    "e2e": "Playwright drives the guided demo in Chromium against a real server; wording scan on every page; "
+           "SYNTHETIC banner and no real-data figures on the demo set",
 }
 
 

@@ -77,10 +77,10 @@ def baseline(events: list[dict], delta: int, theta: int, n_shifts: int) -> list[
         locs = sorted({(e["order"], e["location"]) for e in evs})
         j_of = {loc: j for j, (_, loc) in enumerate(locs)}
 
-        def in_month(x):
+        def in_month(x, y=y, m=m):
             return x["start"].year == y and x["start"].month == m
 
-        def count(shift_k: int) -> int:
+        def count(shift_k: int, evs=evs, j_of=j_of, days=days, in_month=in_month) -> int:
             shifted = []
             for e in evs:
                 s = (j_of[e["location"]] * shift_k) % days

@@ -131,7 +131,7 @@ def test_data_warning_only_in_reports_for_affected_months(generated):
     """D-031: a report for a 2019 Jan-Jun month carries the source-file warning; the 2018 demo report does not."""
     assert generated["side"]["data_warning"] is None
     assert 'data-testid="data-warning"' not in generated["html"]
-    assert not any(l.startswith("Source-file data defect") for l in generated["side"]["method"]["limitations"])
+    assert not any(x.startswith("Source-file data defect") for x in generated["side"]["method"]["limitations"])
     with connect(schema=S) as c:
         row = c.execute("SELECT LOCATION_ID, MONTH_KEY FROM MONTHLY WHERE MONTH_KEY = '2019-01' "
                         "ORDER BY LOCATION_ID LIMIT 1").fetchone()
@@ -142,7 +142,7 @@ def test_data_warning_only_in_reports_for_affected_months(generated):
     html = report.path_for(out["report_id"], "html").read_text(encoding="utf-8")
     assert side["data_warning"] and "lower bounds" in side["data_warning"]
     assert 'data-testid="data-warning"' in html
-    assert any(l.startswith("Source-file data defect") for l in side["method"]["limitations"])
+    assert any(x.startswith("Source-file data defect") for x in side["method"]["limitations"])
     assert not forbidden_hits(unescape(re.sub(r"<[^>]+>", " ", html)))
 
 

@@ -99,9 +99,9 @@ def fetch_sql(conn, schema: str, location_names: list[str] | None = None) -> dic
             "end_certainty": r[7], "is_interruption": bool(r[8]), "zero_minutes": int(r[9]),
         })
     for r in daily:
-        out["daily"][(r[0], _day(r[1]))] = dict(zip(DAILY_FIELDS, (int(x) for x in r[2:])))
+        out["daily"][(r[0], _day(r[1]))] = dict(zip(DAILY_FIELDS, (int(x) for x in r[2:]), strict=True))
     for r in monthly:
-        vals = dict(zip(list(DAILY_FIELDS), (int(x) for x in r[2:13])))
+        vals = dict(zip(list(DAILY_FIELDS), (int(x) for x in r[2:13]), strict=True))
         vals["comparable"] = bool(r[13])
         out["monthly"][(r[0], r[1])] = vals
     return out

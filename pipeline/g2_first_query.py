@@ -97,7 +97,7 @@ def main(location: str, day_str: str) -> int:
     same = sql_cmp == py_cmp
     print(f"independent raw-CSV check: {len(py_cmp)} islands, identical to Exasol result: {same}")
     if not same:
-        for x, y in zip(sql_cmp, py_cmp):
+        for x, y in zip(sql_cmp, py_cmp, strict=False):
             if x != y:
                 print("  first difference:", x, "vs", y)
                 break

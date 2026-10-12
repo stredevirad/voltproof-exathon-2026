@@ -52,7 +52,7 @@ def check_header(path: Path, kind: str) -> None:
     header = [c.strip() for c in first.split(",")]
     expected = LOCATIONS_HEADER if kind == "locations" else READINGS_HEADER
     if header != expected:
-        diff_at = next((i for i, (a, b) in enumerate(zip(header, expected)) if a != b), min(len(header), len(expected)))
+        diff_at = next((i for i, (a, b) in enumerate(zip(header, expected, strict=False)) if a != b), min(len(header), len(expected)))
         raise RawFileError(
             f"{path.name}: unexpected header (column {diff_at + 1}: got "
             f"{header[diff_at] if diff_at < len(header) else '<missing>'!r}, expected "

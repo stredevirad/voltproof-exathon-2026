@@ -67,7 +67,7 @@ def figure8_estimate() -> dict[tuple[str, str], float]:
     x0, x1 = legend[0][0], legend[-1][0]
 
     def hours(rgb):
-        x = min(legend, key=lambda s: sum((a - b) ** 2 for a, b in zip(s[1], rgb)))[0]
+        x = min(legend, key=lambda s: sum((a - b) ** 2 for a, b in zip(s[1], rgb, strict=False)))[0]
         return 5 * (x - x0) / (x1 - x0)
 
     out = {}
@@ -162,7 +162,8 @@ def profiles_from_figures() -> dict[str, list[dict[str, float]]]:
             for col in d["bars"]:
                 counts = dict.fromkeys(CLASSES, 0)
                 for c in col:
-                    dist, k = min((sum((a - b) ** 2 for a, b in zip(c, ref)), k) for k, ref in zip(CLASSES, d["legend"]))
+                    dist, k = min((sum((a - b) ** 2 for a, b in zip(c, ref, strict=False)), k)
+                                   for k, ref in zip(CLASSES, d["legend"], strict=False))
                     if dist < 400:  # within ~20 RGB units of a legend colour; skips white, gridlines, text
                         counts[k] += 1
                 total = sum(counts.values())
@@ -185,7 +186,7 @@ def profiles_from_exasol() -> dict[str, dict[str, dict[str, float]]]:
     out: dict[str, dict[str, dict[str, float]]] = {}
     for lid, m, ndays, *mins in rows:
         h = [float(v) / 60 / float(ndays) for v in mins]
-        out.setdefault(str(lid), {})[m] = dict(zip(CLASSES, h + [24 - sum(h)]))
+        out.setdefault(str(lid), {})[m] = dict(zip(CLASSES, h + [24 - sum(h)], strict=False))
     return out
 
 
@@ -198,7 +199,7 @@ def compare_profiles() -> None:
     for name, (_, lid, _, months) in PROFILES.items():
         print(f"\n{name} (our location {lid})")
         print(f"  {'month':8s}" + "".join(f"{k:>18s}" for k in CLASSES))
-        for m, f in zip(months, fig[name]):
+        for m, f in zip(months, fig[name], strict=False):
             o = ours.get(str(lid), {}).get(m)
             if o is None:
                 print(f"  {m:8s}" + "".join(f"{f[k]:8.1f}  {'(none)':>8s}" for k in CLASSES))

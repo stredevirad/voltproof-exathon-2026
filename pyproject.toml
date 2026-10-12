@@ -36,3 +36,8 @@ markers = [
 [tool.ruff]
 line-length = 110
 target-version = "py312"
+
+[tool.ruff.lint]
+# What CI enforces (.github/workflows/ci.yml): pyflakes, syntax/statement errors, import order, bugbear.
+# Line length is not enforced: long SQL strings and tables read better unwrapped.
+select = ["E4", "E7", "E9", "F", "I", "B"]

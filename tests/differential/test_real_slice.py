@@ -8,7 +8,6 @@ same data as the SQL whatever subset (first / up / all) was loaded.
 
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
 import pytest
@@ -16,8 +15,15 @@ import yaml
 
 from pipeline.db import DEFAULT_SCHEMA, connect
 from tests.oracle.reference import RawRow, run
-from tests.support.compare import (diff, diff_coincidence, fetch_coincidence, fetch_sql, oracle_as_comparable,
-                                   oracle_coincidence, params_from_yaml)
+from tests.support.compare import (
+    diff,
+    diff_coincidence,
+    fetch_coincidence,
+    fetch_sql,
+    oracle_as_comparable,
+    oracle_coincidence,
+    params_from_yaml,
+)
 
 pytestmark = pytest.mark.exasol
 
