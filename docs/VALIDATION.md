@@ -242,5 +242,31 @@ the README, on 2026-10-12. Same database and the same `VOLTPROOF_CLEAN` schema; 
 | 4. `scripts\start.ps1 -Port 8090` | ✅ health ok (`VOLTPROOF_CLEAN`, commit `225b3a0b1845`), guided demo event `183-201807251827`, home page HTTP 200 | – |
 | 5. `scripts\test.ps1` | ✅ unit 22; integration 63 (1 skipped: no 2019 data); differential 4; e2e 3 (1 skipped: no 2019 data); **all passed** | 183 s |
 
-No step needed knowledge outside the README. The two clones are left in `D:\Temp\` (`voltproof-clean`,
-`voltproof-clean-2`), and the schema `VOLTPROOF_CLEAN` is left in the database for inspection.
+No step needed knowledge outside the README. Both clones and the schema `VOLTPROOF_CLEAN` were removed later.
+
+### 4.4 No-download quick start from GitHub (commit `35bc78a`)
+
+On 2026-10-12, `git clone https://github.com/stredevirad/voltproof-exathon-2026.git D:\Temp\voltproof-clean-3`
+was followed by the new README quick start: bootstrap, `load -Set demo`, start. Nothing was downloaded
+from Dataverse and nothing was copied from the main checkout.
+
+Setup:
+- **Machine and database:** the same machine and the same running database as above.
+- **Schema:** the database is shared with the main build, so `VOLTPROOF` exists, and `start.ps1` and
+  `test.ps1` would prefer it. To reproduce a machine that has only the demo set,
+  `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_DEMO'` was set before steps 3 and 4.
+- **"Working":** the app counted as working only when `/api/meta` reported `synthetic: true` and
+  `/api/demo` returned the synthetic event. HTTP 200 alone was not enough.
+
+| README step | Result | Time |
+|---|---|---|
+| `git clone` | ✅ commit `35bc78a9ff04` | 36.3 s |
+| `Set-ExecutionPolicy -Scope Process Bypass`; `scripts\bootstrap.ps1` | ✅ launcher and gitleaks SHA-256 verified; Python 3.12 environment, Chromium and web build, all inside the clone | 234.8 s |
+| 1. `scripts\exa.ps1 status` | ⚠️ printed `database_connection_failed` ("may still be starting up") although the database was running. Bootstrap had just finished building the web app. `load.ps1`'s readiness check, which retries, found it ready a moment later. The README now says to run `status` again in that case | 18.8 s |
+| 2. `scripts\load.ps1 -Set demo` | ✅ generated the SYNTHETIC files; 20 locations, 885,480 clean minutes, 1,315 events, 20 comparable location-months. One transient IMPORT transport error was retried automatically (D-032) | 24.8 s |
+| 3. `scripts\start.ps1 -Port 8090` | ✅ `/api/health`: schema `VOLTPROOF_DEMO`, 20 locations, 1,315 events. `/api/meta`: `synthetic: true`. `/api/demo`: event `1-203001171842`, "Synthpur (SYNTHETIC) \| 2030-01-17 18:42". Home page: HTTP 200 | 13.2 s to the guided demo |
+| **Clone to working app** | **steps above, end to end** | **328 s (5 min 28 s)** |
+| 4. `scripts\test.ps1` (after stopping the app) | ✅ unit 27. Integration 70, 1 skipped (no 2019 month). Differential 2; the 2 real-data slice tests skipped with "raw files loaded in VOLTPROOF_DEMO are not present in data/raw". E2e 5, 1 skipped (no 2019 month). **All passed**; the real-data tests skip cleanly on a demo-only machine | 139 s |
+
+Installing Podman and Exasol Personal is not in the 328 s. It is a one-time step that this run skipped,
+because the database already existed. The clone is left in `D:\Temp\voltproof-clean-3`.

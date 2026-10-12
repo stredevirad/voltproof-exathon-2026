@@ -2,6 +2,8 @@ Households and small shops on unreliable electricity can't show when, and for ho
 
 # VoltProof
 
+[![CI](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml/badge.svg)](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml)
+
 **Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.**
 
 ExaThon India 2026, Track 3. Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI).
@@ -84,6 +86,8 @@ scripts\exa.ps1 status
 ```
 
 - If it prints `database_ready`, go to step 2.
+- If it prints `database_connection_failed`, the database may still be starting or busy: wait a moment and
+  run `status` again.
 - After a Windows restart, run `scripts\exa.ps1 start`.
 - First time on this machine:
 
@@ -119,6 +123,12 @@ scripts\test.ps1
 
 The tests that need the real files skip cleanly on a demo-only machine. The synthetic set is also checked
 against the independent oracle in full.
+
+GitHub Actions ([ci.yml](.github/workflows/ci.yml)) runs ruff and the unit tests on every push and pull
+request. The integration, differential and end-to-end suites are not in CI: they need a running Exasol
+Personal database (Podman/WSL 2 and about 9 GB of RAM for the database), which hosted runners don't
+provide. They run locally with `scripts\test.ps1`, and [docs/TEST_REPORT.md](docs/TEST_REPORT.md) records
+the latest full run. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Real data (ESMI, Harvard Dataverse)
 
