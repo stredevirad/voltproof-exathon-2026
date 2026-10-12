@@ -57,8 +57,8 @@ Docker Desktop closed while the database runs. Full details and troubleshooting 
 ```powershell
 git clone https://github.com/stredevirad/voltproof-exathon-2026.git D:\Projects\VoltProof
 cd D:\Projects\VoltProof
-Set-ExecutionPolicy -Scope Process Bypass        # this terminal only; lets the repository's scripts run
-scripts\bootstrap.ps1                            # Python 3.12, dependencies, Exasol launcher, Chromium, web build (all inside the repo)
+Set-ExecutionPolicy -Scope Process Bypass        # this terminal only; repeat it in every new terminal
+scripts\bootstrap.ps1                            # about 3 minutes: Python 3.12, dependencies, Exasol launcher, Chromium, web build (all inside the repo)
 ```
 
 **1. Exasol Personal.** Check whether a database is already running:
@@ -88,7 +88,7 @@ short Guestbook form, so you download them yourself.
    guided demo and the tests.
 
 **3. Build the analysis inside Exasol.** This verifies checksums against Dataverse, loads with native
-`IMPORT`, runs every SQL step and checks provenance.
+`IMPORT`, runs every SQL step and checks provenance. It took 27 seconds in the clean-start test.
 
 ```powershell
 scripts\load.ps1 -Set first
@@ -97,10 +97,10 @@ scripts\load.ps1 -Set first
 **4. Open the app** at http://127.0.0.1:8000/ and press **Start guided demo**:
 
 ```powershell
-scripts\start.ps1
+scripts\start.ps1                # stop it with Ctrl+C; stop it before rebuilding with load.ps1
 ```
 
-**5. Run the tests** (unit, integration, differential, end-to-end):
+**5. Run the tests** (unit, integration, differential, end-to-end; about 3 minutes on the minimum set):
 
 ```powershell
 scripts\test.ps1

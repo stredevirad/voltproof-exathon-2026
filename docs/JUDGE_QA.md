@@ -167,6 +167,13 @@ By a committed rule (app/api/service.py `DEMO_RULE`, docs/DEMO_SCRIPT.md):
 The UI labels it as one example selected by that rule, not a typical month.
 
 **22. Can a judge reproduce this?**
-Yes. Four commands after cloning, with timings recorded in docs/VALIDATION.md (clean-start test
-*(G6 pending)*): `scripts\bootstrap.ps1`, `scripts\exa.ps1 install local`, `scripts\get-data.ps1`,
-`scripts\load.ps1`. The data download needs each user's own Dataverse Guestbook entry.
+Yes, and we tested it. On 2026-10-12 a fresh clone followed only the README (docs/VALIDATION.md §4):
+- bootstrap took 188 s;
+- the database status check found an existing deployment, so the install was skipped;
+- with the minimum data set, the build took 27 s;
+- the app served the guided demo;
+- every test suite passed in 161 s.
+
+The first run found two bugs (a server-start problem when output is redirected, and an end-to-end test
+that assumed the full data set), which were fixed before the repeat. The data download needs each user's
+own Dataverse Guestbook entry. The full Uttar Pradesh build is an optional README step.

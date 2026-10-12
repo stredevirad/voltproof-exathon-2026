@@ -186,3 +186,49 @@ The single-monitor comparison exposed a defect in `ESMI voltage data 2019 Jan-Ju
 Step 110 is not part of `scripts\load.ps1`, because it is a UP-specific validation, not a product
 feature. `pipeline.prayas_figures` is not part of the clean start, because it needs the network. The
 figures stay in `.cache` and are never committed; they are Prayas's work.
+
+## 4. Clean-start test (G6): a fresh clone, following only the README
+
+**Setup.**
+- **Clone:** `D:\Temp\voltproof-clean`, cloned on 2026-10-12 from the local repository at commit `83fd1ce`.
+  The final repeat clones from GitHub after the G6 push (§4.3).
+- **Database:** the existing Exasol Personal deployment, already running. The README branch "`status`
+  prints `database_ready`, go to step 2" was taken; `exa.ps1 install` was not run.
+- **Schema:** the build went into a separate schema, `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_CLEAN'`, as the
+  README describes, so the main build was untouched.
+- **Data:** the README minimum set. The three files were hardlinked from the repository's `data\raw`, in
+  place of the browser downloads the README asks for (same names and bytes; the Dataverse Guestbook is a
+  manual step).
+
+### 4.1 Iteration 1 (commit `83fd1ce`)
+
+| README step | Result | Time |
+|---|---|---|
+| `Set-ExecutionPolicy -Scope Process Bypass`; `scripts\bootstrap.ps1` | ✅ launcher and gitleaks SHA-256 verified; Python env, Chromium and web build done | 188 s |
+| 1. `scripts\exa.ps1 status` | ✅ `database_ready` (install skipped, as the README says) | – |
+| 2. Data | ✅ three files in `data\raw\` | – |
+| 3. `scripts\load.ps1 -Set first` | ✅ checksums verified against Dataverse; 98 monitors, 10,424,400 clean minutes, 52,810 events; provenance 45/45 | 26.6 s |
+| 4. `scripts\start.ps1 -Port 8090` | ❌ the server stopped right after starting **when its output was redirected to a file** (how the test captured it). Windows PowerShell 5.1 turns uvicorn's stderr log lines into error records, and the script's `Stop` preference then ends it. Run directly, uvicorn served `/api/health` (schema `VOLTPROOF_CLEAN`), `/api/demo` (the same Bahraich, 25 July 2018 example) and the home page (HTTP 200) | – |
+| 5. `scripts\test.ps1` | ❌ e2e `test_methodology_and_sources_pages` failed: it expected an "Excluded" file on the Sources page, which exists only when the full Uttar Pradesh set (with 2019 July–Dec) is loaded. Unit 22, integration 63 (1 skipped), differential 4 passed | 147 s |
+
+**Fixes, each committed before the next iteration:**
+- `3671dfb`: `start.ps1` keeps the server running when its output is redirected.
+- `3f2dd80`: the e2e Sources-page checks follow the files actually loaded.
+
+**README changes from this run:**
+- repeat the execution-policy line in every new terminal;
+- measured times for bootstrap, the minimum build and the tests;
+- how to stop the app.
+
+No step needed knowledge that the README did not give.
+
+### 4.2 Iteration 2 (`git pull` to `3f2dd80`)
+
+| README step | Result | Time |
+|---|---|---|
+| 4. `scripts\start.ps1 -Port 8090` (output redirected) | ✅ `/api/health`: database ok, schema `VOLTPROOF_CLEAN`, 98 locations, 52,810 events | – |
+| 5. `scripts\test.ps1` (all suites, one command) | ✅ unit 22 passed; integration 63 passed, 1 skipped (the 2019-month report test: no 2019 data in the minimum set); differential 4 passed; e2e 3 passed, 1 skipped (the 2019 banner test, same reason) | 161 s |
+
+### 4.3 Final repeat from GitHub
+
+Recorded after the G6 push (see PROGRESS).
