@@ -25,17 +25,34 @@ WHAT = {
 
 
 def _meta() -> dict:
-    for name in ("run_meta_all.json", *(f"run_meta_{s}.json" for s in SUITES)):
-        p = DIR / name
-        if p.exists():
-            return json.loads(p.read_text(encoding="utf-8-sig"))
-    return {}
+    """Merge every run_meta_*.json of this campaign (whole suites or parts, see scripts\\test.ps1 -Part)."""
+    metas = [json.loads(p.read_text(encoding="utf-8-sig")) for p in sorted(DIR.glob("run_meta_*.json"))]
+    if not metas:
+        return {}
+    merged = {"commit": ", ".join(sorted({m.get("commit") or "unknown" for m in metas})),
+              "uncommitted_files": max(int(m.get("uncommitted_files") or 0) for m in metas),
+              "started": min(m.get("started", "?") for m in metas), "finished": max(m.get("finished", "?") for m in metas),
+              "schema": ", ".join(sorted({m.get("schema", "?") for m in metas})),
+              "hypothesis_examples": ", ".join(sorted({str(m.get("hypothesis_examples", "?")) for m in metas})),
+              "parts": sorted(m["part"] for m in metas if m.get("part"))}
+    for s in SUITES:
+        walls = [float(m[f"wall_seconds_{s}"]) for m in metas if f"wall_seconds_{s}" in m]
+        if walls:
+            merged[f"wall_seconds_{s}"] = sum(walls)
+    return merged
 
 
 def _suite(name: str) -> dict | None:
-    p = DIR / f"{name}.xml"
-    if not p.exists():
+    files = sorted([*DIR.glob(f"{name}.xml"), *DIR.glob(f"{name}+*.xml")])
+    if not files:
         return None
+    parts = [_one(p) for p in files]
+    return {"tests": sum(p["tests"] for p in parts), "failures": sum(p["failures"] for p in parts),
+            "errors": sum(p["errors"] for p in parts), "skipped": sum(p["skipped"] for p in parts),
+            "time": sum(p["time"] for p in parts), "cases": [c for p in parts for c in p["cases"]]}
+
+
+def _one(p: Path) -> dict:
     root = ET.parse(p).getroot()
     ts = root if root.tag == "testsuite" else root.find("testsuite")
     cases = []
@@ -66,6 +83,8 @@ def render() -> str:
                                               f" with {dirty} uncommitted tracked file(s)" if dirty else ""),
          f"- **Run:** {meta.get('started', '?')} to {meta.get('finished', '?')} (local time); schema "
          f"`{meta.get('schema', '?')}`; Hypothesis examples per test: {meta.get('hypothesis_examples', '?')}",
+         *([f"- **Run in parts** (`scripts\\test.ps1 -Suite <suite> -Part <path>`, to keep each command under 10 "
+            f"minutes): {', '.join(f'`{x}`' for x in meta['parts'])}"] if meta.get("parts") else []),
          "", "| Suite | What it checks | Tests | Passed | Failed | Errors | Skipped | Time |",
          "|---|---|---:|---:|---:|---:|---:|---:|"]
     tot = defaultdict(float)

@@ -143,20 +143,20 @@
 
 <!-- 6. Why Exasol -->
 <section class="slide">
-  <p class="kicker">Why Exasol · measured on a 15.6 GB laptop</p>
-  <h2>102.8 million minutes, full build in TODO-BENCH-WALL</h2>
+  <p class="kicker">Why Exasol · warm medians, 15.6 GB laptop</p>
+  <h2>102.8 million minutes, full build in 252.8 s</h2>
   <div class="grid g3">
-    <div class="card"><div class="stat">TODO-BENCH-IMPORT</div><div class="stat-label">native IMPORT of 7.37 M raw rows (11 files)</div></div>
-    <div class="card"><div class="stat">TODO-BENCH-UNPIVOT</div><div class="stat-label">in-database unpivot to 102.9 M minute rows</div></div>
-    <div class="card"><div class="stat">TODO-BENCH-RUNS</div><div class="stat-label">gaps-and-islands over 102.8 M readings (one window function)</div></div>
+    <div class="card"><div class="stat">37.3 s</div><div class="stat-label">native IMPORT of 7,367,581 raw rows (11 files)</div></div>
+    <div class="card"><div class="stat">19.6 s</div><div class="stat-label">in-database unpivot to 102,927,720 minute rows</div></div>
+    <div class="card"><div class="stat">49.1 s</div><div class="stat-label">gaps-and-islands over 102.8 million readings (one window function)</div></div>
   </div>
   <table style="margin-top:24px">
     <tr><th>Scale fix (recorded in Exasol's audit log)</th><th class="n">Before</th><th class="n">After</th></tr>
-    <tr><td>Run detection: LAG + running SUM → one ROW_NUMBER window</td><td class="n">665 s, 7.4 GiB temp</td><td class="n">TODO-BENCH-RUNS</td></tr>
-    <tr><td>Duplicates: minute-level GROUP BY → hour-level first</td><td class="n">1,892 s + cancelled</td><td class="n">TODO-BENCH-CLEAN</td></tr>
-    <tr><td>Chance baseline: band join → bucketed equality joins</td><td class="n">348 s (sample only)</td><td class="n">TODO-BENCH-BASELINE</td></tr>
+    <tr><td>Run detection: LAG + running SUM → one ROW_NUMBER window</td><td class="n">665 s, 7.4 GiB temp</td><td class="n">49.1 s</td></tr>
+    <tr><td>Duplicates: minute-level GROUP BY → hour-level first</td><td class="n">1,892 s, then a cancelled step</td><td class="n">23.6 s</td></tr>
+    <tr><td>Chance baseline: band join → bucketed equality joins</td><td class="n">348 s (sample only)</td><td class="n">5.6 s (full data)</td></tr>
   </table>
-  <p class="small muted" style="margin-top:12px">Every statement's session and statement id is matched to EXA_DBA_AUDIT_SQL (199 of 199), and the same audit statistics produce these benchmarks. Sources: docs/BENCHMARKS.md, docs/WHY_EXASOL.md.</p>
+  <p class="small muted" style="margin-top:12px">In all 6 benchmark builds, every statement's session and statement id matched EXA_DBA_AUDIT_SQL by exact SQL text (0 different, 0 missing); the same audit statistics produce these benchmarks. Sources: docs/BENCHMARKS.md, docs/WHY_EXASOL.md.</p>
   <div class="footer"><span>VoltProof</span><span>6</span></div>
 </section>
 
@@ -172,7 +172,7 @@
     </ul>
     <ul>
       <li><b>Report consistency</b>: every number in the PDF equals an independent SQL query and the rendered page.</li>
-      <li><b>Provenance</b>: 199 of 199 statements matched to Exasol's audit log by exact SQL text.</li>
+      <li><b>Provenance</b>: every statement of every build matched to Exasol's audit log by exact SQL text (0 different, 0 missing in all 6 benchmark builds).</li>
       <li><b>End-to-end</b> browser tests of the guided demo, plus a scan for blocked wording on every page and report.</li>
     </ul>
   </div>
@@ -247,7 +247,7 @@
 <!-- 12. Team -->
 <section class="slide">
   <p class="kicker">Team</p>
-  <h2>TODO-TEAM</h2>
+  <h2>[Team names to be added]</h2>
   <p class="muted">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
   <div class="footer"><span>VoltProof</span><span>12</span></div>
 </section>

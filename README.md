@@ -76,21 +76,22 @@ scripts\exa.ps1 status
   scripts\exa.ps1 install local --auto-approve     # about 2 minutes; accepts the Exasol Personal EULA
   ```
 
-**2. Data.** The ESMI files are on Harvard Dataverse. Each download asks for a short Guestbook form, so you
-download them yourself.
+**2. Data (minimum set, about 141 MB).** The ESMI files are on Harvard Dataverse. Each download asks for a
+short Guestbook form, so you download them yourself.
 1. Open https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/CLLZZM.
-2. Download the files below into `data\raw\` without renaming them. For tabular files, choose "Original
-   File Format (Comma Separated Values)".
-   - **Minimum set (about 141 MB, enough for the guided demo):** `ESMI location information`,
-     `About the initiative.pdf`, `ESMI minute-wise voltage data 2018 June-Aug`.
-   - **All of Uttar Pradesh (about 1.9 GB):** add 2016 Jan-June, 2016 July-Dec, 2017 Jan-April,
-     2017 May-Aug, 2017 Sept-Dec, 2018 Jan-May, 2018 Sep-Dec, 2019 Jan-June and 2019 July-Dec.
+2. Download these three files into `data\raw\` (create the folder) without renaming them:
+   - `ESMI location information`
+   - `About the initiative.pdf`
+   - `ESMI minute-wise voltage data 2018 June-Aug`
 
-**3. Build the analysis inside Exasol** (this verifies checksums against Dataverse, loads with native
-`IMPORT`, runs every SQL step and checks provenance):
+   For tabular files, choose "Original File Format (Comma Separated Values)". This set is enough for the
+   guided demo and the tests.
+
+**3. Build the analysis inside Exasol.** This verifies checksums against Dataverse, loads with native
+`IMPORT`, runs every SQL step and checks provenance.
 
 ```powershell
-scripts\load.ps1 -Set first      # minimum set; or: scripts\load.ps1 -Set up
+scripts\load.ps1 -Set first
 ```
 
 **4. Open the app** at http://127.0.0.1:8000/ and press **Start guided demo**:
@@ -107,6 +108,20 @@ scripts\test.ps1
 
 To build next to an existing build without touching it, set a schema name before steps 3–5, for example
 `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_CLEAN'`. To use another port, run `scripts\start.ps1 -Port 8090`.
+
+**Optional: all of Uttar Pradesh (about 1.9 GB; gives the headline figures below).**
+1. Also download 2016 Jan-June, 2016 July-Dec, 2017 Jan-April, 2017 May-Aug, 2017 Sept-Dec, 2018 Jan-May,
+   2018 Sep-Dec, 2019 Jan-June and 2019 July-Dec.
+2. Then run:
+
+   ```powershell
+   scripts\load.ps1 -Set up                                  # about 4 minutes on the build laptop
+   .venv\Scripts\python.exe -m pipeline.run_sql 110          # validation tables (VALIDATION.md section 3)
+   .venv\Scripts\python.exe -m pipeline.headline_figures     # regenerates docs\HEADLINE_FIGURES.md
+   ```
+
+   Keep other heavy applications closed: on a 16 GB machine the database uses most of the memory during
+   this build.
 
 ## How it works
 
@@ -172,8 +187,16 @@ Test results are in [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
 
 ## Performance
 
-Benchmarks are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md), measured on an Intel Core Ultra 5 125H laptop
-with 15.6 GB RAM.
+Measured on an Intel Core Ultra 5 125H laptop with 15.6 GB RAM ([docs/BENCHMARKS.md](docs/BENCHMARKS.md);
+medians of 3 runs). The full Uttar Pradesh build, from IMPORT through every SQL step, takes:
+- 252.8 s warm and 238.6 s cold (first run after a database restart);
+- of which 37.3 s is the native IMPORT of 7,367,581 raw rows;
+- 19.6 s the in-database unpivot to 102,927,720 minute rows;
+- 49.1 s run detection over 102.8 million readings with one window function.
+
+Opening a location-month in the app takes about 0.09 s warm. An evidence report (HTML and PDF) takes about
+16 s, most of it PDF rendering. Every statement in every run matched Exasol's audit log. Why this is
+Exasol's work and not Python's: [docs/WHY_EXASOL.md](docs/WHY_EXASOL.md).
 
 ## Repository map
 

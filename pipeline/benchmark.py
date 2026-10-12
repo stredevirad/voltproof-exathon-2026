@@ -56,17 +56,25 @@ def total_ram_gib() -> float:
     return round(s.ullTotalPhys / 2**30, 1)
 
 
-class RamSampler:
-    """Minimum free host RAM while a run is in progress (sampled every 2 s)."""
+RAM_FLOOR_GIB = 0.4  # stop a run if free host RAM falls below this (agreed with the project owner)
 
-    def __init__(self):
+
+class RamSampler:
+    """Minimum free host RAM while a run is in progress (sampled every 2 s). With `proc`, terminates it if free RAM
+    falls below RAM_FLOOR_GIB and sets `tripped`."""
+
+    def __init__(self, proc: subprocess.Popen | None = None):
         self.min_free = free_ram_gib()
+        self.proc, self.tripped = proc, False
         self._stop = threading.Event()
         self._t = threading.Thread(target=self._loop, daemon=True)
 
     def _loop(self):
         while not self._stop.wait(2):
             self.min_free = min(self.min_free, free_ram_gib())
+            if self.proc is not None and self.min_free < RAM_FLOOR_GIB and self.proc.poll() is None:
+                self.tripped = True
+                self.proc.terminate()
 
     def __enter__(self):
         self._t.start()
@@ -152,12 +160,16 @@ def bench_build(runs: int, cold: bool, schema: str) -> None:
         before = {"free_ram_gib": free_ram_gib(), "disk_free_gib": disk_free_gib()}
         t0 = time.perf_counter()
         started = dt.datetime.now().isoformat(timespec="seconds")
-        with RamSampler() as ram:
-            p = subprocess.run([PY, "-m", "pipeline.build", "--schema", schema], cwd=REPO_ROOT, capture_output=True,
-                               text=True, check=False)
+        proc = subprocess.Popen([PY, "-m", "pipeline.build", "--schema", schema], cwd=REPO_ROOT,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        with RamSampler(proc) as ram:
+            out, _ = proc.communicate()
         wall = round(time.perf_counter() - t0, 1)
-        if p.returncode != 0:
-            err = [ln.strip() for ln in (p.stdout + p.stderr).splitlines() if "message" in ln or "Error" in ln][-3:]
+        if proc.returncode != 0 or ram.tripped:
+            err = [ln.strip() for ln in out.splitlines() if "message" in ln or "Error" in ln][-3:]
+            if ram.tripped:
+                err = [f"stopped by the benchmark: free host RAM fell below {RAM_FLOOR_GIB} GiB "
+                       f"(lowest {ram.min_free} GiB)"] + err
             _save("build", {"kind": "build", "mode": "cold" if cold else "warm", "run": i, "status": "failed",
                             "started_local": started, "wall_seconds": wall, "restart_seconds": restart,
                             "min_free_ram_gib_during": ram.min_free, "error": err})

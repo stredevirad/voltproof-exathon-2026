@@ -11,14 +11,14 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
 - **What it does.** `IMPORT … FROM CSV` loads the raw 63-column hourly rows unchanged over Exasol's HTTP
   transport (`pipeline/load_raw.py`, pyexasol `import_from_callback`). Each line arrives prefixed with its
   file id and physical line number, which is how a report later cites the exact source line.
-- **Measured:** all 11 Uttar Pradesh files (TODO-IMPORT-ROWS raw rows) in **TODO-IMPORT** (warm median). The
+- **Measured:** all 11 Uttar Pradesh files (7,367,581 raw rows) in **37.3 s** (warm median; 35.1 s cold). The
   first sample load ran at about 440,000 rows/s (VERIFICATION_LOG G2a).
 
 ## 2. Unpivot in the database, not in Python
 
 - **What it does.** Each hourly row holds 60 minute values in columns. `sql/030_unpivot.sql` joins the rows
   with a 60-row generator (`CONNECT BY LEVEL <= 60`) and picks the column per minute.
-- **Measured:** **TODO-UNPIVOT** for 102.9 million minute rows, plus TODO-TYPE to type and validate them.
+- **Measured:** **19.6 s** for 102,927,720 minute rows, plus 7.9 s to type and validate them.
 - **Why it matters.** Malformed rows and values are quarantined with reason codes in the same SQL, so
   nothing is dropped silently.
 
@@ -27,19 +27,19 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
 - **What it does.** Outages are runs of consecutive minutes in one voltage class. `sql/050_segments.sql`
   finds every run with a single window function: `minute number − ROW_NUMBER() OVER (PARTITION BY
   location, state ORDER BY ts)` is constant along a run.
-- **Measured:** **TODO-RUNS** over 102.8 million readings.
+- **Measured:** **49.1 s** over 102.8 million readings (temporary-memory peak 6.2 GiB).
 - **The earlier formulation, from the audit log:** LAG plus a running SUM took **665 s** and needed 7.4 GiB
   of temporary memory, because it sorted the data twice (DECISIONS D-028).
 - **Events.** `sql/060_events.sql` then uses LAG/LEAD over segments to give each outage its edge
-  certainty and duration bounds, in TODO-EVENTS.
+  certainty and duration bounds, in 2.9 s for 408,223 events.
 
 ## 4. Band joins across monitors, as equality joins
 
 - **What it does.** A potential shared supply event needs every pair of interruptions in a district whose
   starts are at most 2 minutes apart. That is a band join. `sql/100_coincidence.sql` turns it into two
   equality joins on a time bucket (same bucket, next bucket), which Exasol executes as hash joins.
-- **Measured:** **TODO-PAIRS** for 184,299 coincident pairs. The chance baseline (20 whole-day shifts of
-  every monitor) takes **TODO-BASELINE**.
+- **Measured:** **0.4 s** for 184,299 coincident pairs. The chance baseline (20 whole-day shifts of
+  every monitor) takes **5.6 s** for its four statements.
 - **The earlier non-equality band join, from the audit log:** 348 s on the 2018 June–August sample alone
   (D-021). A cross-join variant was cancelled after 613 s.
 
@@ -49,7 +49,7 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
   session id and statement id (`CURRENT_STATEMENT + 1` in non-autocommit mode, D-017).
 - **Check against the audit log.** `pipeline/check_provenance.py` compares each recorded statement with
   `EXA_DBA_AUDIT_SQL` by the SHA-256 of its exact SQL text. Every benchmark build matched all of them
-  (TODO-PROV).
+  (all 6 recorded runs, 3 cold and 3 warm: 0 different, 0 missing).
 - **In reports.** An evidence report lists the statement ids, so a reviewer can find the SQL that produced
   each table in the database's own log.
 - **Benchmarks.** They use the same audit statistics: duration, CPU and temporary-memory peak per statement
@@ -72,4 +72,4 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
 - **Costs on this laptop, recorded honestly:**
   - The first growth of the data volume over the Windows-to-WSL bind mount is slow (434 s for a write
     that later took 21 s; X31).
-  - A full build leaves little free host RAM (lowest TODO-RAM during warm runs).
+  - A full build leaves little free host RAM (lowest 0.54 GiB during warm runs; one cold run was stopped by our 0.4 GiB free-RAM guard until an unrelated Oracle service was stopped; BENCHMARKS.md).

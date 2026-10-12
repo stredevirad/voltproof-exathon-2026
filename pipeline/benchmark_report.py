@@ -43,8 +43,8 @@ def _targets() -> dict[tuple[str, int], str]:
     out = {}
     for f in sorted(SQL_DIR.glob("[0-9][0-9][0-9]_*.sql")):
         for i, s in enumerate(split_statements(f.read_text(encoding="utf-8")), 1):
-            m = re.search(r"(?:TABLE|VIEW)\s+(?:IF\s+EXISTS\s+)?(\w+)", s, re.I)
-            out[(f.name, i)] = m.group(1).upper() if m else "?"
+            m = re.match(r"\s*CREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|VIEW)\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)", s, re.I)
+            out[(f.name, i)] = m.group(1).upper() if m else "other"  # DROPs etc. are not mapped to a table
     return out
 
 
@@ -100,6 +100,10 @@ def render() -> str:
         f"| Free host RAM / disk when recorded | {env.get('free_ram_gib', '?')} GiB; C: {env.get('disk_free_gib', {}).get('C')} GiB, "
         f"D: {env.get('disk_free_gib', {}).get('D')} GiB |",
         "| Conditions | App server stopped, Docker Desktop not running, one build at a time |",
+        "| Other software | The warm runs (2026-10-12, 02:25–02:42 IST) ran with an unrelated Oracle Database service "
+        "using about 0.6 GB. A first cold run was stopped by the benchmark's 0.4 GiB free-RAM guard, so that "
+        "service was stopped before the cold runs (08:13–08:28 IST). Cold and warm runs therefore differ in free host "
+        "memory as well as in database caches; read the cold/warm difference with that in mind. |",
         "",
         "**Cold** = the first run after `scripts\\exa.ps1 stop` and `start` (database caches empty; the data volume "
         "already grown; the Windows file cache is not cleared). **Warm** = repeated runs with the database running.",

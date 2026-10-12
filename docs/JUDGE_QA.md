@@ -1,7 +1,6 @@
 # Judge Q&A: hard questions, evidence-based answers
 
-Each answer points to a file, test or measurement in this repository. Items marked *(G6 pending)* are
-completed from the validation and benchmark runs. Nothing is claimed that has not been run.
+Each answer points to a file, test or measurement in this repository. Nothing is claimed that has not been run.
 
 ## Problem and impact
 
@@ -106,12 +105,13 @@ equipment fault are blocked by the claims test.
 
 **14. Why Exasol? Wouldn't Excel or DuckDB do?**
 Excel cannot hold this data: about 400 million minute values for 2014–18 alone. DuckDB could run the
-queries. What Exasol gives this project, measured (docs/WHY_EXASOL.md, docs/BENCHMARKS.md *(G6 pending)*):
+queries. What Exasol gives this project, measured (docs/WHY_EXASOL.md, docs/BENCHMARKS.md):
 - the whole pipeline as versioned SQL inside the database (native `IMPORT`, unpivot, window-function
   gaps-and-islands, interval band joins), with no Python data engine;
 - statement-level provenance, because every report cites Exasol session and statement ids that match
   `EXA_DBA_AUDIT_SQL` by exact SQL text (pipeline/check_provenance.py);
-- performance statistics from Exasol's own `EXA_SQL_LAST_DAY`;
+- performance statistics from Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): duration, CPU and temporary
+  memory per statement, which is how docs/BENCHMARKS.md is produced;
 - one local database that judges can start with one command.
 
 We make no "X times faster than DuckDB" claim: we did not benchmark DuckDB on the same data.
@@ -119,7 +119,10 @@ We make no "X times faster than DuckDB" claim: we did not benchmark DuckDB on th
 **15. ~600 M rows on a 24 GB laptop?**
 Measured instead of estimated: 2014–18 contains 6,601,854 location-hours, which is 396,111,240 minute
 values (Dataverse DDI metadata). The build machine has 15.6 GB RAM, not 24, and Exasol gets 8.9 GiB.
-Load and query times for the Uttar Pradesh subset are in docs/BENCHMARKS.md *(G6 pending)*.
+For the Uttar Pradesh data (102.8 million clean minutes), the whole build including the native IMPORT
+takes 252.8 s warm and 238.6 s cold (medians of 3 runs, docs/BENCHMARKS.md). On this 15.6 GB laptop, free
+host RAM falls below 1 GB during a build. One cold run was stopped by our 0.4 GiB guard until an
+unrelated Oracle service was stopped, and this is recorded.
 
 **16. What did you learn about Exasol Personal on Windows?**
 Several things, all recorded with evidence (VERIFICATION_LOG X6, X22, X31; D-010, D-021):
