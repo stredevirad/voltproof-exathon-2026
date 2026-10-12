@@ -8,6 +8,18 @@ ExaThon India 2026, Track 3. Data: Prayas (Energy Group), Electricity Supply Mon
 Team: Joshua Herbert Japheth, Rohith Mohandas, Dane John Padinjarekara — Rajagiri School of Engineering &
 Technology, Kochi.
 
+## Submission deliverables
+
+| Deliverable | Where |
+|---|---|
+| Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README) |
+| Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
+| Demo video (narrated, under 3:00) | `docs/deliverables/VoltProof_demo.mp4`, **pending the team's voice-over**. Script: [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md); how it is made: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| Run guide | [Quick start](#quick-start-windows-1011-amd64) below and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md) |
+| Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
+| Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
+| Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
+
 ![Location-month view: calendar of daily outage minutes, KPIs and the chance comparison](docs/deliverables/screenshots/02_month_calendar.png)
 
 ## The problem

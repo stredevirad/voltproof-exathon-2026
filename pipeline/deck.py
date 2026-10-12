@@ -60,6 +60,15 @@ def main() -> int:
         page.pdf(path=str(PDF), width="1280px", height="720px", print_background=True,
                  margin={"top": "0", "right": "0", "bottom": "0", "left": "0"})
         n = page.locator("section.slide").count()
+        if "--images" in sys.argv:  # 1920 x 1080 review images (not committed)
+            review = REPO_ROOT / "reports" / "deck-review"
+            review.mkdir(parents=True, exist_ok=True)
+            hi = browser.new_page(viewport={"width": 1280, "height": 720}, device_scale_factor=1.5)
+            hi.goto(DECK.as_uri())
+            hi.wait_for_load_state("networkidle")
+            for i in range(n):
+                hi.locator("section.slide").nth(i).screenshot(path=str(review / f"slide_{i + 1:02d}.png"))
+            print(f"review images: {review.relative_to(REPO_ROOT)} ({n} x 1920x1080)")
         browser.close()
     print(f"wrote {PDF.relative_to(REPO_ROOT)} ({n} slides, {PDF.stat().st_size:,} bytes); text checks passed")
     return 0
