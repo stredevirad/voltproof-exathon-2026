@@ -229,6 +229,18 @@ No step needed knowledge that the README did not give.
 | 4. `scripts\start.ps1 -Port 8090` (output redirected) | ✅ `/api/health`: database ok, schema `VOLTPROOF_CLEAN`, 98 locations, 52,810 events | – |
 | 5. `scripts\test.ps1` (all suites, one command) | ✅ unit 22 passed; integration 63 passed, 1 skipped (the 2019-month report test: no 2019 data in the minimum set); differential 4 passed; e2e 3 passed, 1 skipped (the 2019 banner test, same reason) | 161 s |
 
-### 4.3 Final repeat from GitHub
+### 4.3 Final repeat from GitHub (commit `225b3a0`)
 
-Recorded after the G6 push (see PROGRESS).
+`git clone https://github.com/stredevirad/voltproof-exathon-2026.git D:\Temp\voltproof-clean-2`, exactly as in
+the README, on 2026-10-12. Same database and the same `VOLTPROOF_CLEAN` schema; minimum set hardlinked as before.
+
+| README step | Result | Time |
+|---|---|---|
+| `Set-ExecutionPolicy -Scope Process Bypass`; `scripts\bootstrap.ps1` | ✅ both SHA-256 checks verified | 188 s |
+| 1. `scripts\exa.ps1 status` | ✅ `database_ready` | – |
+| 3. `scripts\load.ps1 -Set first` | ✅ three files verified against Dataverse; 98 monitors, 10,424,400 clean minutes, 52,810 events; provenance 0 different, 0 missing | 32.1 s |
+| 4. `scripts\start.ps1 -Port 8090` | ✅ health ok (`VOLTPROOF_CLEAN`, commit `225b3a0b1845`), guided demo event `183-201807251827`, home page HTTP 200 | – |
+| 5. `scripts\test.ps1` | ✅ unit 22; integration 63 (1 skipped: no 2019 data); differential 4; e2e 3 (1 skipped: no 2019 data); **all passed** | 183 s |
+
+No step needed knowledge outside the README. The two clones are left in `D:\Temp\` (`voltproof-clean`,
+`voltproof-clean-2`), and the schema `VOLTPROOF_CLEAN` is left in the database for inspection.

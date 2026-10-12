@@ -39,3 +39,20 @@ def scan() -> list[str]:
 def test_published_text_has_no_forbidden_or_internal_terms():
     hits = scan()
     assert not hits, f"{len(hits)} hit(s):\n" + "\n".join(hits)
+
+
+def test_published_text_has_no_stray_control_characters():
+    """Tabs, backspaces or vertical tabs inside docs or code are almost always an escaping accident."""
+    hits = []
+    for f in _published_files():
+        path = REPO_ROOT / f
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        for no, line in enumerate(text.splitlines(), 1):
+            if any(ord(c) < 32 for c in line):
+                hits.append(f"{f}:{no}: {line[:80]!r}")
+    assert not hits, "\n".join(hits)

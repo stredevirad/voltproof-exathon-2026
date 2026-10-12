@@ -175,5 +175,5 @@ Yes, and we tested it. On 2026-10-12 a fresh clone followed only the README (doc
 - every test suite passed in 161 s.
 
 The first run found two bugs (a server-start problem when output is redirected, and an end-to-end test
-that assumed the full data set), which were fixed before the repeat. The data download needs each user's
+that assumed the full data set). Both were fixed, and a repeat cloned from GitHub passed every step. The data download needs each user's
 own Dataverse Guestbook entry. The full Uttar Pradesh build is an optional README step.
