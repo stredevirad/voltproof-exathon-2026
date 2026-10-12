@@ -270,3 +270,11 @@ Setup:
 
 Installing Podman and Exasol Personal is not in the 328 s. It is a one-time step that this run skipped,
 because the database already existed. The clone is left in `D:\Temp\voltproof-clean-3`.
+
+This work order also changed the real-data load path, so it was rebuilt at `f02a2a0` (main checkout).
+`$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_CLEAN'; scripts\load.ps1 -Set first` took 41.5 s. It matched §4.3 exactly:
+- the three files verified;
+- 98 locations, 10,424,400 clean minutes, 52,810 events;
+- provenance 45 exact, 0 different, 0 missing.
+
+The guided demo on that schema is the same real event, `183-201807251827` (Bahraich, 2018-07-25 18:27).
