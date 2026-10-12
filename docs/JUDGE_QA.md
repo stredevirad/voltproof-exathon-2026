@@ -120,9 +120,9 @@ We make no "X times faster than DuckDB" claim: we did not benchmark DuckDB on th
 Measured instead of estimated: 2014–18 contains 6,601,854 location-hours, which is 396,111,240 minute
 values (Dataverse DDI metadata). The build machine has 15.6 GB RAM, not 24, and Exasol gets 8.9 GiB.
 For the Uttar Pradesh data (102.8 million clean minutes), the whole build including the native IMPORT
-takes 252.8 s warm and 238.6 s cold (medians of 3 runs, docs/BENCHMARKS.md). On this 15.6 GB laptop, free
-host RAM falls below 1 GB during a build. One cold run was stopped by our 0.4 GiB guard until an
-unrelated Oracle service was stopped, and this is recorded.
+takes 210.4 s warm and 238.6 s cold (medians of 3 runs, docs/BENCHMARKS.md). On this 15.6 GB laptop that needs other memory-heavy
+applications closed. With them open, free host RAM fell below our 0.4 GiB guard and two runs were stopped;
+both are recorded.
 
 **16. What did you learn about Exasol Personal on Windows?**
 Several things, all recorded with evidence (VERIFICATION_LOG X6, X22, X31; D-010, D-021):

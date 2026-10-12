@@ -63,13 +63,9 @@ def build_data(location_id: int, month_key: str) -> dict:
     if not m:
         raise LookupError("location-month not found")
     quality = query_one(f"SELECT * FROM {S}.QUALITY_LOCATION WHERE LOCATION_ID = {{id!d}}", {"id": location_id})
-    groups = []
-    for key in sorted({e["group_key"] for e in m["events"] if e.get("group_key")}):
-        g = service.group(key)
-        if g:
-            groups.append({k: g[k] for k in ("group_key", "district", "start_ts", "end_ts", "n_locations", "n_members",
-                                             "n_pairs", "district_locations_with_interruptions")}
-                          | {"members": g["members"]})
+    groups = [{k: g[k] for k in ("group_key", "district", "start_ts", "end_ts", "n_locations", "n_members",
+                                 "n_pairs", "district_locations_with_interruptions")} | {"members": g["members"]}
+              for g in service.groups([e["group_key"] for e in m["events"] if e.get("group_key")])]
     params = {r["name"]: (r["num_value"] if r["num_value"] is not None else r["str_value"])
               for r in query(f"SELECT NAME, NUM_VALUE, STR_VALUE FROM {S}.PARAMS")}
     meta = service.meta()
@@ -152,20 +148,44 @@ def render_html(data: dict) -> str:
     return _env().get_template("report.html").render(d=data)
 
 
-def generate(location_id: int, month_key: str, pdf: bool = True) -> dict:
+def _links(rid: str, pdf: bool) -> dict:
+    out = {"report_id": rid, "html_url": f"/api/reports/{rid}.html", "json_url": f"/api/reports/{rid}.json"}
+    if pdf:
+        out["pdf_url"] = f"/api/reports/{rid}.pdf"
+    return out
+
+
+def _reusable(rid: str, data: dict, pdf: bool) -> dict | None:
+    """A report rendered earlier (e.g. by scripts\\warmup.ps1) is served again only if its stored numbers equal
+    the freshly built data exactly. That data includes the app commit and the last pipeline run, so any code
+    change or rebuild gives a fresh render."""
+    files = [OUT_DIR / f"{rid}.{ext}" for ext in (("json", "html", "pdf") if pdf else ("json", "html"))]
+    if not all(f.exists() for f in files):
+        return None
+    stored = json.loads(files[0].read_text(encoding="utf-8"))
+    generated_at = stored.pop("generated_at_ist", None)
+    stored.pop("report_id", None)
+    if stored != json.loads(json.dumps(data, default=str)):
+        return None
+    return {**_links(rid, pdf), "generated_at_ist": generated_at, "reused": True}
+
+
+def generate(location_id: int, month_key: str, pdf: bool = True, reuse: bool = True) -> dict:
     data = build_data(location_id, month_key)
     rid = _report_id(location_id, month_key, data)
+    if reuse:
+        existing = _reusable(rid, data, pdf)
+        if existing:
+            return existing
     data["report_id"] = rid
     data["generated_at_ist"] = dt.datetime.now(IST).strftime("%Y-%m-%d %H:%M IST")
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / f"{rid}.json").write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
     html_path = OUT_DIR / f"{rid}.html"
     html_path.write_text(render_html(data), encoding="utf-8")
-    out = {"report_id": rid, "html_url": f"/api/reports/{rid}.html", "json_url": f"/api/reports/{rid}.json"}
     if pdf:
         _pdf(html_path, OUT_DIR / f"{rid}.pdf")
-        out["pdf_url"] = f"/api/reports/{rid}.pdf"
-    return out
+    return {**_links(rid, pdf), "generated_at_ist": data["generated_at_ist"], "reused": False}
 
 
 def _pdf(html_path: Path, pdf_path: Path) -> None:

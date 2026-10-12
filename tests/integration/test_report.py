@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from html import unescape
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def generated():
     demo = service.demo()
     if not demo:
         pytest.skip("demo preset not available (build VOLTPROOF with the 2018 June-Aug data)")
-    out = report.generate(demo["location_id"], demo["month"], pdf=True)
+    out = report.generate(demo["location_id"], demo["month"], pdf=True, reuse=False)  # always a fresh render
     rid = out["report_id"]
     side = json.loads(report.path_for(rid, "json").read_text(encoding="utf-8"))
     html = report.path_for(rid, "html").read_text(encoding="utf-8")
@@ -133,10 +134,37 @@ def test_data_warning_only_in_reports_for_affected_months(generated):
                         "ORDER BY LOCATION_ID LIMIT 1").fetchone()
     if not row:
         pytest.skip("no 2019 month in this build")
-    out = report.generate(int(row[0]), row[1], pdf=False)
+    out = report.generate(int(row[0]), row[1], pdf=False, reuse=False)
     side = json.loads(report.path_for(out["report_id"], "json").read_text(encoding="utf-8"))
     html = report.path_for(out["report_id"], "html").read_text(encoding="utf-8")
     assert side["data_warning"] and "lower bounds" in side["data_warning"]
     assert 'data-testid="data-warning"' in html
     assert any(l.startswith("Source-file data defect") for l in side["method"]["limitations"])
     assert not forbidden_hits(unescape(re.sub(r"<[^>]+>", " ", html)))
+
+
+def test_unchanged_report_is_reused_with_its_generation_time(generated):
+    """scripts/warmup.ps1 pre-renders the demo report; the app serves it again only for identical data."""
+    demo = generated["demo"]
+    again = report.generate(demo["location_id"], demo["month"], pdf=True)
+    assert again["reused"] is True
+    assert again["report_id"] == generated["out"]["report_id"]
+    assert again["generated_at_ist"] == generated["out"]["generated_at_ist"]
+
+
+def test_changed_data_is_never_served_from_an_earlier_render(generated, monkeypatch):
+    demo = generated["demo"]
+    real = report.build_data
+
+    nonce = uuid.uuid4().hex  # unique per run: identical data rendered by an earlier run may rightly be reused
+
+    def changed(location_id, month_key):
+        d = real(location_id, month_key)
+        d["summary"]["interruptions"] = int(d["summary"]["interruptions"]) + 1
+        d["summary"]["test_nonce"] = nonce
+        return d
+
+    monkeypatch.setattr(report, "build_data", changed)
+    out = report.generate(demo["location_id"], demo["month"], pdf=False)
+    assert out["reused"] is False
+    assert out["report_id"] != generated["out"]["report_id"]

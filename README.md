@@ -1,8 +1,12 @@
+Households and small shops on unreliable electricity can't show when, and for how long, their power failed, because when they complain, their own memory is usually all they have to set against the utility's records. If this worked, they could take a dated, minute-by-minute record of every outage and voltage problem, with its uncertainty stated, to their utility or grievance forum.
+
 # VoltProof
 
 **Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.**
 
 ExaThon India 2026, Track 3. Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI).
+Team: Joshua Herbert Japheth, Rohith Mohandas, Dane John Padinjarekara — Rajagiri School of Engineering &
+Technology, Kochi.
 
 ![Location-month view: calendar of daily outage minutes, KPIs and the chance comparison](docs/deliverables/screenshots/02_month_calendar.png)
 
@@ -189,15 +193,22 @@ Test results are in [docs/TEST_REPORT.md](docs/TEST_REPORT.md).
 
 Measured on an Intel Core Ultra 5 125H laptop with 15.6 GB RAM ([docs/BENCHMARKS.md](docs/BENCHMARKS.md);
 medians of 3 runs). The full Uttar Pradesh build, from IMPORT through every SQL step, takes:
-- 252.8 s warm and 238.6 s cold (first run after a database restart). The cold runs came out faster
-  because they had more free host memory: an unrelated service was stopped before them (BENCHMARKS.md);
-- of which 37.3 s is the native IMPORT of 7,367,581 raw rows;
-- 19.6 s the in-database unpivot to 102,927,720 minute rows;
-- 49.1 s run detection over 102.8 million readings with one window function.
+- 210.4 s warm and 238.6 s cold (first run after a database restart);
+- of which 30.3 s is the native IMPORT of 7,367,581 raw rows;
+- 11.0 s the in-database unpivot to 102,927,720 minute rows;
+- 35.6 s run detection over 102.8 million readings with one window function.
 
-Opening a location-month in the app takes about 0.09 s warm. An evidence report (HTML and PDF) takes about
-16 s, most of it PDF rendering. Every statement in every run matched Exasol's audit log. Why this is
-Exasol's work and not Python's: [docs/WHY_EXASOL.md](docs/WHY_EXASOL.md).
+These runs had other memory-heavy applications closed. With them open, free host RAM fell below our 0.4 GiB
+guard and the run was stopped (both cases are recorded in BENCHMARKS.md).
+
+In the app, warm:
+- a location-month opens in about 0.1 s and a day view in about 0.2 s;
+- a fresh evidence report (HTML and PDF) takes about 3.7 s, and an unchanged one is served again in 0.4 s.
+
+Right after a database restart, the first day view took 2.1 s; after `scripts\warmup.ps1`, it took 0.13 s.
+
+Every statement in every build matched Exasol's audit log. Why this is Exasol's work and not Python's:
+[docs/WHY_EXASOL.md](docs/WHY_EXASOL.md).
 
 ## Repository map
 

@@ -22,7 +22,7 @@ $py = Join-Path $script:RepoRoot '.venv\Scripts\python.exe'
 if (-not (Test-Path $py)) { throw 'Python environment missing. Run scripts\bootstrap.ps1 first.' }
 
 Write-Step 'Checking the database'
-$status = (& "$PSScriptRoot\exa.ps1" status) -join "`n"
+$status = Get-DatabaseStatus
 if ($status -notmatch 'database_ready') {
     Write-Host $status
     throw 'Exasol is not ready. Start it with: scripts\exa.ps1 start   (first time: scripts\exa.ps1 install local --auto-approve)'

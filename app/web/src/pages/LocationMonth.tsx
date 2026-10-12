@@ -21,7 +21,8 @@ export default function LocationMonth() {
   const locationId = Number(id);
   const { data, error, loading } = useApi(() => api.month(locationId, month!), [locationId, month]);
   const [sort, setSort] = useState<{ key: keyof Ev; dir: 1 | -1 }>({ key: "start_ts", dir: 1 });
-  const [report, setReport] = useState<{ pdf_url: string; html_url: string; json_url: string; report_id: string } | null>(null);
+  const [report, setReport] = useState<{ pdf_url: string; html_url: string; json_url: string; report_id: string;
+                                        generated_at_ist: string; reused: boolean } | null>(null);
   const [reportBusy, setReportBusy] = useState(false);
   const [reportErr, setReportErr] = useState<Error | null>(null);
   const [showTable, setShowTable] = useState(false);
@@ -151,7 +152,8 @@ export default function LocationMonth() {
           {report && (
             <p data-testid="report-links">Report <span className="mono">{report.report_id}</span>:{" "}
               <a href={report.pdf_url} download data-testid="report-pdf">PDF</a> · <a href={report.html_url} target="_blank" rel="noreferrer">HTML</a> ·{" "}
-              <a href={report.json_url} target="_blank" rel="noreferrer">numbers (JSON)</a></p>
+              <a href={report.json_url} target="_blank" rel="noreferrer">numbers (JSON)</a>
+              <br /><span className="small muted" data-testid="report-generated">Generated {report.generated_at_ist}{report.reused ? " (rendered earlier; same data and code since)" : ""}.</span></p>
           )}
           <h3>Chance comparison for {loc.district}</h3>
           {data.baseline ? (

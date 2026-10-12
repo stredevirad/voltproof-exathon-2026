@@ -85,6 +85,14 @@ class RamSampler:
         self._t.join()
 
 
+def conditions() -> dict:
+    """Other memory-heavy software that changes host conditions between runs (recorded with every run)."""
+    out = subprocess.run(["powershell.exe", "-NoProfile", "-Command",
+                          "Get-Service Oracle* -ErrorAction SilentlyContinue | Where-Object Status -eq 'Running' | "
+                          "ForEach-Object Name"], capture_output=True, text=True, check=False).stdout.split()
+    return {"oracle_services_running": out, "free_ram_gib": free_ram_gib()}
+
+
 def disk_free_gib() -> dict:
     return {d: round(shutil.disk_usage(f"{d}:\\").free / 2**30, 1) for d in ("C", "D")}
 
@@ -158,6 +166,7 @@ def bench_build(runs: int, cold: bool, schema: str) -> None:
     for i in range(1, runs + 1):
         restart = restart_db() if cold else None
         before = {"free_ram_gib": free_ram_gib(), "disk_free_gib": disk_free_gib()}
+        cond = conditions()
         t0 = time.perf_counter()
         started = dt.datetime.now().isoformat(timespec="seconds")
         proc = subprocess.Popen([PY, "-m", "pipeline.build", "--schema", schema], cwd=REPO_ROOT,
@@ -187,15 +196,21 @@ def bench_build(runs: int, cold: bool, schema: str) -> None:
                "load_seconds": round(sum(r["seconds"] for r in load), 2), "load_rows": sum(r["rows"] for r in load),
                "load_files": load, "sql_seconds": summary["sql_seconds"], "statements": len(steps),
                "clean_minutes": summary["clean_minutes"], "events": summary["events"], "provenance": prov,
-               "host_before": before, "min_free_ram_gib_during": ram.min_free, "steps": steps}
+               "host_before": before, "conditions": cond, "min_free_ram_gib_during": ram.min_free, "steps": steps}
         _save("build", rec)
         print(f"build {rec['mode']} run {i}: wall {wall}s (load {rec['load_seconds']}s, SQL {rec['sql_seconds']}s), "
               f"min free RAM {ram.min_free} GiB, restart {restart} s, {prov}")
 
 
-def bench_queries(runs: int, cold: bool) -> None:
-    """The guided-demo path, timed in-process through the same service functions the API serves."""
+def bench_queries(runs: int, cold: bool, warmup: bool = False) -> None:
+    """The guided-demo path, timed in-process through the same service functions the API serves.
+    With warmup: restart, run scripts/warmup.ps1's module (timed), then measure the first calls."""
     restart = restart_db() if cold else None
+    warmup_seconds = None
+    if warmup:
+        t0 = time.perf_counter()
+        subprocess.run([PY, "-m", "pipeline.warmup"], cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+        warmup_seconds = round(time.perf_counter() - t0, 1)
     from app.api import report, service  # after any restart, so the pool connects fresh
 
     demo = service.demo()
@@ -207,9 +222,12 @@ def bench_queries(runs: int, cold: bool) -> None:
         "day view (1,440 readings)": lambda: service.day(lid, day),
         "event evidence": lambda: service.event(key),
         "shared-event group": lambda: service.group(group),
-        "evidence report (HTML + PDF)": lambda: report.generate(lid, month, pdf=True),
+        "evidence report (HTML + PDF)": lambda: report.generate(lid, month, pdf=True, reuse=False),
+        "evidence report served again (pre-rendered, same data)": lambda: report.generate(lid, month, pdf=True),
     }
-    rec = {"kind": "queries", "mode": "cold" if cold else "warm", "restart_seconds": restart,
+    mode = ("cold" if cold else "warm") + ("+warmup" if warmup else "")
+    rec = {"kind": "queries", "mode": mode, "restart_seconds": restart, "warmup_seconds": warmup_seconds,
+           "conditions": conditions(),
            "started_local": dt.datetime.now().isoformat(timespec="seconds"), "demo": demo, "timings": {}}
     for name, fn in calls.items():
         times = []
@@ -245,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("what", choices=["build", "queries", "history", "env"])
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--cold", action="store_true")
+    ap.add_argument("--warmup", action="store_true", help="queries: run pipeline.warmup first")
     ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     a = ap.parse_args(argv)
     if a.what == "env":
@@ -255,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     elif a.what == "build":
         bench_build(a.runs, a.cold, a.schema.upper())
     elif a.what == "queries":
-        bench_queries(a.runs, a.cold)
+        bench_queries(a.runs, a.cold, a.warmup)
     else:
         history()
     return 0

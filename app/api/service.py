@@ -210,6 +210,37 @@ def event(event_key: str) -> dict | None:
     return e
 
 
+def groups(group_keys: list[str]) -> list[dict]:
+    """Several potential shared supply events at once (evidence reports list every group of a month), with the
+    same fields as group() except the baseline: two queries plus one count per district-month, instead of
+    four queries per group."""
+    keys = sorted(set(group_keys))
+    if not keys:
+        return []
+    params = {f"k{i}": k for i, k in enumerate(keys)}
+    in_list = ", ".join(f"{{k{i}}}" for i in range(len(keys)))
+    gs = query(f"SELECT * FROM {S}.POTENTIAL_SHARED_EVENT WHERE GROUP_KEY IN ({in_list}) ORDER BY GROUP_KEY", params)
+    members = query(f"""SELECT m.GROUP_KEY, m.EVENT_KEY, m.LOCATION_ID, l.DISPLAY_NAME, m.START_TS, m.END_TS,
+                               m.OFFSET_FROM_GROUP_START_MIN, e.MIN_DURATION, e.MAX_DURATION
+                        FROM {S}.POTENTIAL_SHARED_MEMBER m
+                        JOIN {S}.LOCATION l ON l.LOCATION_ID = m.LOCATION_ID
+                        JOIN {S}.EVENT e ON e.EVENT_ID = m.EVENT_ID
+                        WHERE m.GROUP_KEY IN ({in_list}) ORDER BY m.GROUP_KEY, m.START_TS, l.DISPLAY_NAME""", params)
+    by_key: dict[str, list[dict]] = {}
+    for m in members:
+        by_key.setdefault(m.pop("group_key"), []).append(m)
+    counts: dict[tuple[str, str], int] = {}
+    for g in gs:
+        dm = (g["district"], g["start_ts"][:7])
+        if dm not in counts:
+            counts[dm] = query_one(f"""SELECT COUNT(DISTINCT LOCATION_ID) AS N FROM {S}.INTERRUPTION
+                                       WHERE DISTRICT = {{d}} AND TO_CHAR(START_TS, 'YYYY-MM') = {{m}}""",
+                                   {"d": dm[0], "m": dm[1]})["n"]
+        g["members"] = by_key.get(g["group_key"], [])
+        g["district_locations_with_interruptions"] = counts[dm]
+    return gs
+
+
 def group(group_key: str) -> dict | None:
     g = query_one(f"SELECT * FROM {S}.POTENTIAL_SHARED_EVENT WHERE GROUP_KEY = {{k}}", {"k": group_key})
     if not g:

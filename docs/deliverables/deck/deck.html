@@ -46,6 +46,8 @@
   .title-slide { justify-content: center; background: linear-gradient(135deg, #fff 0%, #fff 60%, #ffede5 100%); }
   .title-slide h1 { font-size: 64px; }
   .bar { height: 10px; border-radius: 5px; background: var(--outage); }
+  .problem { font-size: 19px; line-height: 1.45; max-width: 1000px; margin: 0 0 24px; padding: 12px 18px;
+             border-left: 4px solid var(--outage); background: rgba(255,255,255,.7); color: var(--ink-1); }
   .illustrative { font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px dashed var(--ink-3); padding: 1px 8px; border-radius: 4px; }
 </style>
 </head>
@@ -55,7 +57,8 @@
 <section class="slide title-slide">
   <p class="kicker">ExaThon India 2026 · Track 3</p>
   <h1>VoltProof</h1>
-  <p style="font-size:28px; max-width: 900px; margin: 0 0 28px;">Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.</p>
+  <p style="font-size:28px; max-width: 900px; margin: 0 0 22px;">Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.</p>
+  <p class="problem">Households and small shops on unreliable electricity can't show when, and for how long, their power failed, because when they complain, their own memory is usually all they have to set against the utility's records. If this worked, they could take a dated, minute-by-minute record of every outage and voltage problem, with its uncertainty stated, to their utility or grievance forum.</p>
   <p class="muted small">Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI), Harvard Dataverse doi:10.7910/DVN/CLLZZM (CC0 1.0).</p>
   <p class="muted small">github.com/stredevirad/voltproof-exathon-2026</p>
 </section>
@@ -144,17 +147,17 @@
 <!-- 6. Why Exasol -->
 <section class="slide">
   <p class="kicker">Why Exasol · warm medians, 15.6 GB laptop</p>
-  <h2>102.8 million minutes, full build in 252.8 s</h2>
+  <h2>102.8 million minutes, full build in 210.4 s</h2>
   <div class="grid g3">
-    <div class="card"><div class="stat">37.3 s</div><div class="stat-label">native IMPORT of 7,367,581 raw rows (11 files)</div></div>
-    <div class="card"><div class="stat">19.6 s</div><div class="stat-label">in-database unpivot to 102,927,720 minute rows</div></div>
-    <div class="card"><div class="stat">49.1 s</div><div class="stat-label">gaps-and-islands over 102.8 million readings (one window function)</div></div>
+    <div class="card"><div class="stat">30.3 s</div><div class="stat-label">native IMPORT of 7,367,581 raw rows (11 files)</div></div>
+    <div class="card"><div class="stat">11.0 s</div><div class="stat-label">in-database unpivot to 102,927,720 minute rows</div></div>
+    <div class="card"><div class="stat">35.6 s</div><div class="stat-label">gaps-and-islands over 102.8 million readings (one window function)</div></div>
   </div>
   <table style="margin-top:24px">
     <tr><th>Scale fix (recorded in Exasol's audit log)</th><th class="n">Before</th><th class="n">After</th></tr>
-    <tr><td>Run detection: LAG + running SUM → one ROW_NUMBER window</td><td class="n">665 s, 7.4 GiB temp</td><td class="n">49.1 s</td></tr>
-    <tr><td>Duplicates: minute-level GROUP BY → hour-level first</td><td class="n">1,892 s, then a cancelled step</td><td class="n">23.6 s</td></tr>
-    <tr><td>Chance baseline: band join → bucketed equality joins</td><td class="n">348 s (sample only)</td><td class="n">5.6 s (full data)</td></tr>
+    <tr><td>Run detection: LAG + running SUM → one ROW_NUMBER window</td><td class="n">665 s, 7.4 GiB temp</td><td class="n">35.6 s</td></tr>
+    <tr><td>Duplicates: minute-level GROUP BY → hour-level first</td><td class="n">1,892 s, then a cancelled step</td><td class="n">13.5 s</td></tr>
+    <tr><td>Chance baseline: band join → bucketed equality joins</td><td class="n">348 s (sample only)</td><td class="n">3.9 s (full data)</td></tr>
   </table>
   <p class="small muted" style="margin-top:12px">In all 6 benchmark builds, every statement's session and statement id matched EXA_DBA_AUDIT_SQL by exact SQL text (0 different, 0 missing); the same audit statistics produce these benchmarks. Sources: docs/BENCHMARKS.md, docs/WHY_EXASOL.md.</p>
   <div class="footer"><span>VoltProof</span><span>6</span></div>
@@ -247,8 +250,13 @@
 <!-- 12. Team -->
 <section class="slide">
   <p class="kicker">Team</p>
-  <h2>[Team names to be added]</h2>
-  <p class="muted">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
+  <h2>Rajagiri School of Engineering &amp; Technology, Kochi</h2>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><h3>Joshua Herbert Japheth</h3></div>
+    <div class="card"><h3>Rohith Mohandas</h3></div>
+    <div class="card"><h3>Dane John Padinjarekara</h3></div>
+  </div>
+  <p class="muted" style="margin-top:28px">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
   <div class="footer"><span>VoltProof</span><span>12</span></div>
 </section>
 

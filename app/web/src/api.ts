@@ -85,7 +85,8 @@ export const api = {
     const r = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" },
                                              body: JSON.stringify({ location_id, month }) });
     if (!r.ok) throw new ApiError(r.status, (await r.json().catch(() => ({}))).detail || r.statusText);
-    return r.json() as Promise<{ report_id: string; pdf_url: string; html_url: string; json_url: string }>;
+    return r.json() as Promise<{ report_id: string; pdf_url: string; html_url: string; json_url: string;
+                                 generated_at_ist: string; reused: boolean }>;
   },
 };
 

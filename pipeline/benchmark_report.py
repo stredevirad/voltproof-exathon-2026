@@ -58,6 +58,19 @@ def _mr(xs: list[float], unit: str = "s", nd: int = 1) -> str:
     return f"{med:.{nd}f} {unit} ({min(xs):.{nd}f}–{max(xs):.{nd}f})"
 
 
+# The unrelated Oracle Database services on the build laptop were stopped at this time (project owner's approval;
+# recorded in the private RAM change log). Runs recorded before the `conditions` field existed are classified
+# by their start time; later runs carry the observed service state.
+ORACLE_STOPPED_AT = "2026-10-12T08:11"
+
+
+def _other_software_running(rec: dict) -> bool:
+    cond = rec.get("conditions")
+    if cond is not None:
+        return bool(cond.get("oracle_services_running"))
+    return rec.get("started_local", "") < ORACLE_STOPPED_AT
+
+
 def _prov(runs: list[dict]) -> str:
     if not runs:
         return "–"
@@ -80,6 +93,9 @@ def render() -> str:
     tgt = _targets()
     failed = [b for b in builds if b.get("status") == "failed"]
     builds = [b for b in builds if b.get("status") != "failed"]
+    superseded = [b for b in builds if _other_software_running(b)]
+    builds = [b for b in builds if not _other_software_running(b)]
+    queries = [q for q in queries if not _other_software_running(q)]
     by_mode = {m: [b for b in builds if b["mode"] == m] for m in ("cold", "warm")}
     L = [
         "# Benchmarks",
@@ -100,10 +116,9 @@ def render() -> str:
         f"| Free host RAM / disk when recorded | {env.get('free_ram_gib', '?')} GiB; C: {env.get('disk_free_gib', {}).get('C')} GiB, "
         f"D: {env.get('disk_free_gib', {}).get('D')} GiB |",
         "| Conditions | App server stopped, Docker Desktop not running, one build at a time |",
-        "| Other software | The warm runs (2026-10-12, 02:25–02:42 IST) ran with an unrelated Oracle Database service "
-        "using about 0.6 GB. A first cold run was stopped by the benchmark's 0.4 GiB free-RAM guard, so that "
-        "service was stopped before the cold runs (08:13–08:28 IST). Cold and warm runs therefore differ in free host "
-        "memory as well as in database caches; read the cold/warm difference with that in mind. |",
+        "| Other software | An unrelated Oracle Database service (about 0.6 GB) was stopped at 08:11 IST on 2026-10-12, "
+        "after a cold run was stopped by the benchmark's 0.4 GiB free-RAM guard. Every run in the statistics below "
+        "ran with it stopped. Earlier runs with it running are listed as superseded, not used. |",
         "",
         "**Cold** = the first run after `scripts\\exa.ps1 stop` and `start` (database caches empty; the data volume "
         "already grown; the Windows file cache is not cleared). **Warm** = repeated runs with the database running.",
@@ -150,6 +165,14 @@ def render() -> str:
                      f"{_mr(pick(by_mode['warm'], 'wall_seconds'))} | {_mr(pick(by_mode['warm'], 'db_seconds'))} | "
                      f"{_mr(pick(by_mode['warm'], 'cpu_pct'), '%', 0)} | "
                      f"{_mr(pick(by_mode['warm'], 'temp_ram_peak_mib'), 'MiB', 0)} |" if rows else f"| {label} | – |")
+        if superseded:
+            L += ["", "### Superseded runs (excluded from the statistics above)", "",
+                  "Recorded while the unrelated Oracle Database service was running, so with less free host memory than "
+                  "the runs above. They were superseded by warm runs under the same conditions as the cold runs.", "",
+                  "| Mode | Started (IST) | Wall time | IMPORT | SQL | Lowest free RAM |", "|---|---|---:|---:|---:|---:|"]
+            for s in superseded:
+                L.append(f"| {s['mode']} | {s['started_local'].replace('T', ' ')} | {s['wall_seconds']} s | "
+                         f"{s['load_seconds']} s | {s['sql_seconds']} s | {s['min_free_ram_gib_during']} GiB |")
         if failed:
             L += ["", "### Failed runs (excluded from the statistics above)", ""]
             for f in failed:
@@ -200,22 +223,38 @@ def render() -> str:
         L += ["",
               "The D-021 \"before\" ran on the 2018 June–August sample only; the \"after\" column is the full Uttar "
               "Pradesh data, so the comparison understates the gain.", ""]
-    if queries:
+    REUSE = "evidence report served again (pre-rendered, same data)"
+    current_q = [q for q in queries if REUSE in q["timings"]]
+    older_q = [q for q in queries if REUSE not in q["timings"]]
+    if current_q:
         L += ["## Interactive queries (guided-demo path, in-process through the API's service functions)", "",
-              "First call after a restart (cold) and the following calls (warm).", "",
-              "| Call | Cold: first call | Warm: median (range) |", "|---|---:|---:|"]
-        names = list(queries[-1]["timings"])
+              "- **Cold:** the first call after a database restart.",
+              "- **After warm-up:** the first call after a restart followed by `scripts\\warmup.ps1` (the live-demo case).",
+              "- **Warm:** later calls.",
+              "", "| Call | Cold: first call | After warm-up: first call | Warm: median (range) |", "|---|---:|---:|---:|"]
+        names = list(current_q[-1]["timings"])
         for n in names:
-            cold = [q["timings"][n][0] for q in queries if q["mode"] == "cold"]
-            warm = [t for q in queries for t in (q["timings"][n][1:] if q["mode"] == "cold" else q["timings"][n])]
-            L.append(f"| {n} | {_mr(cold, 's', 2)} | {_mr(warm, 's', 3)} |")
+            cold = [q["timings"][n][0] for q in current_q if q["mode"] == "cold"]
+            prepared = [q["timings"][n][0] for q in current_q if q["mode"] == "cold+warmup"]
+            warm = [t for q in current_q for t in (q["timings"][n][1:] if q["mode"].startswith("cold") else q["timings"][n])]
+            L.append(f"| {n} | {_mr(cold, 's', 2)} | {_mr(prepared, 's', 2)} | {_mr(warm, 's', 3)} |")
+        wu = [q["warmup_seconds"] for q in current_q if q.get("warmup_seconds") is not None]
+        if wu:
+            L += ["", f"`scripts\\warmup.ps1` itself took {_mr(wu)} after the restart (it pre-renders the demo report "
+                  "if no identical one exists)."]
         L.append("")
+    if older_q:
+        L += ["Earlier query runs (" + ", ".join(q["started_local"].replace("T", " ") for q in older_q) + ") are superseded. "
+              "They were recorded before evidence reports fetched a month's shared-event groups in one batch; a fresh "
+              "report then took about 16 s.", ""]
     L += ["## Reproduce", "", "```powershell",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark env",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark history",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark build --runs 3          # warm",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark build --runs 3 --cold   # restarts the database before each run",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark queries --runs 5 --cold",
+          ".venv\\Scripts\\python.exe -m pipeline.benchmark queries --runs 5 --cold --warmup",
+          ".venv\\Scripts\\python.exe -m pipeline.benchmark queries --runs 5",
           ".venv\\Scripts\\python.exe -m pipeline.benchmark_report",
           "```", ""]
     return "\n".join(L)

@@ -60,3 +60,15 @@ if ((Test-Path (Join-Path $podmanDir 'podman.exe')) -and ($env:PATH -notlike "*$
 function Write-Step([string]$msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 
 function Get-FreeGB([string]$drive) { [math]::Round((Get-PSDrive $drive).Free / 1GB, 2) }
+
+# Database status with a few retries: the launcher's status probe occasionally reports
+# database_connection_failed for a few seconds while the database is fine (seen 2026-10-12).
+function Get-DatabaseStatus([int]$Tries = 4, [int]$DelaySeconds = 5) {
+    $text = ''
+    for ($i = 1; $i -le $Tries; $i++) {
+        $text = (& "$PSScriptRoot\exa.ps1" status) -join "`n"
+        if ($text -match 'database_ready') { return $text }
+        if ($i -lt $Tries) { Start-Sleep -Seconds $DelaySeconds }
+    }
+    return $text
+}
