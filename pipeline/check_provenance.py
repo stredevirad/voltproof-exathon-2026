@@ -14,6 +14,25 @@ import sys
 from pipeline.db import DEFAULT_SCHEMA, connect
 
 
+def verify(schema: str) -> dict:
+    """The same check without printing: {'matches': n, 'different': n, 'missing': n}. Runs as the deployment's
+    database user, which can read the audit log."""
+    with connect() as c:
+        c.execute("FLUSH STATISTICS")
+        rows = c.execute(
+            f"SELECT r.STMT_SHA256, a.SQL_TEXT FROM {schema}.RUN_LOG r LEFT JOIN EXA_DBA_AUDIT_SQL a "
+            f"ON a.SESSION_ID = r.EXA_SESSION_ID AND a.STMT_ID = r.EXA_STMT_ID").fetchall()
+    out = {"matches": 0, "different": 0, "missing": 0}
+    for sha, text in rows:
+        if text is None:
+            out["missing"] += 1
+        elif hashlib.sha256(text.encode("utf-8")).hexdigest() == sha:
+            out["matches"] += 1
+        else:
+            out["different"] += 1
+    return out
+
+
 def main(schema: str) -> int:
     ok = bad = missing = 0
     with connect() as c:

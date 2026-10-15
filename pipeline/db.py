@@ -59,24 +59,32 @@ def _password(ddir: Path) -> str:
 DEFAULT_SCHEMA = os.environ.get("VOLTPROOF_SCHEMA", "VOLTPROOF")
 REAL_SCHEMA, DEMO_SCHEMA = "VOLTPROOF", "VOLTPROOF_DEMO"
 SYNTHETIC_FILE_ID_MIN = 900000000  # pipeline/synthetic.py file ids; real files carry Dataverse ids (D-033)
+UPLOAD_FILE_ID_MIN = 800000000     # uploaded files (pipeline/upload.py): 800000001+; never a Dataverse or synthetic id
 
 
 def schema_dataset(conn, schema: str) -> dict:
-    """What a schema holds: {'built': bool, 'synthetic': bool, 'real_files': n, 'synthetic_files': n}."""
+    """What a schema holds: {'built': bool, 'synthetic': bool, 'upload': bool, 'real_files': n, 'synthetic_files': n,
+    'upload_files': n}. Uploaded data (pipeline/upload.py) is marked by its file ids and by dataset.kind = upload."""
     schema = schema.upper()
     tables = {r[0] for r in conn.execute(
         f"SELECT TABLE_NAME FROM EXA_ALL_TABLES WHERE TABLE_SCHEMA = '{schema}'").fetchall()}
-    out = {"built": "QUALITY_LOCATION" in tables, "synthetic": False, "real_files": 0, "synthetic_files": 0}
+    out = {"built": "QUALITY_LOCATION" in tables, "synthetic": False, "upload": False, "real_files": 0,
+           "synthetic_files": 0, "upload_files": 0}
     if "SOURCE_FILE" in tables:
-        real, synth = conn.execute(
-            f"SELECT SUM(CASE WHEN FILE_ID < {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END), "
-            f"SUM(CASE WHEN FILE_ID >= {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END) FROM {schema}.SOURCE_FILE").fetchone()
-        out["real_files"], out["synthetic_files"] = int(real or 0), int(synth or 0)
+        real, synth, upl = conn.execute(
+            f"SELECT SUM(CASE WHEN FILE_ID < {UPLOAD_FILE_ID_MIN} THEN 1 ELSE 0 END), "
+            f"SUM(CASE WHEN FILE_ID >= {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END), "
+            f"SUM(CASE WHEN FILE_ID >= {UPLOAD_FILE_ID_MIN} AND FILE_ID < {SYNTHETIC_FILE_ID_MIN} THEN 1 ELSE 0 END) "
+            f"FROM {schema}.SOURCE_FILE").fetchone()
+        out["real_files"], out["synthetic_files"], out["upload_files"] = int(real or 0), int(synth or 0), int(upl or 0)
+    kind = None
     if "PARAMS" in tables:
         v = conn.execute(f"SELECT NUM_VALUE FROM {schema}.PARAMS WHERE NAME = 'dataset.synthetic'").fetchval()
+        kind = conn.execute(f"SELECT STR_VALUE FROM {schema}.PARAMS WHERE NAME = 'dataset.kind'").fetchval()
         out["synthetic"] = bool(v) or out["synthetic_files"] > 0
     else:
         out["synthetic"] = out["synthetic_files"] > 0
+    out["upload"] = kind == "upload" or out["upload_files"] > 0
     return out
 
 
@@ -86,6 +94,9 @@ def require_real_data(schema: str, what: str) -> None:
         info = schema_dataset(c, schema)
     if info["synthetic"]:
         raise SystemExit(f"{what} works on the real ESMI build only; schema {schema} holds SYNTHETIC demo data. "
+                         f"Set VOLTPROOF_SCHEMA={REAL_SCHEMA} (built by scripts\\load.ps1 -Set first|up).")
+    if info["upload"]:
+        raise SystemExit(f"{what} works on the real ESMI build only; schema {schema} holds uploaded data. "
                          f"Set VOLTPROOF_SCHEMA={REAL_SCHEMA} (built by scripts\\load.ps1 -Set first|up).")
 
 
@@ -101,7 +112,10 @@ def resolve_schema() -> str:
     return REAL_SCHEMA
 
 
-def connect(schema: str | None = None, fetch_dict: bool = False, **kwargs) -> pyexasol.ExaConnection:
+def connect(schema: str | None = None, fetch_dict: bool = False, *, user: str | None = None,
+            password: str | None = None, **kwargs) -> pyexasol.ExaConnection:
+    """Connect as the deployment's database user, or as `user` with `password` (the restricted upload user of
+    pipeline/upload.py, which owns only the VP_USER_ schemas)."""
     ddir = deployment_dir()
     info = conn_info(ddir)
     sslopt = None
@@ -113,8 +127,8 @@ def connect(schema: str | None = None, fetch_dict: bool = False, **kwargs) -> py
         sslopt = {"cert_reqs": ssl.CERT_NONE}
     return pyexasol.connect(
         dsn=info.dsn,
-        user=info.user,
-        password=_password(ddir),
+        user=user or info.user,
+        password=password if user else _password(ddir),
         schema=schema or "",
         encryption=True,
         websocket_sslopt=sslopt,

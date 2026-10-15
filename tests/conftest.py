@@ -21,6 +21,8 @@ TEST_EVIDENCE = REPO_ROOT / "reports" / "tests" / "evidence"
 DOC_SHOTS = REPO_ROOT / "docs" / "deliverables" / "screenshots"
 
 os.environ["VOLTPROOF_REPORT_DIR"] = str(TEST_EVIDENCE)  # read by app/api/report.py at import
+# Uploads made by tests live under reports/tests/uploads, never next to a user's own uploads in data/uploads
+os.environ["VOLTPROOF_UPLOAD_DIR"] = str(REPO_ROOT / "reports" / "tests" / "uploads")  # read by pipeline/upload.py
 
 
 def _listing(folder: Path) -> dict[str, tuple[int, int]]:
