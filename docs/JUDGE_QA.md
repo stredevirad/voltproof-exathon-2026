@@ -73,8 +73,9 @@ interruptions are shifted by whole days (keeping its time-of-day pattern; R-21).
 districts we observed about 1.4–3.1 times more coincident pairs than the shifted baseline, with none of
 20 shifts reaching the observed count (Bahraich, July 2018: 3,945 pairs observed, 1,827.5 expected). Over
 the 276 district-months of 2016–2018 with at least two monitors: 91,532 observed against 40,704.6 expected.
-150 are above all 20 shifts, and many sit at chance (docs/HEADLINE_FIGURES.md, docs/VALIDATION.md §2). The
-baseline uses only comparable months, to avoid an anti-conservative bias (D-023). Its known
+150 are above all 20 shifts. If the coincidences were pure chance, at most about 1 in 21 district-months
+would beat all 20 shifted versions (ties count against us): about 13 of 276. Many others sit at chance
+(docs/HEADLINE_FIGURES.md, docs/VALIDATION.md §2). The baseline uses only comparable months, to avoid an anti-conservative bias (D-023). Its known
 conservative bias in 30-day months is disclosed.
 
 **9. Why ≤ 130 V as "no supply"? Isn't that arbitrary?**
@@ -214,3 +215,16 @@ Earlier runs on the real minimum data set (§4.1–4.3) found two bugs: the serv
 was redirected, and an end-to-end test assumed the full data set. Both were fixed, and a repeat cloned from
 GitHub passed every step. The real data needs each user's own Dataverse Guestbook entry, by script or
 browser (README "Real data"). The full Uttar Pradesh build is optional.
+
+**25. Why are your daily-outage averages 2.0–2.6 times Prayas's Figure 2?**
+We do not know, and we report the gap rather than tune it away (docs/VALIDATION.md §3.3). What we checked:
+- The pipeline does not appear to inflate outage. Prayas's own single-monitor supply profiles for 2017–2018
+  and its time-of-day and evening figures (Figures 8–9) agree with ours. In Lucknow our daily figure is higher
+  than Prayas's but our evening figure is lower; a uniform inflation would push both up.
+- The SQL equals an independent Python oracle, and each of the 17 interruptions in the guided demo's group was
+  checked against the raw CSV (docs/VALIDATION.md §1, §2).
+- No single definition closes the gap: averaging method, connection type, 0 V only, years, the 2019 data,
+  inferred minutes, and the coverage threshold. Dropping the 90% coverage rule raises our rural average
+  slightly (566 to 574 min/day), because months with less coverage have more outage.
+- What we cannot test from the publication: Prayas's exact location-months, how Figure 2 averages, and any
+  verification or exclusion step applied to it.

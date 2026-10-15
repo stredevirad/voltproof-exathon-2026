@@ -62,6 +62,6 @@ After any rebuild, run step 5 again.
 | 11:00–12:30 | Slides 8–9 | Validation against Prayas, in honest wording. The data defects found. |
 | 12:30–13:45 | Slide 10 | Limits and legal framing: monitor not meter, historical data, coincidence is not cause, grievance route |
 | 13:45–15:00 | Slides 11–12 | Future scope; team |
-| 15:00–20:00 | Q&A | Have docs/JUDGE_QA.md open. Likely questions: #8 (is coincidence just chance?), #12 (tuning to Prayas?), #5 (what Prayas already publishes), #15 (why Exasol?), #24 (can a judge reproduce this?), #23 (is the demo data real?) |
+| 15:00–20:00 | Q&A | Have docs/JUDGE_QA.md open. Likely questions: #8 (is coincidence just chance?), #12 (tuning to Prayas?), #25 (why higher than Prayas's Figure 2?), #5 (what Prayas already publishes), #15 (why Exasol?), #24 (can a judge reproduce this?), #23 (is the demo data real?) |
 
 Decide in advance who presents which block, and who drives the laptop during the demo.

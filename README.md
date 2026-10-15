@@ -207,7 +207,8 @@ From [docs/HEADLINE_FIGURES.md](docs/HEADLINE_FIGURES.md), which a script genera
 - **Potential shared supply events, 2016–2018:**
   - Across the 276 district-months with at least two monitors, interruptions started within 2 minutes of
     each other 91,532 times. The time-shifted baseline expects 40,704.6.
-  - 150 of those district-months are above all 20 shifted variants.
+  - 150 of those district-months are above all 20 shifted variants; by pure chance, at most about 1 in 21
+    would be (about 13).
   - Coincidence is not cause.
 
 ## Validation against Prayas
