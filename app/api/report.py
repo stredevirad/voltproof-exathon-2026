@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+from html import escape
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -199,11 +200,23 @@ def generate(location_id: int, month_key: str, pdf: bool = True, reuse: bool = T
     html_path = OUT_DIR / f"{rid}.html"
     html_path.write_text(render_html(data), encoding="utf-8")
     if pdf:
-        _pdf(html_path, OUT_DIR / f"{rid}.pdf", synthetic=bool(data.get("synthetic")))
+        _pdf(html_path, OUT_DIR / f"{rid}.pdf", _footer(data))
     return {**_links(rid, pdf), "generated_at_ist": data["generated_at_ist"], "reused": False}
 
 
-def _pdf(html_path: Path, pdf_path: Path, synthetic: bool = False) -> None:
+def _footer(data: dict) -> str:
+    """PDF page footer, so every printed page carries the disclaimer and the data source: the disclaimer and the
+    attribution (the SYNTHETIC label on the demo set, which has no Prayas attribution), then the page number."""
+    synthetic = bool(data.get("synthetic"))
+    first = escape(data["disclaimer"]) + ("" if synthetic else " " + escape(data["provenance"]["attribution"]))
+    return ('<div style="font-size:7px;width:100%;text-align:center;color:#555">'
+            f'<div>{first}</div><div>'
+            + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
+            + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
+            '<span class="totalPages"></span></div></div>')
+
+
+def _pdf(html_path: Path, pdf_path: Path, footer: str) -> None:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -215,9 +228,6 @@ def _pdf(html_path: Path, pdf_path: Path, synthetic: bool = False) -> None:
                      margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"},
                      display_header_footer=True,
                      header_template="<div></div>",
-                     footer_template='<div style="font-size:7px;width:100%;text-align:center;color:#555">'
-                                     + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
-                                     + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
-                                     '<span class="totalPages"></span></div>')
+                     footer_template=footer)
         finally:
             browser.close()
