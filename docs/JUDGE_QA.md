@@ -17,7 +17,8 @@ The output is a dated evidence report (PDF) per location-month. It lists every i
 timestamps, certainty and duration bounds, and other monitors that lost supply at the same time, with
 an appendix tracing each number to the source file line and the SQL that produced it
 (app/api/report.py; tests/integration/test_report.py). It points to the statutory grievance route
-(the Section 42 forum and Ombudsman, as set up by UPERC's regulations; VERIFICATION_LOG L1–L3) without
+(the Consumer Grievance Redressal Forum and the Electricity Ombudsman under UPERC's 2003 regulations;
+VERIFICATION_LOG L1–L2) without
 claiming any entitlement. Using it today
 needs a monitor like ESMI's; see "future scope" in the README.
 
