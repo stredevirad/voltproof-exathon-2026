@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 
@@ -19,7 +20,8 @@ from app.api import service
 from app.api.db import SCHEMA, query, query_one
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO_ROOT / "reports" / "evidence"
+# VOLTPROOF_REPORT_DIR: the test suite sets it (tests/conftest.py) so test renders never sit next to real reports
+OUT_DIR = Path(os.environ.get("VOLTPROOF_REPORT_DIR") or REPO_ROOT / "reports" / "evidence")
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
 REPORT_ID = re.compile(r"^VP-(DEMO-)?\d{1,9}-\d{6}-[0-9a-f]{8}$")  # VP-DEMO-...: SYNTHETIC demo data (D-033)
