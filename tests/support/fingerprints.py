@@ -38,13 +38,15 @@ def tables(conn, schema: str) -> list[str]:
         "SELECT TABLE_NAME FROM EXA_ALL_TABLES WHERE TABLE_SCHEMA = {s} ORDER BY TABLE_NAME", {"s": schema}).fetchall()]
 
 
-def fingerprint(conn, schema: str, table: str, skip_columns: set[str] = FILE_COLUMNS) -> tuple:
+def fingerprint(conn, schema: str, table: str, skip_columns: set[str] = FILE_COLUMNS, where: str = "") -> tuple:
+    """`where` (optional) restricts the rows, e.g. to the locations two builds have in common; it is written by the
+    test itself, never taken from data."""
     cols = [(n, t) for n, t in conn.execute(
         "SELECT COLUMN_NAME, COLUMN_TYPE FROM EXA_ALL_COLUMNS WHERE COLUMN_SCHEMA = {s} AND COLUMN_TABLE = {t} "
         "ORDER BY COLUMN_ORDINAL_POSITION", {"s": schema, "t": table}).fetchall() if n not in skip_columns]
     h = "HASH_SHA256(" + " || '|' || ".join(_col_text(n, t) for n, t in cols) + ")"
     sums = ", ".join(f"SUM(TO_NUMBER(SUBSTR(H, {1 + 12 * i}, 12), 'XXXXXXXXXXXX'))" for i in range(3))
-    row = conn.execute(f'SELECT COUNT(*), {sums} FROM (SELECT {h} AS H FROM "{schema}"."{table}")').fetchone()
+    row = conn.execute(f'SELECT COUNT(*), {sums} FROM (SELECT {h} AS H FROM "{schema}"."{table}" {where})').fetchone()
     return (tuple(n for n, _ in cols),) + tuple(int(x or 0) for x in row)
 
 

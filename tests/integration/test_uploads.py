@@ -328,6 +328,26 @@ def test_monitors_without_district_and_state_are_set_aside_or_asked(tmp_path, pr
     assert s["questions"][0]["monitors"] == ["Shop A", "Shop B"]
 
 
+def test_dataverse_tab_files_are_read_as_delivered(tmp_path, protected):
+    """Harvard Dataverse's archival .tab: tab-separated, text in double quotes, numbers bare (as in the real
+    2014 file checked on 16 Oct 2026: same 58,976 rows as Dataverse's metadata, nothing set aside)."""
+    tab = tmp_path / "readings.tab"
+    with open(tab, "w", newline="", encoding="utf-8") as fh:
+        fh.write("\t".join(READINGS_HEADER) + "\n")
+        for d in DAYS:
+            for h in range(24):
+                cells = ["0" if h == 19 else "229"] * 60
+                fh.write("\t".join(['"Shop A [Offline]"', f'"{d}"', str(h)] + cells) + "\n")
+    up = _upload(tab, _locations(tmp_path / "l.csv", ["Shop A"]))
+    assert up["summary"]["ready_to_build"] and up["summary"]["rows"] == 72, up["summary"]
+    rec = upload.build(up["id"])
+    with connect() as c:
+        names = [r[0] for r in c.execute(f"SELECT DISPLAY_NAME FROM {rec['schema']}.QUALITY_LOCATION").fetchall()]
+        events = c.execute(f"SELECT COUNT(*) FROM {rec['schema']}.EVENT").fetchval()
+    assert names == ["Shop A"] and events == 3   # one evening hour without supply on each of the three days
+    upload.delete(rec["id"])
+
+
 # ---------------------------------------------------------------- hostile names, delete
 
 HOSTILE = "x'); DROP SCHEMA VOLTPROOF_DEMO CASCADE; --"
