@@ -9,6 +9,7 @@ Households and small shops on unreliable electricity can't show when, and for ho
 ExaThon India 2026, Track 3. Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI).
 Team: Joshua Herbert Japheth, Rohith Mohandas, Dane John Padinjarekara — Rajagiri School of Engineering &
 Technology, Kochi.
+This project was built with AI coding assistance (Claude Code).
 
 ## Submission deliverables
 
