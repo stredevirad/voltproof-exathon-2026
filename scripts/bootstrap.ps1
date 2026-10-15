@@ -10,7 +10,7 @@
   Steps
     1. Check prerequisites: git, uv, Node.js (>= 20), Podman (warn only), free disk space.
     2. Install CPython 3.12 managed by uv into .cache\uv-python (no shims, no registry entries).
-    3. Create .venv and install the locked Python dependencies (uv sync).
+    3. Create .venv and install exactly the locked Python dependencies (uv sync --frozen).
     4. Download the Exasol Launcher v2.3.0 and gitleaks v8.30.1 from their GitHub releases, verify the
        published SHA-256 checksums, and unpack them into .tools\.
 #>
@@ -52,8 +52,8 @@ $ErrorActionPreference = 'Continue'
 uv python install 3.12 --no-bin --no-registry 2>&1 | ForEach-Object { "  $_" }
 if ($LASTEXITCODE -ne 0) { throw 'uv python install failed' }
 
-Write-Step 'Creating .venv and installing Python dependencies (uv sync)'
-uv sync --python 3.12 2>&1 | ForEach-Object { "  $_" }
+Write-Step 'Creating .venv and installing the locked Python dependencies (uv sync --frozen)'
+uv sync --frozen --python 3.12 2>&1 | ForEach-Object { "  $_" }
 if ($LASTEXITCODE -ne 0) { throw 'uv sync failed' }
 $ErrorActionPreference = 'Stop'
 

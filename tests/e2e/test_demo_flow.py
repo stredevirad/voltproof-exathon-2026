@@ -1,7 +1,8 @@
 """End-to-end UI test (spec 9.7): the guided demo workflow in a real browser against a real server.
 
 Starts uvicorn on a free port, drives Chromium through the judge's workflow, checks the claims vocabulary on
-every page, and saves screenshots to docs/deliverables/screenshots/ for the README and deck.
+every page, and saves screenshots to reports/screenshots/ (gitignored). Set VOLTPROOF_UPDATE_SCREENSHOTS=1 to
+refresh the committed screenshots in docs/deliverables/screenshots/ for the README and deck instead.
 Set VOLTPROOF_RECORD_VIDEO=1 to also record a silent video of the flow (reports/video-run/raw/, gitignored),
 paced by docs/deliverables/video_timeline.json (see pipeline/video.py).
 
@@ -23,7 +24,8 @@ from tests.support.claims import forbidden_hits
 
 pytestmark = [pytest.mark.e2e, pytest.mark.exasol]
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SHOTS = REPO_ROOT / "docs" / "deliverables" / "screenshots"
+SHOTS = REPO_ROOT / "reports" / "screenshots"
+DOC_SHOTS = REPO_ROOT / "docs" / "deliverables" / "screenshots"  # committed; only with VOLTPROOF_UPDATE_SCREENSHOTS=1
 VIDEO = REPO_ROOT / "reports" / "video-run" / "raw"
 TIMELINE_FILE = REPO_ROOT / "docs" / "deliverables" / "video_timeline.json"
 ACTUAL_FILE = REPO_ROOT / "reports" / "video-run" / "timeline_actual.json"
@@ -72,7 +74,10 @@ def _check_wording(pg, where: str):
 
 
 def _shot(pg, name: str):
-    target = REPO_ROOT / "reports" / "screenshots-synthetic" if _STATE["synthetic"] else SHOTS
+    if _STATE["synthetic"]:
+        target = REPO_ROOT / "reports" / "screenshots-synthetic"
+    else:
+        target = DOC_SHOTS if os.environ.get("VOLTPROOF_UPDATE_SCREENSHOTS") == "1" else SHOTS
     target.mkdir(parents=True, exist_ok=True)
     pg.screenshot(path=str(target / f"{name}.png"), full_page=False)
 

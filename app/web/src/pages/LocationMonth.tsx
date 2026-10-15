@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, type Ev } from "../api";
+import { api, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, fmtWindow, type Ev } from "../api";
 import { C, EChart, hatch } from "../charts";
 import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, useApi } from "../ui";
 
@@ -27,6 +27,7 @@ export default function LocationMonth() {
   const [reportErr, setReportErr] = useState<Error | null>(null);
   const [showTable, setShowTable] = useState(false);
   const isDemo = sp.get("demo") === "1";
+  const demo = useApi(() => (isDemo ? api.demo() : Promise.resolve(null)), [isDemo]);  // its window names the period
 
   const option = useMemo(() => {
     if (!data) return null;
@@ -91,11 +92,11 @@ export default function LocationMonth() {
 
   return (
     <div style={{ opacity: loading ? 0.6 : 1 }}>
-      {isDemo && (
+      {isDemo && demo.data && (
         <div className="note" data-testid="demo-banner" style={{ marginTop: 12 }}>
           <strong>Guided demo.</strong> This location-month was chosen by a fixed rule: the evening potential shared
-          supply event with the most monitors in June–August 2018, at a monitor whose month is comparable. It is one
-          example. Next: <Link to={`/location/${locationId}/day/${sp.get("day")}?event=${sp.get("event")}`} data-testid="demo-next-day">open {sp.get("day")}</Link>.
+          supply event with the most monitors in {fmtWindow(demo.data.window_from, demo.data.window_to_exclusive)}, at a
+          monitor whose month is comparable. It is one example. Next: <Link to={`/location/${locationId}/day/${sp.get("day")}?event=${sp.get("event")}`} data-testid="demo-next-day">open {sp.get("day")}</Link>.
         </div>
       )}
       <p className="small muted" style={{ marginBottom: 0 }}><Link to="/">Start</Link> / {loc.state_name} / {loc.district}</p>

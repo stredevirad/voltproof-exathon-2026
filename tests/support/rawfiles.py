@@ -66,6 +66,13 @@ def _as_date(v) -> dt.date | None:
     return v if isinstance(v, dt.date) else dt.date.fromisoformat(str(v))
 
 
+def _period(declared: dict | None) -> tuple[dt.date, dt.date] | None:
+    if declared and (declared.get("period_from") or declared.get("period_to")):
+        return (_as_date(declared.get("period_from")) or dt.date.min,
+                _as_date(declared.get("period_to")) or dt.date.max)
+    return None
+
+
 def read_rows(path: Path, names: set[str] | None = None, declared: dict | None = None,
               matcher=None) -> list[RawRow]:
     """All data rows of `path` (optionally only `names`) with per-row date format and declared period.
@@ -78,10 +85,7 @@ def read_rows(path: Path, names: set[str] | None = None, declared: dict | None =
         next(rd)
         raw = [(line_no, row) for line_no, row in enumerate(rd, start=2) if row]
     dash, slash = detect_formats([row[1] for _, row in raw])
-    period = None
-    if declared and (declared.get("period_from") or declared.get("period_to")):
-        period = (_as_date(declared.get("period_from")) or dt.date.min,
-                  _as_date(declared.get("period_to")) or dt.date.max)
+    period = _period(declared)
     out = []
     for line_no, row in raw:
         loc = matcher(row[0]) if matcher else row[0]
@@ -90,4 +94,39 @@ def read_rows(path: Path, names: set[str] | None = None, declared: dict | None =
         d = row[1].strip()
         fmt = slash if SLASH.match(d) else dash
         out.append(RawRow(loc, row[1], row[2], row[3:], line_no, date_format=fmt, period=period))
+    return out
+
+
+def read_rows_window(path: Path, names: set[str], first_day: dt.date, last_day: dt.date,
+                     declared: dict | None = None, matcher=None) -> list[RawRow]:
+    """Like read_rows, but only the rows of `names` dated first_day..last_day (inclusive), and streamed: the file
+    is read twice (its dates for the D-025 format rule, then the rows) instead of being held in memory. Rows whose
+    date cannot be read with the file's format (an ambiguous slash date) are left out: they cannot be placed in
+    the window, and the oracle would quarantine them anyway."""
+    if declared and declared.get("exclude_reason"):
+        return []
+    with path.open(newline="", encoding="utf-8") as fh:
+        rd = csv.reader(fh)
+        next(rd)
+        dates = {row[1] for row in rd if row}
+    dash, slash = detect_formats(sorted(dates))
+    period = _period(declared)
+    out = []
+    with path.open(newline="", encoding="utf-8") as fh:
+        rd = csv.reader(fh)
+        next(rd)
+        for line_no, row in enumerate(rd, start=2):
+            if not row:
+                continue
+            loc = matcher(row[0]) if matcher else row[0]
+            if loc is None or loc not in names:
+                continue
+            d = row[1].strip()
+            fmt = slash if SLASH.match(d) else dash
+            try:
+                day = dt.datetime.strptime(d, fmt).date()
+            except ValueError:
+                continue
+            if first_day <= day <= last_day:
+                out.append(RawRow(loc, row[1], row[2], row[3:], line_no, date_format=fmt, period=period))
     return out

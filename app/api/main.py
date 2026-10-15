@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api import report, service
 
@@ -23,6 +24,9 @@ WEB_DIST = REPO_ROOT / "app" / "web" / "dist"
 
 app = FastAPI(title="VoltProof", version="0.1.0",
               description="Traceable evidence of power cuts and poor supply from ESMI minute-wise voltage data.")
+# The app is served on 127.0.0.1 only. Refusing any other Host header (400) stops a web page that points its
+# own host name at 127.0.0.1 (DNS rebinding) from reading the app as if it were the same site.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 
 MONTH = re.compile(r"^\d{4}-\d{2}$")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -120,7 +124,23 @@ def get_report(report_id: str, ext: str):
     return FileResponse(path, media_type=media, filename=path.name if ext == "pdf" else None)
 
 
-# Static single-page app (built by `npm run build` in app/web). Unknown non-API paths fall back to index.html.
+def _dist_file(path: str) -> Path | None:
+    """The built web-app file that `path` names, or None if there is none. Raises 404 for a path that could
+    leave WEB_DIST (`..` or `.` segments, an absolute or drive path, a backslash variant, a NUL byte) before it
+    reaches the file system; the resolved file must also still lie inside WEB_DIST."""
+    parts = path.replace("\\", "/").split("/")
+    if path.startswith(("/", "\\")) or any(p in (".", "..") or ":" in p or "\x00" in p for p in parts):
+        _404("page")
+    try:
+        root = WEB_DIST.resolve()
+        candidate = (root / path).resolve()
+    except (OSError, ValueError):
+        _404("page")
+    return candidate if candidate.is_relative_to(root) and candidate.is_file() else None
+
+
+# Static single-page app (built by `npm run build` in app/web). Unknown non-API paths fall back to index.html;
+# paths that try to leave the build folder get 404.
 if WEB_DIST.exists():
     app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
 
@@ -128,7 +148,5 @@ if WEB_DIST.exists():
     def spa(path: str):
         if path.startswith("api/"):
             _404("API route")
-        candidate = WEB_DIST / path
-        if path and candidate.is_file():
-            return FileResponse(candidate)
-        return FileResponse(WEB_DIST / "index.html")
+        candidate = _dist_file(path) if path else None
+        return FileResponse(candidate or WEB_DIST / "index.html")

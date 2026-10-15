@@ -78,6 +78,8 @@ def test_every_page_of_the_guided_demo_is_labelled_synthetic(page, demo_server):
     pg.get_by_test_id("calendar").wait_for()
     assert "SYNTHETIC" in pg.get_by_test_id("location-title").inner_text()
     _check(pg, "month")
+    demo_banner = pg.get_by_test_id("demo-banner").inner_text()  # names the synthetic month, not the real window
+    assert "January 2030" in demo_banner and "2018" not in demo_banner, demo_banner
     pg.get_by_test_id("demo-next-day").click()
     pg.get_by_test_id("voltage-trace").wait_for()
     _check(pg, "day")

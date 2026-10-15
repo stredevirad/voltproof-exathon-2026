@@ -8,8 +8,9 @@
   differential  oracle vs SQL: Hypothesis random batches (schema VP_HYPO) and a real-data slice
                 (needs the VOLTPROOF schema built by scripts\load.ps1 and its files in data\raw; skips otherwise)
   e2e           Playwright drives the guided demo in Chromium against a real server (needs a built schema and
-                app\web\dist); saves screenshots to docs\deliverables\screenshots, or to
-                reports\screenshots-synthetic on the SYNTHETIC demo set
+                app\web\dist); saves screenshots to reports\screenshots, or to
+                reports\screenshots-synthetic on the SYNTHETIC demo set. To refresh the committed README/deck
+                screenshots in docs\deliverables\screenshots, set VOLTPROOF_UPDATE_SCREENSHOTS=1 first
   The database must be running for integration, differential and e2e suites.
   Schema: VOLTPROOF_SCHEMA if set, else VOLTPROOF if built, else VOLTPROOF_DEMO (the synthetic demo set).
 

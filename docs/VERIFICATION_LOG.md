@@ -1,5 +1,7 @@
 # Verification log
 
+> This log is a history of what was checked and when. Items not verified here (⏳ not checked, ❌ contradicted) are not cited anywhere in the app, the reports, the deck or the README.
+
 Every external fact we rely on, checked by hand. The last column records whether the check agreed with
 our initial planning assumption. Raw evidence copies are kept locally in a gitignored evidence folder
 (third-party pages are not redistributed).

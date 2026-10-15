@@ -39,7 +39,9 @@ resolvable p is 1/20.
 
 **All district-months:** 420 district-months have interruptions in comparable months; 322 of them have at
 least two monitors. Of those 322, 174 are above every one of the 20 shifted versions, 132 have p > 0.05 and
-44 have fewer coincident pairs than expected. Summed over the 322, there are 97,852 observed pairs against
+44 have fewer coincident pairs than expected. If the coincidences were pure chance, at most about 1 in 21
+district-months would be above all 20 shifted versions (ties count against us): about 15 of the 322. For
+2016–2018 alone, about 13 of 276 would be; 150 are. Summed over the 322, there are 97,852 observed pairs against
 43,192.4 expected (2.3 times). Over the 141 district-months with at least 10 expected pairs, the median
 ratio is 1.9.
 
@@ -136,6 +138,11 @@ By year (pooled): megacity 68.3 / 48.1 / 49.6 / 50.3 (2016–2019), other munici
   of each category's outage minutes.
 - Averaging method, connection type, 0 V vs low readings, the year mix, the 2019 data, and inferred
   minutes are all ruled out by the table above.
+- The 90% coverage rule does not raise our averages. 2016–2018, pooled, min/day with no coverage filter /
+  above 50% / above 75% / above 90% (ours): megacity 60.6 / 58.4 / 56.2 / 56.3; other municipal 198.4 /
+  196.5 / 194.3 / 189.5; rural 574.0 / 570.7 / 569.9 / 566.3. Months with less coverage have more outage
+  per observed minute (33.1% of observed minutes at 50% coverage or less, 22.7% above 90%), so the rule
+  lowers our averages slightly.
 
 **Evidence that the pipeline does not inflate outage minutes:**
 - Prayas's own single-monitor profiles agree to within 0.1 h/day of no supply for 2017–2018.
@@ -182,6 +189,11 @@ The single-monitor comparison exposed a defect in `ESMI voltage data 2019 Jan-Ju
 .venv\Scripts\python.exe -m pipeline.run_sql 110          # validation tables (about 1 s; needs the UP build)
 .venv\Scripts\python.exe -m pipeline.prayas_figures       # needs network: downloads Prayas's figures to .cache\prayas
 ```
+
+The coverage check in §3.3 is a read-only query on `MONTHLY` and `VALIDATION_CATEGORY` (months 2016–2018;
+pooled min/day = SUM(OUTAGE_MIN_LOWER) / SUM(OBSERVED_MINUTES / 1440); filter COVERAGE_CALENDAR above each
+cut-off; outage share = SUM(OUTAGE_MIN_LOWER) / SUM(OBSERVED_MINUTES) per coverage band). Re-measured on
+2026-10-15.
 
 Step 110 is not part of `scripts\load.ps1`, because it is a UP-specific validation, not a product
 feature. `pipeline.prayas_figures` is not part of the clean start, because it needs the network. The

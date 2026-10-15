@@ -10,7 +10,9 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import os
 import re
+from html import escape
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -19,7 +21,8 @@ from app.api import service
 from app.api.db import SCHEMA, query, query_one
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO_ROOT / "reports" / "evidence"
+# VOLTPROOF_REPORT_DIR: the test suite sets it (tests/conftest.py) so test renders never sit next to real reports
+OUT_DIR = Path(os.environ.get("VOLTPROOF_REPORT_DIR") or REPO_ROOT / "reports" / "evidence")
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
 REPORT_ID = re.compile(r"^VP-(DEMO-)?\d{1,9}-\d{6}-[0-9a-f]{8}$")  # VP-DEMO-...: SYNTHETIC demo data (D-033)
@@ -27,10 +30,10 @@ S = SCHEMA
 
 REDRESS_TEXT = (
     "A consumer can raise supply complaints with the distribution company. In Uttar Pradesh, the State "
-    "Electricity Regulatory Commission's regulations made under Section 42(5) to (8) of the Electricity Act, 2003 "
-    "provide a Consumer Grievance Redressal Forum to be constituted by each distribution licensee (Section 42(5)) "
-    "and an Electricity Ombudsman appointed or designated by the Commission (Section 42(6)); their 2003 "
-    "definition of a deficiency includes interruption or failure of power supply and voltage complaints. "
+    "Electricity Regulatory Commission's 2003 regulations provide a Consumer Grievance Redressal Forum to be "
+    "constituted by each distribution licensee and an Electricity Ombudsman appointed or designated by the "
+    "Commission; their definition of a deficiency includes interruption or failure of power supply and voltage "
+    "complaints. "
     "A consumer whose grievance is not redressed may make a representation to the Ombudsman. Sources: UPERC "
     "(Consumer Grievance Redressal Forum & Electricity Ombudsman) Regulations, 2003, clauses 2.1(i), (l) and (n); "
     "Press Information Bureau, Ministry of Power, 30 December 2010. Check the Commission's current regulations "
@@ -197,11 +200,23 @@ def generate(location_id: int, month_key: str, pdf: bool = True, reuse: bool = T
     html_path = OUT_DIR / f"{rid}.html"
     html_path.write_text(render_html(data), encoding="utf-8")
     if pdf:
-        _pdf(html_path, OUT_DIR / f"{rid}.pdf", synthetic=bool(data.get("synthetic")))
+        _pdf(html_path, OUT_DIR / f"{rid}.pdf", _footer(data))
     return {**_links(rid, pdf), "generated_at_ist": data["generated_at_ist"], "reused": False}
 
 
-def _pdf(html_path: Path, pdf_path: Path, synthetic: bool = False) -> None:
+def _footer(data: dict) -> str:
+    """PDF page footer, so every printed page carries the disclaimer and the data source: the disclaimer and the
+    attribution (the SYNTHETIC label on the demo set, which has no Prayas attribution), then the page number."""
+    synthetic = bool(data.get("synthetic"))
+    first = escape(data["disclaimer"]) + ("" if synthetic else " " + escape(data["provenance"]["attribution"]))
+    return ('<div style="font-size:7px;width:100%;text-align:center;color:#555">'
+            f'<div>{first}</div><div>'
+            + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
+            + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
+            '<span class="totalPages"></span></div></div>')
+
+
+def _pdf(html_path: Path, pdf_path: Path, footer: str) -> None:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
@@ -213,9 +228,6 @@ def _pdf(html_path: Path, pdf_path: Path, synthetic: bool = False) -> None:
                      margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"},
                      display_header_footer=True,
                      header_template="<div></div>",
-                     footer_template='<div style="font-size:7px;width:100%;text-align:center;color:#555">'
-                                     + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
-                                     + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
-                                     '<span class="totalPages"></span></div>')
+                     footer_template=footer)
         finally:
             browser.close()

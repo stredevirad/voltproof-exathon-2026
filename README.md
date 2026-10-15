@@ -9,6 +9,7 @@ Households and small shops on unreliable electricity can't show when, and for ho
 ExaThon India 2026, Track 3. Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI).
 Team: Joshua Herbert Japheth, Rohith Mohandas, Dane John Padinjarekara — Rajagiri School of Engineering &
 Technology, Kochi.
+This project was built with AI coding assistance (Claude Code).
 
 ## Submission deliverables
 
@@ -17,7 +18,7 @@ Technology, Kochi.
 | Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README) |
 | Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
 | Demo video (narrated, under 3:00) | `docs/deliverables/VoltProof_demo.mp4`, **pending the team's voice-over**. Script: [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md); how it is made: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
-| Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md) |
+| Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md); manual steps for [macOS / Linux](#macos--linux-not-tested-by-the-team), not tested by the team |
 | Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
 | Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
@@ -130,6 +131,46 @@ Personal database (Podman/WSL 2 and about 9 GB of RAM for the database), which h
 provide. They run locally with `scripts\test.ps1`, and [docs/TEST_REPORT.md](docs/TEST_REPORT.md) records
 the latest full run. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## macOS / Linux (not tested by the team)
+
+The scripts in `scripts\` are PowerShell scripts for Windows, and we have only run VoltProof on Windows 10/11.
+The steps below are the same commands the scripts run, written out by hand for macOS and Linux. **The team has
+not tested them.** You need Git, [uv](https://docs.astral.sh/uv/), Node.js 20 or newer and about 16 GB RAM.
+
+**1. Exasol Personal.** Download the launcher for your system from the
+[v2.3.0 release](https://github.com/exasol/exasol-personal/releases/tag/v2.3.0) (Linux and macOS builds are
+published there; check the file against `exasol-personal_2.3.0_checksums.txt`) and follow the launcher's own
+instructions for a local deployment. Always pass `--deployment-dir`: VoltProof reads the connection details
+(`deployment.json`, `secrets.json`) from the folder named by `EXASOL_DEPLOYMENT_DIR`.
+
+```bash
+export EXASOL_DEPLOYMENT_DIR="$HOME/ExasolDeployments/voltproof"
+./exasol install local --deployment-dir "$EXASOL_DEPLOYMENT_DIR" --auto-approve   # accepts the Exasol Personal EULA
+./exasol status --deployment-dir "$EXASOL_DEPLOYMENT_DIR"                          # wait for database_ready
+```
+
+**2. Python, the PDF browser and the web app.**
+
+```bash
+git clone https://github.com/stredevirad/voltproof-exathon-2026.git voltproof && cd voltproof
+uv sync --frozen --python 3.12
+uv run --frozen playwright install chromium
+(cd app/web && npm ci && npm run build)
+```
+
+**3. Build the SYNTHETIC demo set** (no download) and check its provenance:
+
+```bash
+uv run --frozen python -m pipeline.build --schema VOLTPROOF_DEMO --demo
+uv run --frozen python -m pipeline.check_provenance VOLTPROOF_DEMO
+```
+
+**4. Open the app** at http://127.0.0.1:8000/:
+
+```bash
+VOLTPROOF_SCHEMA=VOLTPROOF_DEMO uv run --frozen uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+```
+
 ## Real data (ESMI, Harvard Dataverse)
 
 The real readings are published by Prayas (Energy Group) on Harvard Dataverse. Each file download records a
@@ -206,7 +247,8 @@ From [docs/HEADLINE_FIGURES.md](docs/HEADLINE_FIGURES.md), which a script genera
 - **Potential shared supply events, 2016–2018:**
   - Across the 276 district-months with at least two monitors, interruptions started within 2 minutes of
     each other 91,532 times. The time-shifted baseline expects 40,704.6.
-  - 150 of those district-months are above all 20 shifted variants.
+  - 150 of those district-months are above all 20 shifted variants; by pure chance, at most about 1 in 21
+    would be (about 13).
   - Coincidence is not cause.
 
 ## Validation against Prayas
@@ -275,7 +317,8 @@ Every statement in every build matched Exasol's audit log. Why this is Exasol's 
   - The dataset is licensed **CC0 1.0** on Dataverse. Prayas also asks for non-commercial, academic and
     research use with acknowledgement, and we follow that.
   - Raw data is **not** redistributed in this repository ([docs/data/SOURCE_TERMS.md](docs/data/SOURCE_TERMS.md)).
-- **Code.** MIT licence ([LICENSE](LICENSE)). Third-party notices are in
+- **Code.** MIT licence ([LICENSE](LICENSE)); it covers the VoltProof source code only, not the ESMI data.
+  Third-party notices are in
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - **Exasol Personal** is used under its End User License Agreement and is not included in this repository.
 

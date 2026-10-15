@@ -345,3 +345,42 @@ real-data oracle tests are re-run on the new formulations.
     or real place name appears.
 - **Schema used by the scripts:** `start`, `test` and `warmup` use VOLTPROOF_SCHEMA if set, otherwise
   VOLTPROOF if it is built, otherwise VOLTPROOF_DEMO.
+
+## D-034 · 2026-10-15 · Real-data coincidence test scoped to June–August 2018
+
+- **Problem:** `test_coincidence_sql_matches_oracle_on_two_real_districts` gives the independent oracle every
+  minute of two districts. It was written on the 2018 June–August file and grew with the data: on the full
+  Uttar Pradesh build (2016–2019) the test process needed about 8.7 GB, and free RAM on the 15.6 GB development
+  laptop fell to 0.31 GB.
+- **Choice (team decision):** the test compares the SQL with the oracle on June–August 2018, the scope it was
+  designed on, with the same assertions:
+  - the two districts with the most coincident pairs in that window, and all their monitors;
+  - pairs with both starts, groups whose first member starts, and baseline months inside the window.
+
+  The oracle streams only the rows of those monitors dated 31 May to 1 September from the files that cover
+  them. The extra day on each side makes outages that cross 1 June or 1 September start at the same minute as
+  in the SQL, which reads the files as one continuous record (gap bridging is off, so one day is enough).
+- **This is an exception, not compliance:** the test now checks less than before. The SQL-vs-oracle comparison of
+  coincidences on real data no longer covers 2016, 2017 or 2019, so a coincidence defect that showed only in
+  those years would not be caught by this test. The coincidence rules are still checked in full on the
+  synthetic set and by the hand-written fixtures (D-033).
+- **Proof:**
+  - On a build of only the 2018 June–August file, the original and the scoped test chose the same districts
+    (Bahraich, Barabanki), gave the oracle the same 88,608 rows and produced identical SQL and oracle results
+    (20,127 pairs, 6,683 groups, 6 baseline rows). Both passed, and both failed when one pair was removed or
+    one start was moved by a minute.
+  - On the full build the scoped test passes in about 45 s, and free RAM stayed above 2.4 GB.
+  - The 76 pairs that the one-file build has in addition all start at 1 June 00:00: outages that began in
+    May, cut at the file edge.
+- **Unchanged:** the oracle, the SQL, the event and aggregate test on the real slice (it still reads every
+  file), the Hypothesis tests and the 18 fixtures. No test was skipped or weakened.
+
+## D-035 · 2026-10-15 · The verification log stays as a history
+
+- **Problem:** `docs/VERIFICATION_LOG.md` records every external fact we checked during the build, including legal
+  sources that the app, the reports, the deck and the README no longer cite (the grievance route is now cited only
+  from the UPERC 2003 regulations and the 2010 PIB release).
+- **Choice (team decision):** keep the log unchanged as a record of what was checked and when, with one line at
+  the top saying that items it does not verify are not cited anywhere in the app, the reports, the deck or the
+  README. It is a working record, not a claim to users; `tests/unit/test_grievance_wording.py` already treats it
+  as record-only.
