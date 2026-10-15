@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api import datasets, report, service
+from app.api import datasets, report, service, uploads
 from app.api.db import using
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -154,6 +154,9 @@ def get_report(report_id: str, ext: str):
         _404("report")
     media = {"pdf": "application/pdf", "html": "text/html", "json": "application/json"}[ext]
     return FileResponse(path, media_type=media, filename=path.name if ext == "pdf" else None)
+
+
+app.include_router(uploads.router)  # before the single-page-app fallback below
 
 
 def _dist_file(path: str) -> Path | None:

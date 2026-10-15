@@ -36,6 +36,7 @@ import re
 import secrets
 import shutil
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -112,9 +113,16 @@ def _now() -> str:
 def save(rec: dict) -> None:
     path = _folder(rec["id"]) / "upload.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
+    tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
     tmp.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
-    os.replace(tmp, path)
+    for attempt in range(40):  # Windows refuses to replace a file another thread is reading at that moment
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == 39:
+                raise
+            time.sleep(0.05)
 
 
 def load(upload_id: str) -> dict:
@@ -773,7 +781,10 @@ def build(upload_id: str, progress=None) -> dict:
         def tick(step, idx):
             done["n"] += 1
             rec["progress"] = {"step": step, "done": done["n"], "total": total}
-            save(rec)
+            try:
+                save(rec)
+            except OSError:
+                pass  # progress is only for display; it never stops a build
             if progress:
                 progress(step, done["n"], total)
         try:
@@ -803,6 +814,8 @@ def build(upload_id: str, progress=None) -> dict:
             save(rec)
             raise
         except Exception as e:  # keep the message plain; the detail goes to the server log, never file contents
+            print(f"[upload] build of {upload_id} failed: {type(e).__name__}: "
+                  f"{(str(e).splitlines() or [''])[0][:200]}", file=sys.stderr, flush=True)
             rec.update(status="failed", progress=None,
                        error="The build stopped with a database error. Delete this upload and try again; if it "
                              "happens again, the file may be too large for this laptop.")

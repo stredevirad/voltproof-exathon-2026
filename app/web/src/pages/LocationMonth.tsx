@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, fmtWindow, type Ev } from "../api";
-import { C, EChart, hatch } from "../charts";
+import { api, withDs, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, fmtWindow, type Ev } from "../api";
+import { esc, C, EChart, hatch } from "../charts";
 import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, useApi } from "../ui";
 
 const PIECES = [
@@ -39,9 +39,9 @@ export default function LocationMonth() {
       tooltip: {
         formatter: (p: any) => {
           const d = byDay[p.data[0]];
-          if (!d) return p.data[0];
+          if (!d) return esc(p.data[0]);
           const cov = (100 * d.observed_minutes / 1440).toFixed(0);
-          return `<b>${d.cal_day}</b><br/>Outage: at least ${fmtMin(d.outage_min_lower)}` +
+          return `<b>${esc(d.cal_day)}</b><br/>Outage: at least ${fmtMin(d.outage_min_lower)}` +
             (d.outage_min_upper > d.outage_min_lower ? ` (up to ${fmtMin(d.outage_min_upper)})` : "") +
             `<br/>Interruptions: ${d.interruptions}<br/>Read: ${cov}% of the day` +
             (d.observed_minutes < FULL_DAY ? "<br/><i>No reading for part of the day, not counted as outage</i>" : "");
@@ -64,7 +64,7 @@ export default function LocationMonth() {
   }, [data, month]);
 
   const onDayClick = useCallback((p: any) => {
-    if (p?.data?.[0]) nav(`/location/${locationId}/day/${p.data[0]}`);
+    if (p?.data?.[0]) nav(withDs(`/location/${locationId}/day/${p.data[0]}`));
   }, [nav, locationId]);
 
   const events = useMemo(() => {
@@ -96,10 +96,10 @@ export default function LocationMonth() {
         <div className="note" data-testid="demo-banner" style={{ marginTop: 12 }}>
           <strong>Guided demo.</strong> This location-month was chosen by a fixed rule: the evening potential shared
           supply event with the most monitors in {fmtWindow(demo.data.window_from, demo.data.window_to_exclusive)}, at a
-          monitor whose month is comparable. It is one example. Next: <Link to={`/location/${locationId}/day/${sp.get("day")}?event=${sp.get("event")}`} data-testid="demo-next-day">open {sp.get("day")}</Link>.
+          monitor whose month is comparable. It is one example. Next: <Link to={withDs(`/location/${locationId}/day/${sp.get("day")}?event=${sp.get("event")}`)} data-testid="demo-next-day">open {sp.get("day")}</Link>.
         </div>
       )}
-      <p className="small muted" style={{ marginBottom: 0 }}><Link to="/">Start</Link> / {loc.state_name} / {loc.district}</p>
+      <p className="small muted" style={{ marginBottom: 0 }}><Link to={withDs("/")}>Start</Link> / {loc.state_name} / {loc.district}</p>
       <h1 data-testid="location-title">{loc.display_name} · {month}</h1>
       <DataWarning text={data.data_warning} />
       <div className="row small muted" style={{ alignItems: "center" }}>
@@ -135,7 +135,7 @@ export default function LocationMonth() {
               <table className="data" data-testid="daily-table">
                 <thead><tr><th className="l">Day</th><th>Interruptions</th><th>Outage min (lower–upper)</th><th>Low-V min</th><th>High-V min</th><th>Read</th></tr></thead>
                 <tbody>{data.days.map((d) => (
-                  <tr key={d.cal_day}><td className="l"><Link to={`/location/${locationId}/day/${d.cal_day}`}>{d.cal_day}</Link></td>
+                  <tr key={d.cal_day}><td className="l"><Link to={withDs(`/location/${locationId}/day/${d.cal_day}`)}>{d.cal_day}</Link></td>
                     <td>{d.interruptions}</td><td>{d.outage_min_lower}–{d.outage_min_upper}</td><td>{d.low_minutes}</td><td>{d.high_minutes}</td>
                     <td>{((100 * d.observed_minutes) / 1440).toFixed(0)}%</td></tr>))}</tbody>
               </table>
@@ -177,8 +177,8 @@ export default function LocationMonth() {
               <th className="l">Start / end certainty</th><th className="l">Other monitors</th>
             </tr></thead>
             <tbody>{events.map((e) => (
-              <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(`/event/${e.event_key}`)}
-                  onKeyDown={(k) => k.key === "Enter" && nav(`/event/${e.event_key}`)}>
+              <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(withDs(`/event/${e.event_key}`))}
+                  onKeyDown={(k) => k.key === "Enter" && nav(withDs(`/event/${e.event_key}`))}>
                 <td className="l">{fmtTs(e.start_ts)}</td><td className="l">{fmtTs(e.end_ts).slice(11)}</td>
                 <td>{fmtMin(e.min_duration)}</td><td>{e.max_duration > e.min_duration ? fmtMin(e.max_duration) : "–"}</td>
                 <td className="l"><Certainty value={e.start_certainty} /> / <Certainty value={e.end_certainty} />{!e.is_interruption && " (below threshold)"}</td>

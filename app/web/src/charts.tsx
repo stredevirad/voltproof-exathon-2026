@@ -18,6 +18,12 @@ export const C = {
   ramp: ["#ffede5", "#ffd2c0", "#ffb295", "#f78d66", "#e96a38", "#9b411d"],
 };
 
+/** Text for chart tooltips, which ECharts renders as HTML: every value placed in a tooltip goes through this, so a
+ *  name from an uploaded file could never become markup. */
+export function esc(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 /** Diagonal hatch used for "no reading" (texture channel, 45 degrees). */
 export function hatch(color = "#98a2b3", bg = "#eef0f3"): any {
   const c = document.createElement("canvas");

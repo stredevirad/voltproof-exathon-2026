@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { api, fmtMin, fmtP, fmtTs, type GroupData } from "../api";
+import { api, withDs, fmtMin, fmtP, fmtTs, type GroupData } from "../api";
 import { DataWarning, ErrorBox, Skeleton, useApi } from "../ui";
 
 function edgeText(kind: "start" | "end", certainty: string, seg: { supply_state: string; minutes: number } | null, cap = 60) {
@@ -26,7 +26,7 @@ export function GroupPanel({ g, highlight }: { g: GroupData; highlight?: string 
           <thead><tr><th className="l">Monitor</th><th className="l">Start</th><th>Offset</th><th>Measured</th></tr></thead>
           <tbody>{g.members.map((m) => (
             <tr key={m.event_key} style={m.event_key === highlight ? { fontWeight: 700 } : undefined}>
-              <td className="l"><Link to={`/event/${m.event_key}`}>{m.display_name}</Link></td>
+              <td className="l"><Link to={withDs(`/event/${m.event_key}`)}>{m.display_name}</Link></td>
               <td className="l">{fmtTs(m.start_ts)}</td><td>+{m.offset_from_group_start_min} min</td><td>{fmtMin(m.min_duration)}</td>
             </tr>))}</tbody>
         </table>
@@ -52,8 +52,8 @@ export default function EventView() {
   return (
     <>
       <p className="small muted" style={{ marginBottom: 0 }}>
-        <Link to="/">Start</Link> / <Link to={`/location/${e.location_id}/${e.start_ts.slice(0, 7)}`}>{e.display_name} · {e.start_ts.slice(0, 7)}</Link> /{" "}
-        <Link to={`/location/${e.location_id}/day/${day}?event=${e.event_key}`}>{day}</Link>
+        <Link to={withDs("/")}>Start</Link> / <Link to={withDs(`/location/${e.location_id}/${e.start_ts.slice(0, 7)}`)}>{e.display_name} · {e.start_ts.slice(0, 7)}</Link> /{" "}
+        <Link to={withDs(`/location/${e.location_id}/day/${day}?event=${e.event_key}`)}>{day}</Link>
       </p>
       <h1 data-testid="event-title">Outage at {e.display_name}, {fmtTs(e.start_ts)}</h1>
       <DataWarning text={e.data_warning} />

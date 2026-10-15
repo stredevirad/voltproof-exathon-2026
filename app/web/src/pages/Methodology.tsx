@@ -5,6 +5,7 @@ export default function Methodology() {
   const { data, error, loading } = useApi(() => api.meta(), []);
   if (loading && !data) return <Skeleton label="the methodology" />;
   if (error) return <ErrorBox error={error} what="the methodology" />;
+  const kind: string = data.dataset_kind || (data.synthetic ? "synthetic" : "real");
   const p: Record<string, any> = Object.fromEntries((data.params as any[]).map((r) => [r.name, r.num_value ?? r.str_value]));
   return (
     <>
@@ -45,12 +46,16 @@ export default function Methodology() {
       <h2>Known limitations</h2>
       <ul>
         <li>A plug-in monitor is not the utility's meter. It sees one socket, and an outage there may also come from the premises or the monitor.</li>
-        {data.synthetic
+        {kind === "upload"
+          ? <li>This dataset is an uploaded file: VoltProof has not verified where the readings came from.</li>
+          : data.synthetic
           ? <li>This build runs on SYNTHETIC demo data: invented readings that show the method and describe no real supply.</li>
           : <li>The data are historical (2016–2019 for Uttar Pradesh); they show a method, not today's supply.</li>}
-        <li>Monitor accuracy is ±4 V, so readings within 4 V of a class boundary are sensitive.</li>
-        <li>Some monitors report a floor value (about 101 V or 99 V) during deep sags; Prayas counts these as no supply, and VoltProof shows the 0 V share separately.</li>
-        <li>The published 2019 July–December file lost its hour column and is excluded (see Data &amp; sources).</li>
+        {kind === "upload"
+          ? <li>The accuracy of the device that recorded an uploaded file is not known, so readings close to a class boundary are sensitive.</li>
+          : <li>Monitor accuracy is ±4 V, so readings within 4 V of a class boundary are sensitive.</li>}
+        {kind !== "upload" && <li>Some monitors report a floor value (about 101 V or 99 V) during deep sags; Prayas counts these as no supply, and VoltProof shows the 0 V share separately.</li>}
+        {kind === "real" && <li>The published 2019 July–December file lost its hour column and is excluded (see Data &amp; sources).</li>}
       </ul>
     </>
   );
