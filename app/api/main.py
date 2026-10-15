@@ -9,6 +9,7 @@ them, and renders evidence reports from them.
 from __future__ import annotations
 
 import re
+from contextlib import contextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -17,7 +18,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api import report, service
+from app.api import datasets, report, service
+from app.api.db import using
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WEB_DIST = REPO_ROOT / "app" / "web" / "dist"
@@ -37,6 +39,25 @@ def _404(what: str):
     raise HTTPException(status_code=404, detail=f"{what} not found")
 
 
+DS = Query(None, max_length=40, description="dataset (from /api/datasets); default: the server's dataset")
+
+
+@contextmanager
+def _dataset(ds: str | None):
+    """Answer this request from dataset `ds`, which must be on the whitelist (app/api/datasets.py)."""
+    try:
+        schema = datasets.resolve(ds)
+    except datasets.UnknownDataset:
+        raise HTTPException(status_code=404, detail="dataset not found (it may have been deleted)") from None
+    with using(schema):
+        yield
+
+
+@app.get("/api/datasets")
+def list_datasets():
+    return datasets.available()
+
+
 @app.get("/api/health")
 def health():
     try:
@@ -50,54 +71,64 @@ def health():
 
 
 @app.get("/api/meta")
-def meta():
-    return service.meta()
+def meta(ds: str | None = DS):
+    with _dataset(ds):
+        return service.meta()
 
 
 @app.get("/api/states")
-def states():
-    return service.states()
+def states(ds: str | None = DS):
+    with _dataset(ds):
+        return service.states()
 
 
 @app.get("/api/locations")
-def locations(state: str | None = None, district: str | None = None, q: str | None = Query(None, max_length=80)):
-    return service.locations(state, district, q)
+def locations(state: str | None = None, district: str | None = None, q: str | None = Query(None, max_length=80),
+              ds: str | None = DS):
+    with _dataset(ds):
+        return service.locations(state, district, q)
 
 
 @app.get("/api/locations/{location_id}")
-def location(location_id: int):
-    return service.location(location_id) or _404("location")
+def location(location_id: int, ds: str | None = DS):
+    with _dataset(ds):
+        return service.location(location_id) or _404("location")
 
 
 @app.get("/api/locations/{location_id}/months/{month_key}")
-def month(location_id: int, month_key: str):
+def month(location_id: int, month_key: str, ds: str | None = DS):
     if not MONTH.match(month_key):
         raise HTTPException(status_code=400, detail="month must look like 2018-07")
-    return service.month(location_id, month_key) or _404("location-month")
+    with _dataset(ds):
+        return service.month(location_id, month_key) or _404("location-month")
 
 
 @app.get("/api/locations/{location_id}/days/{day}")
-def day(location_id: int, day: str):
+def day(location_id: int, day: str, ds: str | None = DS):
     if not DAY.match(day):
         raise HTTPException(status_code=400, detail="day must look like 2018-07-25")
-    return service.day(location_id, day)
+    with _dataset(ds):
+        return service.day(location_id, day)
 
 
 @app.get("/api/events/{event_key}")
-def event(event_key: str):
+def event(event_key: str, ds: str | None = DS):
     if not EVENT_KEY.match(event_key):
         raise HTTPException(status_code=400, detail="event key must look like 123-201807251827")
-    return service.event(event_key) or _404("event")
+    with _dataset(ds):
+        return service.event(event_key) or _404("event")
 
 
 @app.get("/api/groups/{group_key:path}")
-def group(group_key: str):
-    return service.group(group_key) or _404("potential shared supply event")
+def group(group_key: str, ds: str | None = DS):
+    with _dataset(ds):
+        return service.group(group_key) or _404("potential shared supply event")
 
 
 @app.get("/api/demo")
-def demo():
-    return service.demo() or _404("demo preset (build the 2018 June-August data first)")
+def demo(ds: str | None = DS):
+    with _dataset(ds):
+        return service.demo() or _404("demo preset (build the 2018 June-August data first)")
 
 
 class ReportRequest(BaseModel):
@@ -106,13 +137,14 @@ class ReportRequest(BaseModel):
 
 
 @app.post("/api/reports")
-def create_report(req: ReportRequest):
+def create_report(req: ReportRequest, ds: str | None = DS):
     if not MONTH.match(req.month):
         raise HTTPException(status_code=400, detail="month must look like 2018-07")
-    data = service.month(req.location_id, req.month)
-    if not data:
-        _404("location-month")
-    return report.generate(req.location_id, req.month)
+    with _dataset(ds):
+        data = service.month(req.location_id, req.month)
+        if not data:
+            _404("location-month")
+        return report.generate(req.location_id, req.month)
 
 
 @app.get("/api/reports/{report_id}.{ext}")

@@ -18,15 +18,18 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.api import service
-from app.api.db import SCHEMA, query, query_one
+from app.api.db import CURRENT, current_schema, query, query_one
+from pipeline import upload
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 # VOLTPROOF_REPORT_DIR: the test suite sets it (tests/conftest.py) so test renders never sit next to real reports
 OUT_DIR = Path(os.environ.get("VOLTPROOF_REPORT_DIR") or REPO_ROOT / "reports" / "evidence")
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30), "IST")
-REPORT_ID = re.compile(r"^VP-(DEMO-)?\d{1,9}-\d{6}-[0-9a-f]{8}$")  # VP-DEMO-...: SYNTHETIC demo data (D-033)
-S = SCHEMA
+# VP-DEMO-...: SYNTHETIC demo data (D-033). VP-USER-<upload id>-...: uploaded data, stored in the upload's own folder
+# (data/uploads/<id>/reports), so deleting the upload deletes its reports too.
+REPORT_ID = re.compile(r"^VP-(DEMO-|USER-[0-9a-f]{8}-)?\d{1,9}-\d{6}-[0-9a-f]{8}$")
+S = CURRENT  # the current request's dataset (app/api/db.py)
 
 REDRESS_TEXT = (
     "A consumer can raise supply complaints with the distribution company. In Uttar Pradesh, the State "
@@ -57,10 +60,43 @@ SYNTHETIC_LIMITATION = ("SYNTHETIC demo data: the monitors, districts and readin
                         "(pipeline/synthetic.py); no figure describes real electricity supply.")
 
 
-def _limitations(synthetic: bool) -> list[str]:
+UPLOAD_LIMITATIONS = [
+    "UPLOADED DATA, not verified by VoltProof: the readings come from a file uploaded on this computer. VoltProof "
+    "analysed them with the same method as every dataset in the app; nobody has checked where they came from or how "
+    "they were recorded.",
+    "A monitor records the supply where it is connected; it is not the utility's meter. An outage recorded here may "
+    "also come from a tripped breaker, wiring or the monitor itself.",
+    LIMITATIONS[2],
+    "The accuracy of the device that recorded these readings is not known; readings close to a class boundary are "
+    "sensitive.",
+    LIMITATIONS[4],
+]
+# Outside Uttar Pradesh (uploads only): one general sentence, no citation (owner decision, Checkpoint A).
+REDRESS_GENERAL = (
+    "A consumer can raise supply complaints with the distribution company. For the grievance procedure that applies "
+    "in this state, check the current regulations of the State Electricity Regulatory Commission. VoltProof does not "
+    "determine whether any standard of performance was breached, or what remedy, if any, applies."
+)
+
+
+def _limitations(synthetic: bool, kind: str = "real") -> list[str]:
+    if kind == "upload":
+        return UPLOAD_LIMITATIONS
     if not synthetic:
         return LIMITATIONS
     return [SYNTHETIC_LIMITATION] + [x for x in LIMITATIONS if not x.startswith("The data are historical")]
+
+
+def _upload_id() -> str | None:
+    """The upload id of the current request's dataset (VP_USER_<ID>), or None for the Prayas and synthetic data."""
+    schema = current_schema()
+    return schema[len("VP_USER_"):].lower() if upload.is_upload_schema(schema) else None
+
+
+def _out_dir(report_id: str) -> Path:
+    if report_id.startswith("VP-USER-"):
+        return upload.UPLOAD_DIR / report_id.split("-")[2] / "reports"
+    return OUT_DIR
 
 
 def _env() -> Environment:
@@ -123,8 +159,8 @@ def build_data(location_id: int, month_key: str) -> dict:
                            "normal_max_v": params.get("classification.normal_max_v")},
             "threshold_source": params.get("classification.source_url"),
             "params": params,
-            "limitations": _limitations(meta["synthetic"]) + ([f"Source-file data defect: {m['data_warning']}"]
-                                                            if m["data_warning"] else []),
+            "limitations": _limitations(meta["synthetic"], meta["dataset_kind"])
+            + ([f"Source-file data defect: {m['data_warning']}"] if m["data_warning"] else []),
         },
         "provenance": {
             "app_commit": service.git_commit(),
@@ -145,19 +181,27 @@ def build_data(location_id: int, month_key: str) -> dict:
         # Monday = 0; places the first day of the window in the calendar grid
         "calendar_offset": dt.date.fromisoformat(m["days"][0]["cal_day"]).weekday() if m["days"] else 0,
     }
+    if meta["dataset_kind"] == "upload":  # only uploads get these keys; Prayas and synthetic reports are unchanged
+        uid = _upload_id()
+        data["upload"] = {**meta["upload"], "upload_id": uid}
+        data["provenance"]["regenerate"] = (f"python -m pipeline.upload build {uid} ; then POST /api/reports "
+                                            f"{{\"location_id\": {location_id}, \"month\": \"{month_key}\"}}")
+        if (m["location"].get("state_name") or "").strip().lower() != "uttar pradesh":
+            data["redress"] = REDRESS_GENERAL
     return data
 
 
 def _report_id(location_id: int, month_key: str, data: dict) -> str:
     digest = hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()[:8]
-    prefix = "VP-DEMO" if data.get("synthetic") else "VP"
+    prefix = f"VP-USER-{data['upload']['upload_id']}" if data.get("upload") else \
+        "VP-DEMO" if data.get("synthetic") else "VP"
     return f"{prefix}-{location_id}-{month_key.replace('-', '')}-{digest}"
 
 
 def path_for(report_id: str, ext: str) -> Path | None:
-    if not REPORT_ID.match(report_id) or ext not in ("pdf", "html", "json"):
+    if not REPORT_ID.fullmatch(report_id) or ext not in ("pdf", "html", "json"):
         return None
-    return OUT_DIR / f"{report_id}.{ext}"
+    return _out_dir(report_id) / f"{report_id}.{ext}"
 
 
 def render_html(data: dict) -> str:
@@ -175,7 +219,7 @@ def _reusable(rid: str, data: dict, pdf: bool) -> dict | None:
     """A report rendered earlier (e.g. by scripts\\warmup.ps1) is served again only if its stored numbers equal
     the freshly built data exactly. That data includes the app commit and the last pipeline run, so any code
     change or rebuild gives a fresh render."""
-    files = [OUT_DIR / f"{rid}.{ext}" for ext in (("json", "html", "pdf") if pdf else ("json", "html"))]
+    files = [_out_dir(rid) / f"{rid}.{ext}" for ext in (("json", "html", "pdf") if pdf else ("json", "html"))]
     if not all(f.exists() for f in files):
         return None
     stored = json.loads(files[0].read_text(encoding="utf-8"))
@@ -195,23 +239,27 @@ def generate(location_id: int, month_key: str, pdf: bool = True, reuse: bool = T
             return existing
     data["report_id"] = rid
     data["generated_at_ist"] = dt.datetime.now(IST).strftime("%Y-%m-%d %H:%M IST")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    (OUT_DIR / f"{rid}.json").write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
-    html_path = OUT_DIR / f"{rid}.html"
+    out = _out_dir(rid)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{rid}.json").write_text(json.dumps(data, indent=1, default=str), encoding="utf-8")
+    html_path = out / f"{rid}.html"
     html_path.write_text(render_html(data), encoding="utf-8")
     if pdf:
-        _pdf(html_path, OUT_DIR / f"{rid}.pdf", _footer(data))
+        _pdf(html_path, out / f"{rid}.pdf", _footer(data))
     return {**_links(rid, pdf), "generated_at_ist": data["generated_at_ist"], "reused": False}
 
 
 def _footer(data: dict) -> str:
     """PDF page footer, so every printed page carries the disclaimer and the data source: the disclaimer and the
     attribution (the SYNTHETIC label on the demo set, which has no Prayas attribution), then the page number."""
-    synthetic = bool(data.get("synthetic"))
+    synthetic, uploaded = bool(data.get("synthetic")), bool(data.get("upload"))
     first = escape(data["disclaimer"]) + ("" if synthetic else " " + escape(data["provenance"]["attribution"]))
+    if uploaded:
+        first = escape(data["disclaimer"]) + " Source: uploaded file " + escape(str(data["upload"]["file_name"])) + "."
     return ('<div style="font-size:7px;width:100%;text-align:center;color:#555">'
             f'<div>{first}</div><div>'
             + ('<b>SYNTHETIC DEMO DATA, not ESMI data</b> &middot; ' if synthetic else '')
+            + ('<b>UPLOADED DATA, not verified by VoltProof</b> &middot; ' if uploaded else '')
             + 'VoltProof evidence report &middot; page <span class="pageNumber"></span> of '
             '<span class="totalPages"></span></div></div>')
 
