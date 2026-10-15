@@ -360,6 +360,10 @@ real-data oracle tests are re-run on the new formulations.
   The oracle streams only the rows of those monitors dated 31 May to 1 September from the files that cover
   them. The extra day on each side makes outages that cross 1 June or 1 September start at the same minute as
   in the SQL, which reads the files as one continuous record (gap bridging is off, so one day is enough).
+- **This is an exception, not compliance:** the test now checks less than before. The SQL-vs-oracle comparison of
+  coincidences on real data no longer covers 2016, 2017 or 2019, so a coincidence defect that showed only in
+  those years would not be caught by this test. The coincidence rules are still checked in full on the
+  synthetic set and by the hand-written fixtures (D-033).
 - **Proof:**
   - On a build of only the 2018 June–August file, the original and the scoped test chose the same districts
     (Bahraich, Barabanki), gave the oracle the same 88,608 rows and produced identical SQL and oracle results
