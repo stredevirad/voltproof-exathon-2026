@@ -48,7 +48,8 @@ export type EventData = Ev & {
                 exa_session_id: number; exa_stmt_id: number; run_id: string }[];
   group: GroupData | null; baseline: Baseline | null; data_warning: string | null;
 };
-export type Demo = { location_id: number; month: string; day: string; event_key: string; group_key: string; rule: string };
+export type Demo = { location_id: number; month: string; day: string; event_key: string; group_key: string; rule: string;
+                     window_from: string; window_to_exclusive: string };
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -96,3 +97,19 @@ export const fmtHours = (m: number) => (m / 60).toLocaleString("en-IN", { maximu
 export const fmtPct = (x: number | null | undefined) => (x == null ? "–" : `${(100 * x).toFixed(1)}%`);
 export const fmtTs = (ts: string) => ts.replace("T", " ");
 export const fmtP = (p: number, n: number) => (p === 0 ? `none of ${n} shifted variants reached it` : `${(p * 100).toFixed(0)}% of ${n} shifted variants reached it`);
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                     "November", "December"];
+
+/** The guided demo's selection window [from, toExclusive) in words: "June–August 2018", "January 2030". */
+export function fmtWindow(from: string, toExclusive: string): string {
+  const [y0, m0] = from.split("-").map(Number);
+  let [y1, m1] = toExclusive.split("-").map(Number);
+  if (Number(toExclusive.slice(8, 10)) === 1) {  // the window ends on the last day of the previous month
+    m1 -= 1;
+    if (m1 === 0) { m1 = 12; y1 -= 1; }
+  }
+  const a = MONTH_NAMES[m0 - 1], b = MONTH_NAMES[m1 - 1];
+  if (y0 === y1 && m0 === m1) return `${a} ${y0}`;
+  return y0 === y1 ? `${a}–${b} ${y1}` : `${a} ${y0}–${b} ${y1}`;
+}

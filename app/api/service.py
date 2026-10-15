@@ -326,7 +326,8 @@ def demo() -> dict | None:
         return None
     return {"location_id": row["location_id"], "month": row["start_ts"][:7], "day": row["start_ts"][:10],
             "event_key": row["event_key"], "group_key": row["group_key"],
-            "rule": DEMO_RULE.format(window=_window_text(w)), "synthetic": ds["synthetic"]}
+            "rule": DEMO_RULE.format(window=_window_text(w)), "synthetic": ds["synthetic"],
+            "window_from": w[0], "window_to_exclusive": w[1]}
 
 
 def dumps(obj) -> str:
