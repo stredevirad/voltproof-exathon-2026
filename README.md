@@ -275,7 +275,8 @@ Every statement in every build matched Exasol's audit log. Why this is Exasol's 
   - The dataset is licensed **CC0 1.0** on Dataverse. Prayas also asks for non-commercial, academic and
     research use with acknowledgement, and we follow that.
   - Raw data is **not** redistributed in this repository ([docs/data/SOURCE_TERMS.md](docs/data/SOURCE_TERMS.md)).
-- **Code.** MIT licence ([LICENSE](LICENSE)). Third-party notices are in
+- **Code.** MIT licence ([LICENSE](LICENSE)); it covers the VoltProof source code only, not the ESMI data.
+  Third-party notices are in
   [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - **Exasol Personal** is used under its End User License Agreement and is not included in this repository.
 
