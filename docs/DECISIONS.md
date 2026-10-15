@@ -374,3 +374,13 @@ real-data oracle tests are re-run on the new formulations.
     May, cut at the file edge.
 - **Unchanged:** the oracle, the SQL, the event and aggregate test on the real slice (it still reads every
   file), the Hypothesis tests and the 18 fixtures. No test was skipped or weakened.
+
+## D-035 · 2026-10-15 · The verification log stays as a history
+
+- **Problem:** `docs/VERIFICATION_LOG.md` records every external fact we checked during the build, including legal
+  sources that the app, the reports, the deck and the README no longer cite (the grievance route is now cited only
+  from the UPERC 2003 regulations and the 2010 PIB release).
+- **Choice (team decision):** keep the log unchanged as a record of what was checked and when, with one line at
+  the top saying that items it does not verify are not cited anywhere in the app, the reports, the deck or the
+  README. It is a working record, not a claim to users; `tests/unit/test_grievance_wording.py` already treats it
+  as record-only.
