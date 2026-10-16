@@ -17,8 +17,10 @@ screen, the tool says which hold to raise. Then re-record; the audio is never sp
 the drafts stay in the gitignored `reports\video-run\`. Only the final narrated MP4 is committed, as
 `docs/deliverables/VoltProof_demo.mp4`, once the team confirms it.
 
-**Live demo:** see docs/deliverables/LIVE_DEMO_RUNBOOK.md. The table below is the original 3-minute plan
-that the timeline implements.
+**Live demo:** see docs/deliverables/LIVE_DEMO_RUNBOOK.md.
+
+The timeline's holds are estimates from the word count until `tts --update-holds` has measured the narration;
+run it before recording.
 
 ## How the guided-demo example is chosen (say this, it pre-empts "cherry-picked?")
 
@@ -37,18 +39,13 @@ This script and the recorded video use the real data.
 
 ## Script
 
-| Time | Screen | Narration (plain English) |
-|---|---|---|
-| 0:00–0:20 | Start page; caption **"Illustrative example"** while the shopkeeper is mentioned | "Imagine a shopkeeper in a small Uttar Pradesh town who can't get a fix for daily power cuts, because her memory is the only record, against the utility's own reports. Prayas, which ran independent voltage monitors, reports more than four hours of outage a day in rural Uttar Pradesh. VoltProof turns those minute-by-minute voltage records into traceable evidence." |
-| 0:20–0:35 | Click **Start guided demo**; banner | "The demo opens one real monitor and month, chosen by a fixed rule shown here, not hand-picked." |
-| 0:35–1:05 | Month dashboard: KPI tiles, calendar, quality badge | "In July 2018 this monitor in Bahraich recorded 320 interruptions and at least 366 hours without usable supply. That headline is a lower bound: missing readings are never counted as outage, and hatched days had too few readings. The range shows what the gaps *could* add: here, about one more hour." |
-| 1:05–1:35 | Click the demo day; voltage trace | "Minute by minute: the grey line is measured voltage. Orange blocks are outages; hatched grey means no reading, not counted. On 25 July at 18:27 the supply drops to zero." |
-| 1:35–2:10 | Open the event; certainty; **How was this computed?**; coincidence panel | "Exact start and end, and how certain they are. Every number traces to the source file line and to the SQL statement Exasol ran; its audit log shows the same SQL. Sixteen other monitors in Bahraich lost supply within two minutes. That is a *potential* shared supply event: against a chance baseline it is far more common than shifted timings would give, but VoltProof does not claim a cause." |
-| 2:10–2:35 | Back to month, **Generate evidence report**, open PDF, scroll to appendix | "One click gives a PDF a consumer can take to the distribution company's grievance forum. It has the calendar, every event with bounds, data quality, methodology and a reproducibility appendix with file checksums and statement ids. It is not legal advice and claims no entitlement." |
-| 2:35–2:55 | Data & sources page (2019 files: one excluded, one marked lower bound), then the BENCHMARKS table | "The whole analysis runs as versioned SQL inside Exasol Personal on this laptop: about 103 million minutes of Uttar Pradesh data, loaded with native IMPORT in about 30 seconds, and every outage found with one window function in about 36 seconds; the full build takes about three and a half minutes. We even caught defects in the published data, like a file that lost its hour column, and one that leaves out most zero-volt hours, and we show both instead of hiding them." |
-| 2:55–3:00 | Start page with footer | "VoltProof: traceable evidence of power cuts. Data: Prayas Energy Group, ESMI." |
+The narration lives only in `docs/deliverables/video_timeline.json` (eight screens: start page with the
+"Illustrative example" caption, the guided month with its lead tile, the demo day, the outage's evidence page,
+the evidence report, the upload page, the 2019 files on Data & sources, and the start page again) and is read
+aloud from `docs/deliverables/VOICEOVER_SCRIPT.md`: 344 words, about 2:27 of speech. An earlier hand-written
+table here was replaced by the timeline so that there is one source.
 
-Numbers checked against the build on 2026-10-12. Huzurpur-Bahraich, 2018-07: 320 interruptions; outage at
+Numbers checked against the build on 2026-10-12 (and again on 2026-10-16 for the new screens). Huzurpur-Bahraich, 2018-07: 320 interruptions; outage at
 least 21,970 minutes (366.2 h), up to 22,030 minutes (367.2 h); 90.7% of minutes read (comparable). The
 scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. Never quote a number that
 is not on screen or in those files. The shopkeeper is an illustrative example, not a real person in the
@@ -58,6 +55,7 @@ data; the video must caption her as "Illustrative example".
 
 1. Before the call: database started, `scripts\start.ps1` running, browser open on the start page, a
    pre-generated report PDF open in a second tab.
-2. Walk the same flow as above (5 minutes), then spend time on Q&A material (docs/JUDGE_QA.md).
+2. Walk the same flow as the video (about 6 minutes, including a pre-built upload), then spend time on Q&A
+   material (docs/JUDGE_QA.md).
 3. **Backup if the database misbehaves:** the recorded video, plus the screenshots in
    `docs/deliverables/screenshots/` and the pre-generated PDF.

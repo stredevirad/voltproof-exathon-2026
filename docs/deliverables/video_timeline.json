@@ -1,18 +1,18 @@
 {
-  "about": "Single source for the demo video: the e2e recording (tests/e2e/test_demo_flow.py with VOLTPROOF_RECORD_VIDEO=1) holds each screen for `hold` seconds, docs/deliverables/VOICEOVER_SCRIPT.md is generated from `text`, and pipeline/video.py places each narration piece at the segment's actual start. Holds are set from the measured narration length (pipeline/video.py tts --update-holds); never speed up the audio.",
+  "about": "Single source for the demo video: the e2e recording (tests/e2e/test_demo_flow.py with VOLTPROOF_RECORD_VIDEO=1) holds each screen for `hold` seconds, docs/deliverables/VOICEOVER_SCRIPT.md is generated from `text`, and pipeline/video.py places each narration piece at the segment's actual start. Holds are set from the measured narration length (pipeline/video.py tts --update-holds); never speed up the audio. The holds below are estimates from the word count (about 2.3 words a second plus a pause); run tts --update-holds before recording.",
   "segments": [
     {
       "id": "intro",
-      "screen": "Start page, with the caption 'Illustrative example'",
+      "screen": "Start page (the new look), with the caption 'Illustrative example'",
       "caption": "Illustrative example",
-      "hold": 26,
-      "text": "Imagine a shopkeeper in a small town in Uttar Pradesh. The power fails every day. When she complains, her memory is all she has against the utility's records. Prayas, an independent research group, recorded the supply minute by minute at homes and shops like hers. VoltProof turns those readings into evidence anyone can check."
+      "hold": 22,
+      "text": "Imagine a shopkeeper in a small town in Uttar Pradesh. The power fails every evening, and when she complains, her memory is all she has. Prayas, an independent research group, recorded the voltage every minute at homes and shops. VoltProof turns those readings into evidence anyone can check."
     },
     {
       "id": "month",
-      "screen": "Start guided demo: the month view with its banner, KPI tiles and calendar",
-      "hold": 26,
-      "text": "The guided demo opens one real monitor, chosen by a fixed rule rather than by hand: Huzurpur, in Bahraich district, in July 2018. That month it recorded 320 interruptions and at least 366 hours without usable supply. That figure is a lower bound: a minute without a reading is never counted as an outage."
+      "screen": "Start guided demo: the month view, lead tile 'Outage time (at least)' with its plain caption, then the calendar",
+      "hold": 25,
+      "text": "The guided demo opens one real monitor, chosen by a fixed rule, not by hand: Huzurpur, in Bahraich, July 2018. The first number is the one that matters: at least 366 hours without supply that month. It is a minimum, because a minute without a reading is never counted as an outage."
     },
     {
       "id": "day",
@@ -23,25 +23,31 @@
     {
       "id": "event",
       "screen": "The outage's evidence page: times, certainty, source lines and statement ids, and the panel of other monitors",
-      "hold": 33,
-      "text": "The evidence page gives the outage's exact start and end, how certain each edge is, and the two lines of the source file it comes from, with the database statements that computed it. Sixteen other monitors in the district lost supply within two minutes. This month, coincidences like this happened about twice as often as a time-shifted baseline predicts. VoltProof calls this a potential shared supply event: it is not proof of a common cause."
+      "hold": 28,
+      "text": "The evidence page gives the exact start and end, how certain each one is, and the lines of the source file, with the database statements that computed them. Sixteen other monitors in the district lost supply within two minutes. VoltProof calls this a potential shared supply event. Coincidence is not cause, and no cause or equipment is named."
     },
     {
       "id": "report",
       "screen": "Back to the month: Generate evidence report, the report links",
       "hold": 18,
-      "text": "One click makes an evidence report: the calendar, every outage with its bounds, data quality and the grievance route, plus file checksums and statement ids for anyone who wants to check. It is not legal advice and states no amount owed."
+      "text": "One click makes an evidence report: every outage with its bounds, data quality, and checksums and statement ids for anyone who wants to check. It ends with where a consumer can seek redress. It is not legal advice and states no amount owed."
+    },
+    {
+      "id": "upload",
+      "screen": "Upload your data: the page that says the file stays on this computer",
+      "hold": 17,
+      "text": "Anyone can also upload readings from their own monitor. The file stays on this computer, is checked, and is analysed by the same steps in its own space, and every page then says it is not verified."
     },
     {
       "id": "sources",
       "screen": "Data and sources: the two 2019 files",
-      "hold": 21,
-      "text": "Defects in the published data are shown, not hidden. The July to December 2019 file lost its hour column, so it is excluded. The January to June 2019 file leaves out most zero-volt hours, so its outage figures are lower bounds."
+      "hold": 16,
+      "text": "Defects in the published data are shown, not hidden. One 2019 file lost its hour column, so it is excluded; another leaves out most zero-volt hours, so its figures are lower bounds."
     },
     {
       "id": "close",
       "screen": "Start page",
-      "hold": 19,
+      "hold": 18,
       "text": "All of this runs as versioned SQL inside Exasol: about 103 million minutes of Uttar Pradesh data, rebuilt from the raw files in about three and a half minutes on this laptop. VoltProof. Data: Prayas Energy Group."
     }
   ]

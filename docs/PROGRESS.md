@@ -4,22 +4,29 @@
 
 | Gate | Status | Evidence / blocker |
 |---|---|---|
-| G0 Environment & repo | ✅ passed 2026-10-11 (commit pending) | Environment report below; scaffold staged. The local `git commit` was denied twice at the permission prompt, so it awaits user approval. Tag `gate-0-env` follows the commit |
+| G0 Environment & repo | ✅ passed 2026-10-11 | Environment report below; scaffold committed (`20ef134`). Tag `gate-0-env` |
 | G1 Data access & licence | ✅ passed 2026-10-11 | Terms + exact citation in `docs/data/SOURCE_TERMS.md`; 3 sample files MD5-verified (original CSV); 542,518 rows confirmed; outage = 0 V, missing = absent hours; corrections D-013 to D-016. Tag `gate-1-data` |
 | G2 Exasol | ✅ passed 2026-10-11 | Native IMPORT 542,518 rows in 1.23 s; in-DB unpivot to 32,551,080 minutes in 4.8 s; first LAG+SUM islands query on real data identical to an independent raw-CSV check (Dhule 16-06-2018: 37-min outage 17:00–17:36). Tag `gate-2-exasol` |
 | G3 Correctness core | ✅ passed 2026-10-11 | Full UP subset loads (102,845,781 minutes, 176 locations) in 194 s; fixtures F01–F18 + Hypothesis + real-data slices identical to the oracle; quality report renders. Tag `gate-3-correctness` |
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ✅ passed 2026-10-12 | Prayas comparison (VALIDATION §3); 2019 defect handled (D-031); benchmarks 3 cold + 3 warm full-UP builds and query timings (BENCHMARKS.md); WHY_EXASOL; README; clean start from GitHub passed every README step (VALIDATION §4); TEST_REPORT 94/94 on 3889f1a. Tag `gate-6-validation` |
-| G7 Submission | 🟡 submission candidate 2 2026-10-12 (tag `gate-7-submission-candidate-2`) | Problem statement, deck (team, 1080p review), clean warm benchmarks, warm-up + live-demo runbook, voice-over script + paced recording + TTS draft, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033): clone to working app in 5 min 28 s (VALIDATION §4.4). GitHub Actions CI (ruff + unit) green; CONTRIBUTING. TEST_REPORT 108/108 on a150710. Left: the team's voice-over → final MP4 committed |
+| G7 Submission | 🟡 submission candidate 3 2026-10-15 (tag `gate-7-submission-candidate-3`, main `5f1a4d3`) | Problem statement, deck, clean warm benchmarks, warm-up + live-demo runbook, voice-over script, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 adds the October audit fixes (path traversal, Host allowlist, MIT licence detection, grievance wording, report footer). Left: the team's voice-over → final MP4 committed |
+| Rework (Oct 15–) | 🟡 on branch `rework-oct15` | Uploads of your own data (D-037), the new look with measured contrast (D-038), the beginner's guide and tour (D-039), the simpler deck (D-040), docs. Merged into main only if every test, the slow gate, the original-baseline comparison and the compliance check pass |
 
-## Remaining risks (top 5)
+## Remaining risks (top 5, updated 2026-10-16)
 
-1. **C: disk.** 32.2 GB free; Exasol data will live in Podman's WSL disk on C:. Docker Desktop already uses 22.7 GB there. Growth per million rows must be measured before sizing the load.
-2. **RAM.** 15.6 GB total (not 24 GB); WSL2 is capped at 11 GB and shared with Docker Desktop. The UP subset should fit; the full national load may not.
-3. **Data download gate.** A Guestbook response is required per download. Mitigated: the README quick start uses the SYNTHETIC demo set (no download), and the scripted download (`get-data.ps1 -Download`, the user's own `.env` details) was tested end to end.
-4. **New platform path.** Windows local deployment is new in launcher 2.3.0 (released 2026-09-21); expect rough edges.
-5. **Schedule.** ~7 build days; SHOULD items only after G6.
+1. **RAM.** 15.6 GB total; the database's virtual machine grows during long test runs. Heavy test parts run under a
+   free-memory guard and the database is restarted between steps when needed; other memory-heavy applications
+   (browsers, chat apps) should be closed during builds and tests.
+2. **C: disk.** 28 GB free (16 Oct); Exasol's data lives in Podman's WSL disk on C:. Keep at least 10 GB free; uploads
+   check this before building.
+3. **Demo video.** The narrated MP4 waits for the team's one-take voice-over (script: `docs/deliverables/VOICEOVER_SCRIPT.md`).
+4. **Data download gate.** A Guestbook response is required per download. Mitigated: the README quick start uses the
+   SYNTHETIC demo set (no download), and the scripted download (`get-data.ps1 -Download`, the user's own `.env`
+   details) was tested end to end.
+5. **New platform path.** Windows local deployment is new in launcher 2.3.0 (released 2026-09-21); after a machine
+   restart Podman's machine may need `podman machine stop` / `start` before `scripts\exa.ps1 start`.
 
 ---
 
@@ -177,8 +184,26 @@
 - **JUDGE_QA:** "Most consumers don't have a monitor. Who can use this today?" and "Is the demo data real?"
 - **Tests:** TEST_REPORT 108/108 on a150710 (clean tree; the differential suite run in parts).
 
+## 2026-10-15 to 2026-10-16 — October rework (branch `rework-oct15`)
+
+- **Audit fixes, candidate 3 (15 Oct):** path traversal on the static routes closed and a Host allowlist added;
+  standard MIT licence (GitHub detects it); grievance wording limited to the UPERC 2003 regulations and the 2010 PIB
+  release; disclaimer and data source on every PDF page; tests write their reports outside `reports/evidence`.
+  Merged to main `5f1a4d3`, tag `gate-7-submission-candidate-3`.
+- **Your own data (D-037):** upload page and `python -m pipeline.upload`; the same SQL in a separate schema owned by
+  a restricted database user; uploaded files give the same results as the command-line build; honest labels.
+- **The new look (D-038):** one lead number per page, plain captions, the "Civic calm" colours behind one switch,
+  WCAG AA text contrast measured on every screen in light and dark, no sideways scroll on a phone, chart text readable
+  in dark mode, table rows with real links; the day view draws every minute in any viewer time zone (F-09).
+- **Beginner's guide and tour (D-039)** and **a simpler deck (D-040)**, each reviewed by an LLM council; every
+  wording change reviewed line by line against the frozen wording.
+- **Benchmarks not re-measured:** every SQL step the benchmarks time (`sql/010`–`sql/110`) is unchanged; the new SQL
+  is only in `sql/ingest/` (uploads). The command-line build gained a build lock and a progress callback around
+  the same statements.
+
 ### Next (G7, after the voice-over)
 1. Merge the team's recording: `python -m pipeline.video merge --audio voice`; if a piece runs long, raise the
-   hold, re-record (`python -m pipeline.video record`) and merge again.
+   hold, re-record (`python -m pipeline.video record`) and merge again. The timeline now has eight screens,
+   including the upload page; run `python -m pipeline.video tts --update-holds` once before recording.
 2. After the team confirms, commit it as `docs/deliverables/VoltProof_demo.mp4` (the only file allowed over 5 MB,
    up to 40 MB), update the README deliverables row, scan and push, and tag the final submission.

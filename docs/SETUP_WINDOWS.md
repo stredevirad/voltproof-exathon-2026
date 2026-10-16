@@ -132,7 +132,11 @@ scripts\start.ps1               # → http://127.0.0.1:8000/
 ```
 
 Open the URL and press **Start guided demo**. Stop with Ctrl+C. Don't run `load.ps1` while the app is
-running.
+running. **How to use** in the menu explains every screen in plain words; a short tour appears on a first visit.
+
+**Your own readings:** **Upload your data** in the menu (or `python -m pipeline.upload`, see the README section
+"Use your own data"). An upload needs at least 10 GB free on C: and is built while the app runs; only one build
+(upload or `load.ps1`) runs at a time.
 
 ## 9. Run the tests
 
@@ -152,3 +156,5 @@ scripts\test.ps1 -Suite unit     # no database needed
 | Windows becomes sluggish during a full load | close other heavy apps and Docker Desktop; the database uses most of the WSL memory |
 | `Raw files missing or not verified` | download the files into `data\raw\` with unchanged names (step 6) |
 | Report generation fails | rerun `scripts\bootstrap.ps1` (installs Playwright Chromium) |
+| An upload says another build is running | wait for the other build (an upload or `load.ps1`) to finish; one build runs at a time |
+| An upload is refused | the page says why (for example not one reading a minute, or not a 230 V supply); the README section "Use your own data" lists the checks |
