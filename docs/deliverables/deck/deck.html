@@ -6,35 +6,32 @@
 <title>VoltProof Deck</title>
 <style>
   :root {
-    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #6f6d68; --page: #ffffff; --soft: #f6f5f2; --border: #dcdad3;
-    --outage: #eb6834; --low: #2a78d6; --high: #1baf7a; --accent: #9b411d; --warn-bg: #fff4e5;
+    --ink-1: #14201e; --ink-2: #45534f; --ink-3: #5b6965; --page: #ffffff; --soft: #f3f6f5; --tint: #e9f2f0;
+    --border: #d5dedb; --teal: #0f6e66; --teal-dark: #12312e;
+    --outage: #eb6834; --low: #2a78d6; --high: #1baf7a; --warn-bg: #fff4e5;
   }
   @page { size: 1280px 720px; margin: 0; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--page); color: var(--ink-1);
                font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
-  section.slide { width: 1280px; height: 720px; padding: 56px 72px 48px; position: relative; overflow: hidden;
+  section.slide { width: 1280px; height: 720px; padding: 52px 72px 48px; position: relative; overflow: hidden;
                   page-break-after: always; break-after: page; display: flex; flex-direction: column; }
   section.slide:last-child { page-break-after: auto; break-after: auto; }
-  .kicker { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 10px; }
-  h1 { font-size: 46px; line-height: 1.1; margin: 0 0 18px; letter-spacing: -.01em; }
-  h2 { font-size: 34px; line-height: 1.15; margin: 0 0 22px; letter-spacing: -.01em; }
-  p, li { font-size: 21px; line-height: 1.45; color: var(--ink-1); }
-  ul { margin: 0; padding-left: 24px; } li { margin: 0 0 10px; }
-  .muted { color: var(--ink-2); } .small { font-size: 16px; } .xs { font-size: 13px; }
+  .kicker { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); font-weight: 700; margin: 0 0 10px; }
+  h1 { font-size: 46px; line-height: 1.1; margin: 0 0 18px; letter-spacing: -.01em; font-family: Cambria, Georgia, serif; }
+  h2 { font-size: 36px; line-height: 1.15; margin: 0 0 24px; letter-spacing: -.01em; font-family: Cambria, Georgia, serif; }
+  p, li { font-size: 22px; line-height: 1.45; color: var(--ink-1); }
+  ul { margin: 0; padding-left: 26px; } li { margin: 0 0 12px; }
+  .muted { color: var(--ink-2); } .small { font-size: 17px; } .xs { font-size: 13px; }
   .grid { display: grid; gap: 28px; } .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); }
-  .g-shot { grid-template-columns: 1.05fr 1fr; align-items: start; }
-  .g-crop { grid-template-columns: 470px 1fr; align-items: start; }
-  /* a window onto part of a 1366 px wide screenshot, at full size so its text stays legible */
-  .crop { width: 470px; height: 438px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0,0,0,.08); position: relative; }
-  .crop img { position: absolute; width: 1366px; max-width: none; }
-  .card { background: var(--soft); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; }
-  .card h3 { margin: 0 0 8px; font-size: 20px; }
-  .card p, .card li { font-size: 17px; margin: 0 0 6px; }
-  .stat { font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; }
-  .stat-label { font-size: 15px; color: var(--ink-2); margin-top: 4px; }
-  .shot { width: 100%; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  .card { background: var(--soft); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; }
+  .card h3 { margin: 0 0 8px; font-size: 21px; }
+  .card p, .card li { font-size: 18px; margin: 0 0 6px; }
+  .card p.small { font-size: 16px; } .card p.xs { font-size: 13px; }
+  .stat { font-size: 64px; font-weight: 700; letter-spacing: -.02em; line-height: 1.0; }
+  .stat-label { font-size: 17px; color: var(--ink-2); margin-top: 6px; }
+  .crop { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.08); position: relative; }
+  .crop img { position: absolute; max-width: none; }
   table { border-collapse: collapse; width: 100%; font-size: 17px; }
   th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); font-weight: 600; }
@@ -43,17 +40,40 @@
   .tag.ok::before { content: "✓ "; } .tag.diff::before { content: "≠ "; } .tag.warn { background: var(--warn-bg); } .tag.warn::before { content: "! "; }
   .footer { position: absolute; left: 72px; right: 72px; bottom: 20px; display: flex; justify-content: space-between;
             font-size: 12px; color: var(--ink-3); }
-  .flow { display: flex; gap: 10px; align-items: stretch; margin-top: 6px; }
-  .flow .step { flex: 1; background: var(--soft); border: 1px solid var(--border); border-radius: 8px; padding: 12px 12px; font-size: 15px; line-height: 1.35; }
-  .flow .step b { display: block; font-size: 16px; margin-bottom: 4px; }
-  .flow .arrow { align-self: center; color: var(--ink-3); font-size: 22px; }
-  .exasol { border-color: var(--accent); }
-  .title-slide { justify-content: center; background: linear-gradient(135deg, #fff 0%, #fff 60%, #ffede5 100%); }
-  .title-slide h1 { font-size: 64px; }
-  .bar { height: 10px; border-radius: 5px; background: var(--outage); }
-  .problem { font-size: 19px; line-height: 1.45; max-width: 1000px; margin: 0 0 24px; padding: 12px 18px;
-             border-left: 4px solid var(--outage); background: rgba(255,255,255,.7); color: var(--ink-1); }
+  .problem { font-size: 19px; line-height: 1.45; max-width: 1040px; margin: 0 0 22px; padding: 12px 18px;
+             border-left: 4px solid var(--teal); background: var(--tint); color: var(--ink-1); }
   .illustrative { font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px dashed var(--ink-3); padding: 1px 8px; border-radius: 4px; }
+  .title-slide { justify-content: center; border-left: 18px solid var(--teal-dark); }
+  .title-slide h1 { font-size: 72px; }
+  .card p.quote { font-family: Cambria, Georgia, serif; font-size: 38px; line-height: 1.3; margin: 12px 0 0; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 8px; }
+  .steps .s { background: var(--soft); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px; }
+  .steps .s .num { width: 34px; height: 34px; border-radius: 50%; background: var(--teal); color: #fff; font-weight: 700;
+                   display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
+  .steps .s b { display: block; font-size: 21px; margin-bottom: 6px; }
+  .steps .s p { font-size: 17px; margin: 0; line-height: 1.4; }
+  /* the Exasol diagram */
+  .dia { display: grid; grid-template-columns: 190px 36px 1fr 36px 200px; align-items: stretch; margin-top: 4px; }
+  .dia .box { border: 1px solid var(--border); border-radius: 12px; background: var(--soft); padding: 14px 16px; font-size: 16px; line-height: 1.4; }
+  .dia .box b { display: block; font-size: 18px; margin-bottom: 6px; }
+  .dia .arrow { align-self: center; text-align: center; font-size: 28px; color: var(--ink-3); }
+  .exa { border: 3px solid var(--teal); border-radius: 14px; padding: 14px 16px 12px; background: #fff; }
+  .exa .head { font-weight: 700; color: var(--teal); font-size: 19px; margin-bottom: 10px; }
+  .exa .row { display: flex; gap: 8px; align-items: center; }
+  .exa .st { flex: 1; background: var(--tint); border-radius: 8px; padding: 9px 10px; font-size: 15px; line-height: 1.3; }
+  .exa .st b { display: block; font-size: 15px; }
+  .exa .to { color: var(--ink-3); }
+  .exa .audit { margin-top: 10px; border-top: 1px dashed var(--teal); padding-top: 8px; font-size: 15px; color: var(--ink-2); }
+  .chain { display: flex; gap: 10px; align-items: stretch; margin: 6px 0 26px; }
+  .chain .c { flex: 1; background: var(--soft); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 18px; line-height: 1.35; }
+  .chain .c b { display: block; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--teal); margin-bottom: 4px; }
+  .chain .to { align-self: center; font-size: 26px; color: var(--ink-3); }
+  .lead-num { display: flex; align-items: baseline; gap: 16px; }
+  .appendix .kicker { color: var(--ink-3); }
+  .appendix h2 { font-size: 30px; margin-bottom: 18px; }
+  .appendix p, .appendix li { font-size: 19px; }
+  .appendix .stat { font-size: 40px; }
+  .appendix .stat-label { font-size: 15px; }
 </style>
 </head>
 <body>
@@ -62,115 +82,300 @@
 <section class="slide title-slide">
   <p class="kicker">ExaThon India 2026 · Track 3</p>
   <h1>VoltProof</h1>
-  <p style="font-size:28px; max-width: 900px; margin: 0 0 22px;">Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.</p>
+  <p style="font-size:28px; max-width: 980px; margin: 0 0 22px;">Traceable evidence of power cuts and poor supply, from minute-by-minute voltage records, analysed inside Exasol.</p>
   <p class="problem">Households and small shops on unreliable electricity can't show when, and for how long, their power failed, because when they complain, their own memory is usually all they have to set against the utility's records. If this worked, they could take a dated, minute-by-minute record of every outage and voltage problem, with its uncertainty stated, to their utility or grievance forum.</p>
   <p class="muted small">Data: Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI), Harvard Dataverse doi:10.7910/DVN/CLLZZM (CC0 1.0).</p>
   <p class="muted small">github.com/stredevirad/voltproof-exathon-2026</p>
 </section>
 
-<!-- 2. Problem -->
+<!-- 2. The shopkeeper -->
 <section class="slide">
   <p class="kicker">The problem</p>
-  <h2>A consumer's memory against the utility's own reports</h2>
-  <div class="grid g2">
-    <div>
-      <ul>
-        <li>Daily power cuts and voltage too low or too high to use are common in parts of India.</li>
-        <li>Complaints rest on memory; there is rarely an independent, dated record.</li>
-        <li>Prayas's ESMI monitors recorded supply every minute at homes and shops, and published it, but as raw 63-column hourly files with gaps, duplicates and defects.</li>
-      </ul>
-      <p class="small muted" style="margin-top:14px"><span class="illustrative">Illustrative</span> A shopkeeper in a small Uttar Pradesh town loses business to evening cuts but cannot show when, how long, or whether neighbours lost supply too.</p>
+  <h2>Evening power cuts, and nothing to show for them</h2>
+  <div class="grid g2" style="align-items: center; margin-top: 10px;">
+    <div class="card" style="background: var(--tint); border-color: var(--tint); padding: 30px 36px;">
+      <p class="small" style="margin: 0;"><span class="illustrative">Illustrative</span></p>
+      <p class="quote">“The power goes off almost every evening.”</p>
+      <p class="muted small" style="margin-top: 16px;">A shopkeeper's memory, against the utility's own records.</p>
     </div>
-    <div class="card">
-      <h3>Rural Uttar Pradesh, 2016–2018</h3>
-      <div class="stat">566.3 min/day</div>
-      <div class="stat-label">measured outage (lower bound), 82 rural monitors, comparable months, VoltProof</div>
-      <p class="small" style="margin-top:16px">Prayas's own article reports "in excess of 4 hours (>240 minutes) a day" for rural areas; our measurement is higher (see validation).</p>
-      <p class="xs muted">Sources: docs/HEADLINE_FIGURES.md; Prayas, "ESMI in Uttar Pradesh", 7 Aug 2019.</p>
+    <div>
+      <p>A shopkeeper in a small Uttar Pradesh town loses business to evening cuts. When he complains, he cannot show
+        <b>when</b> the power failed, <b>for how long</b>, or <b>whether his neighbours lost it too</b>.</p>
+      <p class="muted">Daily cuts and voltage too low to use are common in parts of India, and complaints rarely have an
+        independent, dated record behind them.</p>
     </div>
   </div>
   <div class="footer"><span>VoltProof</span><span>2</span></div>
 </section>
 
-<!-- 3. Who it helps -->
+<!-- 3. Someone was measuring -->
 <section class="slide">
-  <p class="kicker">Who it helps</p>
-  <h2>Evidence anyone can check, not a verdict</h2>
-  <div class="grid g3">
-    <div class="card"><h3>Consumers and consumer groups</h3><p>A dated PDF per location-month: every interruption, its certainty and bounds, and a pointer to the grievance route.</p></div>
-    <div class="card"><h3>Researchers and civil society</h3><p>Reproducible, versioned SQL over the raw files; data defects found and documented instead of silently dropped.</p></div>
-    <div class="card"><h3>Grievance forums and regulators</h3><p>Every number traces to a source file line and an Exasol statement id, so a reviewer can verify it rather than trust it.</p></div>
-  </div>
-  <p class="small muted" style="margin-top:26px">VoltProof is an evidence-analysis aid. It does not state what anyone is owed, does not name a cause, and is not legal advice.</p>
-  <div class="footer"><span>VoltProof</span><span>3</span></div>
-</section>
-
-<!-- 4. Demo moment -->
-<section class="slide">
-  <p class="kicker">Demo moment · Bahraich, 25 July 2018, 18:27</p>
-  <h2>17 monitors lost supply within 2 minutes</h2>
-  <div class="grid g-crop">
-    <div class="crop"><img src="../screenshots/04_event_evidence.png" style="left:-800px; top:-160px" alt="The panel on the event evidence page: 16 other monitors lost supply within 2 minutes, with the chance comparison"></div>
+  <p class="kicker">The record already exists</p>
+  <h2>Independent monitors recorded the voltage every minute</h2>
+  <div class="grid g2" style="grid-template-columns: 1.1fr 1fr; align-items: start;">
     <div>
       <ul>
-        <li>One evening outage at Huzurpur-Bahraich: exact start and end, certainty of each edge, the raw source lines.</li>
-        <li>16 other Bahraich monitors started an interruption between 18:27 and 18:29: a <b>potential shared supply event</b>.</li>
-        <li>Bahraich, July 2018: 3,945 coincident pairs observed vs 1,827.5 expected from 20 time-shifted variants; none reached the observed count.</li>
-        <li>Chosen by a fixed, documented rule, not hand-picked.</li>
+        <li>Prayas (Energy Group)'s ESMI monitors were plugged in at homes and shops and recorded the voltage every
+          minute. VoltProof uses Uttar Pradesh, January 2016 to June 2019.</li>
+        <li>The readings are published openly, but as raw hourly files with gaps, duplicates and defects: hard to
+          use, and impossible to show to a utility as they are.</li>
       </ul>
-      <p class="small muted">Coincidence is not cause.</p>
+    </div>
+    <div class="card" style="padding: 28px 30px;">
+      <div class="stat">102.8 million</div>
+      <div class="stat-label">minutes of clean readings from Uttar Pradesh that VoltProof analyses</div>
+      <p class="xs muted" style="margin-top: 16px; font-family: Consolas, monospace;">Location name, Date, Hour, Min 0, Min 1, … Min 59</p>
+      <p class="xs muted">the published files: one row per hour, holding that hour's 60 minutes</p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof</span><span>4</span></div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI, CC0 1.0</span><span>3</span></div>
 </section>
 
-<!-- 5. How it works -->
+<!-- 4. What VoltProof gives him -->
 <section class="slide">
-  <p class="kicker">How it works</p>
-  <h2>The whole analysis is versioned SQL running inside Exasol</h2>
-  <div class="flow">
-    <div class="step"><b>Verify</b>MD5 against Dataverse</div><div class="arrow">→</div>
-    <div class="step exasol"><b>IMPORT</b>raw rows keep file id and line number</div><div class="arrow">→</div>
-    <div class="step exasol"><b>Unpivot</b>63 columns → minutes; per-file date formats; quarantine</div><div class="arrow">→</div>
-    <div class="step exasol"><b>Runs</b>voltage classes; gaps-and-islands with one window function</div><div class="arrow">→</div>
-    <div class="step exasol"><b>Events</b>certainty and bounds; daily, monthly, coverage</div><div class="arrow">→</div>
-    <div class="step exasol"><b>Coincidence</b>pairs across monitors; chance baseline</div>
+  <p class="kicker">What VoltProof gives him</p>
+  <h2>Every cut, dated to the minute, with its certainty stated</h2>
+  <div class="crop" style="width: 1136px; height: 252px;">
+    <img src="../screenshots/02_month_calendar.png" style="width: 1325px; left: -96px; top: -366px"
+         alt="The month page of Huzurpur-Bahraich, July 2018: outage time at least 366.2 h, then interruptions, longest interruption, low voltage and minutes read, each with a plain caption">
   </div>
-  <div class="grid g2" style="margin-top:28px">
+  <div class="grid g2" style="margin-top: 24px;">
     <ul>
-      <li><b>Missing data is never an outage.</b> Gaps stay NO_DATA; outages next to gaps get a measured lower bound (the headline) and an upper bound.</li>
-      <li>A month is comparable only with &gt; 90% of minutes read (Prayas's rule).</li>
+      <li>One monitor, one month: <b>at least 366.2 hours</b> without supply, every cut listed.</li>
+      <li>Missing data is never counted, so the headline is a minimum.</li>
+      <li>Open any day to see each minute; open any cut to see its source lines.</li>
     </ul>
     <ul>
-      <li>FastAPI + React app and a one-click PDF report; every number traced to the source line and the Exasol statement id in the audit log.</li>
-      <li>Thresholds are Prayas's published ones: outage ≤ 130 V, low 131–204 V, high above 270 V.</li>
+      <li>One click: a PDF evidence report to take to the utility.</li>
+      <li>Anyone can analyse readings from their own monitor today, the same way; the app labels them “not
+        verified”.</li>
     </ul>
   </div>
-  <div class="footer"><span>VoltProof</span><span>5</span></div>
+  <div class="footer"><span>VoltProof · Huzurpur-Bahraich, July 2018 · Data: Prayas (Energy Group), ESMI</span><span>4</span></div>
 </section>
 
-<!-- 6. Why Exasol -->
+<!-- 5. Demo moment -->
 <section class="slide">
-  <p class="kicker">Why Exasol · warm medians, 15.6 GB laptop</p>
+  <p class="kicker">Demo moment · Bahraich, 25 July 2018, 18:27</p>
+  <h2>One evening in Bahraich: 17 monitors lost supply within 2 minutes</h2>
+  <div class="grid" style="grid-template-columns: 392px 1fr; align-items: start;">
+    <div class="crop" style="width: 392px; height: 452px;">
+      <img src="../screenshots/04_event_evidence.png" style="width: 1161px; left: -680px; top: -140px"
+           alt="The event page panel: 16 other monitors lost supply within 2 minutes, with the chance comparison">
+    </div>
+    <div>
+      <ul>
+        <li>Huzurpur-Bahraich plus 16 other Bahraich monitors lost supply between 18:27 and 18:29 (the panel lists the
+          16 others).</li>
+        <li>VoltProof calls this a <b>potential shared supply event</b>: the cuts started together. It names no cause
+          and no equipment.</li>
+        <li>Chosen by a fixed, documented rule, not hand-picked: the evening potential shared supply event with the
+          most monitors in June–August 2018.</li>
+      </ul>
+      <p class="small muted"><b>The whole month, not just this evening:</b> in Bahraich in July 2018, interruptions at two
+        different monitors started within 2 minutes of each other 3,945 times; about 1,827.5 would be expected by
+        chance (20 versions with the days shifted; none reached the observed count).</p>
+      <p style="font-weight: 700;">Coincidence is not cause.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>5</span></div>
+</section>
+
+<!-- 6. How it works -->
+<section class="slide">
+  <p class="kicker">How it works, in plain words</p>
+  <h2>Four steps, from published files to a report</h2>
+  <div class="steps">
+    <div class="s"><div class="num">1</div><b>Check</b><p>Every file's checksum (a fingerprint of its contents) must match the published one before it is used.</p></div>
+    <div class="s"><div class="num">2</div><b>Load</b><p>The raw rows go into the database unchanged, each one keeping its file and line number.</p></div>
+    <div class="s"><div class="num">3</div><b>Analyse</b><p>Every minute is sorted into no supply, low, normal, high or no reading; each cut is found, measured and compared with other monitors.</p></div>
+    <div class="s"><div class="num">4</div><b>Show</b><p>The app and the PDF only read the results. Every number points back to its file line.</p></div>
+  </div>
+  <p class="small muted" style="margin: 14px 0 0;">Steps 2 and 3 run inside Exasol (next slide).</p>
+  <div class="grid g2" style="margin-top: 30px;">
+    <p><b>Missing data is never an outage.</b> A cut next to a gap gets a measured minimum (the headline) and a
+      possible maximum.</p>
+    <p>The voltage classes are Prayas's published ones: no supply at 130 V or less, low 131–204 V, high above 270 V.
+      A month is compared only when more than 90% of its minutes were read.</p>
+  </div>
+  <div class="footer"><span>VoltProof</span><span>6</span></div>
+</section>
+
+<!-- 7. Exasol -->
+<section class="slide">
+  <p class="kicker">How we use Exasol Personal</p>
+  <h2>The whole analysis runs inside Exasol, on a laptop</h2>
+  <div class="dia">
+    <div class="box"><b>1 · Check</b>Published CSV and .tab files (or a file the user uploads). Each checksum must
+      match: the file is exactly the published one.</div>
+    <div class="arrow">→</div>
+    <div class="exa">
+      <div class="head">Inside Exasol Personal: versioned SQL, one step after another</div>
+      <div class="row">
+        <div class="st"><b>2 · Load</b>IMPORT raw rows, each with its file and line</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>one hourly row of 60 minutes becomes 60 rows</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>classify each minute's voltage</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>find each cut (one window function)</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>days, months, other monitors, chance</div>
+      </div>
+      <div class="audit">Exasol's audit log records every statement: 0 different, 0 missing against the SQL files in
+        every benchmark build. Uploads run the same SQL in their own schema, under a separate database user.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box"><b>4 · Show</b>The app and the PDF report read the result tables; they compute nothing
+      themselves.</div>
+  </div>
+  <div class="grid" style="grid-template-columns: 300px 1fr; margin-top: 22px; align-items: start;">
+    <div><div class="stat">210.4 s</div><div class="stat-label">full build of the Uttar Pradesh data (39 SQL
+      statements), on a 15.6 GB laptop</div></div>
+    <div>
+      <p style="margin: 0 0 8px;">In Exasol: 102,927,720 minute rows built in 11.0 s; every cut found in 35.6 s
+        (665 s before our own fix, both timed from Exasol's audit log).</p>
+      <p class="small muted" style="margin: 0;">The published files hold all states; all are loaded, and only the
+        Uttar Pradesh rows become minutes. Python only checks files, starts the SQL steps and shows results. More
+        timings: appendix A1.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof</span><span>7</span></div>
+</section>
+
+<!-- 8. Trust -->
+<section class="slide">
+  <p class="kicker">Why you can trust the numbers</p>
+  <h2>Every number can be checked, not just believed</h2>
+  <div class="chain">
+    <div class="c"><b>A number</b>in the app or the PDF report</div><div class="to">→</div>
+    <div class="c"><b>The SQL step</b>that computed it, and the hash of its SQL file</div><div class="to">→</div>
+    <div class="c"><b>The Exasol statement</b>recorded in the audit log</div><div class="to">→</div>
+    <div class="c"><b>The source line</b>in the published file</div>
+  </div>
+  <ul>
+    <li>A separate Python check, written independently from the same rules, gives identical results on every test.
+      It is a test, not the product.</li>
+    <li>Hand-written test cases, random test data and real slices of the data are all checked the same way.</li>
+    <li>Results are compared with Prayas's own published figures, including where they differ (slide 10).</li>
+  </ul>
+  <div class="footer"><span>VoltProof</span><span>8</span></div>
+</section>
+
+<!-- 9. Data defects -->
+<section class="slide">
+  <p class="kicker">Honest about the data</p>
+  <h2>Defects in the published files: found and labelled, never hidden</h2>
+  <div class="grid g3">
+    <div class="card"><h3>2019 January–June <span class="tag warn">lower bounds</span></h3>
+      <p>Hours that read 0 V throughout were left out of this file. The gaps stay missing data, so 2019 figures are
+        labelled lower bounds in the app and the reports.</p></div>
+    <div class="card"><h3>2019 July–December: Hour column lost</h3>
+      <p>Almost every row says hour 0, so the minute of a reading cannot be known. The file is loaded, checked and
+        excluded, with that reason.</p></div>
+    <div class="card"><h3>2019 names and dates</h3>
+      <p>Some locations gained an added “ [Offline]”; they are matched to their earlier names only when that is
+        unambiguous. Dates changed format between files and are read per file.</p></div>
+  </div>
+  <p class="small muted" style="margin-top: 22px;">Found by checking the data against Prayas's own single-monitor
+    charts. Details and counts: appendix A4.</p>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>9</span></div>
+</section>
+
+<!-- 10. Where we differ -->
+<section class="slide">
+  <p class="kicker">Checked against Prayas's published figures</p>
+  <h2>Single monitors agree; our daily averages are higher</h2>
+  <div class="grid" style="grid-template-columns: 380px 1fr; align-items: start;">
+    <div class="card" style="padding: 26px 28px;">
+      <div class="stat">2.0–2.6×</div>
+      <div class="stat-label">our daily-outage averages, compared with Prayas's Figure 2</div>
+    </div>
+    <div>
+      <p><b>We measure more outage than Prayas's Figure 2, and say so.</b> Single-monitor profiles agree within
+        0.2 h/day, and so do the evening and time-of-day charts.</p>
+      <p>Our daily-outage averages are higher than Prayas's Figure 2. Prayas's Figure 2 and Figures 8–9 imply
+        different averages, and the article does not state the averaging used for Figure 2. No parameter was tuned
+        to close the gap.</p>
+      <p class="small muted">The full comparison table is in appendix A3.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof</span><span>10</span></div>
+</section>
+
+<!-- 11. Limits -->
+<section class="slide">
+  <p class="kicker">Limits and legal framing</p>
+  <h2>What VoltProof does not claim</h2>
+  <div class="grid g2">
+    <ul>
+      <li>A plug-in monitor is not the utility's meter; an outage may also come from a tripped breaker, wiring or the monitor.</li>
+      <li>ESMI data is historical (the whole dataset: 2014–2019; used here: Uttar Pradesh, January 2016 to June 2019):
+        it describes supply then, not today.</li>
+      <li>A potential shared supply event is a coincidence in time, not proof of a common cause.</li>
+      <li>No amount owed and no breach is stated. VoltProof is an evidence-analysis aid, not legal advice.</li>
+    </ul>
+    <div class="card">
+      <h3>Grievance route the report points to</h3>
+      <p>In Uttar Pradesh, the Commission's 2003 regulations provide a Consumer Grievance Redressal Forum and an Electricity Ombudsman.</p>
+      <p class="xs muted">UPERC CGRF and Ombudsman Regulations, 2003; PIB, Ministry of Power, 30 Dec 2010.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof</span><span>11</span></div>
+</section>
+
+<!-- 12. If adopted -->
+<section class="slide">
+  <p class="kicker">If VoltProof is adopted</p>
+  <h2>What changes</h2>
+  <div class="grid g3">
+    <div class="card"><h3>For a shopkeeper or a consumer group</h3><p>A dated record of every cut, with its certainty,
+      instead of a memory. Anyone can also upload readings from their own monitor today; the app labels them “not
+      verified”.</p></div>
+    <div class="card"><h3>For a grievance forum or a regulator</h3><p>Each number traces to a file line and an Exasol
+      statement, so it can be checked rather than trusted.</p></div>
+    <div class="card"><h3>Next (not claimed today)</h3><p>New monitors or smart-meter data through the same SQL; each
+      state's standards of performance, from the primary regulation, to show which events may warrant review through
+      the grievance forum.</p></div>
+  </div>
+  <p class="small muted" style="margin-top: 18px;">More states and maps: the ESMI files cover many states; a map needs
+    coordinates the source does not have.</p>
+  <p style="margin-top: 18px; font-size: 24px;"><b>In one line:</b> 102.8 million minutes of independent readings,
+    analysed inside Exasol, every number traced to its SQL step and source line.</p>
+  <div class="footer"><span>VoltProof</span><span>12</span></div>
+</section>
+
+<!-- 13. Team -->
+<section class="slide">
+  <p class="kicker">Team</p>
+  <h2>Rajagiri School of Engineering &amp; Technology, Kochi</h2>
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card"><h3>Joshua Herbert Japheth</h3></div>
+    <div class="card"><h3>Rohith Mohandas</h3></div>
+    <div class="card"><h3>Dane John Padinjarekara</h3></div>
+  </div>
+  <p class="muted" style="margin-top:28px">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
+  <div class="footer"><span>VoltProof</span><span>13</span></div>
+</section>
+
+<!-- A1. Exasol benchmarks -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A1 · Why Exasol · warm medians, 15.6 GB laptop</p>
   <h2>102.8 million minutes, full build in 210.4 s</h2>
   <div class="grid g3">
     <div class="card"><div class="stat">30.3 s</div><div class="stat-label">native IMPORT of 7,367,581 raw rows (11 files)</div></div>
     <div class="card"><div class="stat">11.0 s</div><div class="stat-label">in-database unpivot to 102,927,720 minute rows</div></div>
     <div class="card"><div class="stat">35.6 s</div><div class="stat-label">gaps-and-islands over 102.8 million readings (one window function)</div></div>
   </div>
-  <table style="margin-top:24px">
+  <table style="margin-top:22px">
     <tr><th>Scale fix (recorded in Exasol's audit log)</th><th class="n">Before</th><th class="n">After</th></tr>
     <tr><td>Run detection: LAG + running SUM → one ROW_NUMBER window</td><td class="n">665 s, 7.4 GiB temp</td><td class="n">35.6 s</td></tr>
     <tr><td>Duplicates: minute-level GROUP BY → hour-level first</td><td class="n">1,892 s, then a cancelled step</td><td class="n">13.5 s</td></tr>
     <tr><td>Chance baseline: band join → bucketed equality joins</td><td class="n">348 s (sample only)</td><td class="n">3.9 s (full data)</td></tr>
   </table>
   <p class="small muted" style="margin-top:12px">In all 6 benchmark builds, every statement's session and statement id matched EXA_DBA_AUDIT_SQL by exact SQL text (0 different, 0 missing); the same audit statistics produce these benchmarks. Sources: docs/BENCHMARKS.md, docs/WHY_EXASOL.md.</p>
-  <div class="footer"><span>VoltProof</span><span>6</span></div>
+  <div class="footer"><span>VoltProof</span><span>A1</span></div>
 </section>
 
-<!-- 7. Correctness -->
-<section class="slide">
-  <p class="kicker">Correctness evidence</p>
+<!-- A2. Correctness -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A2 · Correctness evidence</p>
   <h2>The SQL must equal an independent implementation, exactly</h2>
   <div class="grid g2">
     <ul>
@@ -185,12 +390,12 @@
     </ul>
   </div>
   <p class="small muted" style="margin-top:12px">docs/VALIDATION.md §1 · docs/TEST_REPORT.md</p>
-  <div class="footer"><span>VoltProof</span><span>7</span></div>
+  <div class="footer"><span>VoltProof</span><span>A2</span></div>
 </section>
 
-<!-- 8. Validation vs Prayas -->
-<section class="slide">
-  <p class="kicker">Validation against Prayas's published figures</p>
+<!-- A3. Validation -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A3 · Validation against Prayas's published figures</p>
   <h2>Agrees at the level of single monitors; headline averages differ</h2>
   <table>
     <tr><th>Prayas figure</th><th>Prayas</th><th>VoltProof</th><th></th></tr>
@@ -199,14 +404,14 @@
     <tr><td>Outage by time of day (Figure 8), summed, min/day</td><td>≈ 56 / ≈ 155 / ≈ 523</td><td>56 / 174 / 555</td><td><span class="tag ok">agrees</span></td></tr>
     <tr><td>Daily outage (Figure 2), min/day</td><td>21 / 87 / 260</td><td>55.6 / 174.4 / 555.2<br><span class="small muted">2016–2018 only: 56.3 / 189.5 / 566.3</span></td><td><span class="tag diff">higher</span></td></tr>
   </table>
-  <p style="margin-top:18px; font-size:19px">Our daily-outage averages are higher than Prayas's Figure 2; Prayas's Figure 2 and Figures 8–9 imply different averages, and the article does not state the averaging used for Figure 2. No parameter was tuned to close the gap.</p>
+  <p style="margin-top:16px; font-size:18px">Our daily-outage averages are higher than Prayas's Figure 2; Prayas's Figure 2 and Figures 8–9 imply different averages, and the article does not state the averaging used for Figure 2. No parameter was tuned to close the gap.</p>
   <p class="xs muted">docs/VALIDATION.md §3. Primary definition, fixed before comparing: comparable months, 2016-01 to 2019-06, pooled. Headline figures elsewhere use 2016–2018 (the 2019 file defect, D-031); that variant was already reported in §3.3.</p>
-  <div class="footer"><span>VoltProof</span><span>8</span></div>
+  <div class="footer"><span>VoltProof</span><span>A3</span></div>
 </section>
 
-<!-- 9. Data defects -->
-<section class="slide">
-  <p class="kicker">Data defects found in the published files</p>
+<!-- A4. Data defects in detail -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A4 · Data defects found in the published files</p>
   <h2>Found, documented and handled, never silently dropped</h2>
   <div class="grid g2">
     <div class="card"><h3>2019 Jan–June: all-0 V hours omitted <span class="tag warn">lower bounds</span></h3>
@@ -217,52 +422,31 @@
       <h3 style="margin-top:14px">2019 formats</h3>
       <p>Dates M/D/YYYY (earlier DD-MM-YYYY), detected per file; names with an added " [Offline]", matched only when unambiguous.</p></div>
   </div>
-  <div class="footer"><span>VoltProof</span><span>9</span></div>
+  <div class="footer"><span>VoltProof</span><span>A4</span></div>
 </section>
 
-<!-- 10. Limits and legal framing -->
-<section class="slide">
-  <p class="kicker">Limits and legal framing</p>
-  <h2>What VoltProof does not claim</h2>
+<!-- A5. Headline figures -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A5 · Headline figures, Uttar Pradesh, 2016–2018, comparable months</p>
+  <h2>Measured minutes only, so these are lower bounds</h2>
   <div class="grid g2">
-    <ul>
-      <li>A plug-in monitor is not the utility's meter; an outage may also come from a tripped breaker, wiring or the monitor.</li>
-      <li>ESMI data is historical (2014–2019): it describes supply then, not today.</li>
-      <li>A potential shared supply event is a coincidence in time, not proof of a common cause.</li>
-      <li>No amount owed and no breach is stated. Not legal advice.</li>
-    </ul>
     <div class="card">
-      <h3>Grievance route the report points to</h3>
-      <p>In Uttar Pradesh, the Commission's 2003 regulations provide a Consumer Grievance Redressal Forum and an Electricity Ombudsman.</p>
-      <p class="xs muted">UPERC CGRF and Ombudsman Regulations, 2003; PIB, Ministry of Power, 30 Dec 2010.</p>
+      <h3>Rural Uttar Pradesh, 2016–2018</h3>
+      <div class="stat">566.3 min/day</div>
+      <div class="stat-label">measured outage (lower bound), 82 rural monitors, comparable months, VoltProof</div>
+      <p class="small" style="margin-top:14px">Prayas's own article reports "in excess of 4 hours (>240 minutes) a day" for rural areas; our measurement is higher (see validation).</p>
+      <p class="xs muted">Sources: docs/HEADLINE_FIGURES.md; Prayas, "ESMI in Uttar Pradesh", 7 Aug 2019.</p>
+    </div>
+    <div class="card">
+      <h3>Potential shared supply events</h3>
+      <p>Across the 276 district-months with at least two monitors, interruptions started within 2 minutes of each
+        other 91,532 times; the time-shifted baseline expects 40,704.6.</p>
+      <p>150 of those district-months are above all 20 shifted variants; by pure chance, at most about 1 in 21 would be
+        (about 13).</p>
+      <p><b>Coincidence is not cause.</b></p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof</span><span>10</span></div>
-</section>
-
-<!-- 11. Future scope -->
-<section class="slide">
-  <p class="kicker">Future scope (not claimed today)</p>
-  <h2>The same pipeline, on today's data</h2>
-  <div class="grid g3">
-    <div class="card"><h3>Live data</h3><p>New plug-in monitors or smart-meter interval data through the same versioned SQL steps.</p></div>
-    <div class="card"><h3>Standards of performance</h3><p>Each state's rules, encoded from the primary regulation, to show which events may warrant review through the grievance forum.</p></div>
-    <div class="card"><h3>More states, maps</h3><p>The ESMI files cover many states; a map needs coordinates the source does not have.</p></div>
-  </div>
-  <div class="footer"><span>VoltProof</span><span>11</span></div>
-</section>
-
-<!-- 12. Team -->
-<section class="slide">
-  <p class="kicker">Team</p>
-  <h2>Rajagiri School of Engineering &amp; Technology, Kochi</h2>
-  <div class="grid g3" style="margin-top:8px">
-    <div class="card"><h3>Joshua Herbert Japheth</h3></div>
-    <div class="card"><h3>Rohith Mohandas</h3></div>
-    <div class="card"><h3>Dane John Padinjarekara</h3></div>
-  </div>
-  <p class="muted" style="margin-top:28px">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
-  <div class="footer"><span>VoltProof</span><span>12</span></div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>A5</span></div>
 </section>
 
 </body>

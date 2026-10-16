@@ -478,3 +478,18 @@ real-data oracle tests are re-run on the new formulations.
   pop-ups. **Checked by tests:** `tests/e2e/test_guide.py` (every dataset kind, attribution, blocked words, contrast,
   phone width, tour first visit / finish / skip / Escape / reopen / storage blocked / SYNTHETIC set, stable step count)
   and new assertions in `tests/e2e/test_ui_quality.py` and `tests/e2e/test_upload_ui.py`.
+
+## D-040 · 2026-10-16 · The deck tells one story for a non-technical judge; the figures move to an appendix
+
+- **What:** `docs/deliverables/deck/deck.html` (built into `VoltProof_deck.pdf` by `python -m pipeline.deck`) now
+  follows one story, one idea per slide: the shopkeeper's problem (Illustrative), the record that already exists,
+  what VoltProof gives him, one evening in Bahraich, how it works in four plain steps, how Exasol Personal is used
+  (one diagram with the same four steps, the in-Exasol timings and the audit-log match), why the numbers can be
+  checked, the data defects, where we differ from Prayas, what VoltProof does not claim, what changes if adopted, and
+  the team.
+- **Nothing dropped:** the earlier slides with benchmarks, correctness evidence, the validation table and the data
+  defects are kept word for word as appendix A1-A4; A5 adds the headline figures and the "150 of 276 district-months,
+  about 13 by chance" sentence from the README. The problem statement, the attribution and every frozen sentence are
+  unchanged; every number on a slide also appears in the README or docs (checked by the deck build).
+- **No speed comparison** with other engines is made (as in `docs/WHY_EXASOL.md`); the only before/after timings are
+  VoltProof's own SQL fixes, timed from Exasol's audit log.
