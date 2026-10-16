@@ -116,21 +116,22 @@ export default function LocationMonth() {
       <h2>This month in numbers</h2>
       <div className="kpis">
         <Kpi testId="kpi-outage" lead label="Outage time (at least)" value={`${fmtHours(m.outage_min_lower)} h`}
-             sub={m.outage_min_upper > m.outage_min_lower ? `up to ${fmtHours(m.outage_min_upper)} h if gaps next to outages were outages` : "no outage borders missing data"}
-             plain="Time with no supply (130 V or less), counted only in minutes that have a reading. Minutes without a reading are left out, so this is a minimum." />
+             sub={m.outage_min_upper > m.outage_min_lower
+               ? `up to ${fmtHours(m.outage_min_upper)} h if every minute with no reading next to an outage was also an outage`
+               : "no outage borders a minute with no reading"}
+             plain="Time when the voltage read 130 V or less, which Prayas counts as no supply. Only minutes with a reading count, so this is a minimum." />
         <Kpi testId="kpi-interruptions" label="Interruptions" value={m.interruptions} sub="counted on the day they start"
-             plain="Each separate run of minutes with no supply counts once." />
+             plain="Separate power cuts: each run of minutes with no supply counts once." />
         <Kpi testId="kpi-longest" label="Longest interruption" value={fmtMin(m.longest_interruption)} sub="measured minutes"
              plain="The longest single run of minutes with no supply." />
         <Kpi testId="kpi-low" label="Low voltage" value={`${fmtHours(m.low_minutes)} h`} sub={`131–204 V; high voltage ${fmtHours(m.high_minutes)} h`}
-             plain="Time with supply present but below the normal range (205–270 V)." />
+             plain="Time when the voltage read 131–204 V, below the normal range (205–270 V)." />
         <Kpi testId="kpi-coverage" label="Minutes read" value={fmtPct(m.coverage_calendar)} sub={`${m.observed_minutes.toLocaleString("en-IN")} of ${m.calendar_minutes.toLocaleString("en-IN")}`}
              plain="Share of the month's minutes with a reading. Above 90% makes the month comparable." />
       </div>
-      <p className="small muted">
-        {m.outage_zero_minutes.toLocaleString("en-IN")} of the outage minutes read exactly 0 V; the rest read 1–130 V, which Prayas
-        treats as no supply. Evening (17:00–23:00) outage: at least {fmtMin(m.evening_outage_lower)}.
-      </p>
+      <p className="small muted" style={{ marginBottom: 0 }}>
+        {m.outage_zero_minutes.toLocaleString("en-IN")} of the outage minutes read exactly 0 V; the rest read 1–130 V.</p>
+      <p className="small muted" style={{ marginTop: 0 }}>Evening (17:00–23:00) outage: at least {fmtMin(m.evening_outage_lower)}.</p>
 
       <div className="grid-2">
         <div className="card">
@@ -138,6 +139,7 @@ export default function LocationMonth() {
           <div className="chips small" aria-label="Legend: outage hours per day" data-testid="calendar-legend">
             {PIECES.map((p) => <span key={p.label} className="state"><span className="swatch" style={{ background: p.color }} />{p.label}</span>)}
           </div>
+          <p className="small muted" style={{ margin: "0 0 4px" }} data-testid="calendar-key">Each square: the day of the month, then its outage hours (at least).</p>
           {option && <EChart option={option} height={16 + 7 * 44 + 14} onClick={onDayClick} testId="calendar"
                              ariaLabel={`Calendar of daily outage minutes for ${loc.display_name} in ${month}. The same values are in the table below.`} />}
           <p className="small muted"><span className="swatch nodata" /> Hatched: less than 90% of the day was read. Missing readings are never counted as outage.</p>
@@ -169,6 +171,8 @@ export default function LocationMonth() {
               <br /><span className="small muted" data-testid="report-generated">Generated {report.generated_at_ist}{report.reused ? " (rendered earlier; same data and code since)" : ""}.</span></p>
           )}
           <h3>Chance comparison for {loc.district}</h3>
+          {data.baseline && <p className="small muted" data-testid="baseline-gloss">How often power cuts at different monitors in
+            this district started together, compared with how often chance alone would give.</p>}
           {data.baseline ? (
             <p className="small" data-testid="baseline">
               In {data.baseline.month_key}, monitors in this district had <b>{data.baseline.observed_pairs.toLocaleString("en-IN")}</b> coincident

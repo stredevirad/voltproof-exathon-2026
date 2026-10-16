@@ -103,6 +103,7 @@ def test_month_page_leads_with_the_outage_lower_bound_and_one_action(base, scree
     assert filled.count() == 1 and filled.first.get_attribute("data-testid") == "generate-report"
     legend = pg.get_by_test_id("calendar-legend").inner_text()
     assert "no outage" in legend and "≥ 12 h" in legend
+    assert "day of the month" in pg.get_by_test_id("calendar-key").inner_text()
     ctx.close()
 
 
@@ -118,6 +119,9 @@ def test_table_rows_open_through_a_real_link_or_button(base, screens, browser):
     choose.focus()
     pg.keyboard.press("Enter")
     assert choose.get_attribute("aria-pressed") == "true"
+    # the chosen monitor is marked without relying on colour: bold text and a tick
+    mark = choose.evaluate("e => [getComputedStyle(e).fontWeight, getComputedStyle(e, '::before').content]")
+    assert int(mark[0]) >= 700 and "✓" in mark[1], mark
     months = pg.get_by_test_id("month-table")
     months.wait_for()
     links = months.locator("tbody tr").first.get_by_role("link")
