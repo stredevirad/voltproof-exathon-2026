@@ -1,10 +1,13 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, withDs, fmtMin, fmtTs } from "../api";
 import { esc, C, EChart, hatch } from "../charts";
 import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
 
-const toMs = (ts: string) => new Date(ts + ":00").getTime(); // local wall-clock (IST as recorded)
+// The recorded wall-clock time (local time as written in the data) is placed on the chart as if it were UTC, and the
+// chart is drawn in UTC: the viewer's own time zone, and its daylight-saving changes, can never shift or drop a minute.
+const toMs = (ts: string) => Date.parse(ts + ":00Z");
+const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function DayView() {
   const { id, day } = useParams();
@@ -15,18 +18,20 @@ export default function DayView() {
   const { data, error, loading } = useApi(() => api.day(locationId, day!), [locationId, day]);
   const [showTable, setShowTable] = useState(false);
 
+  const drawnMinutes = useRef(0);
   const option = useMemo(() => {
     if (!data) return null;
     const start = toMs(`${day}T00:00`);
     const end = toMs(`${day}T23:59`);
     const byTs = new Map(data.readings.map((r) => [r.ts, r.voltage]));
     const pts: [number, number | null][] = [];
+    const drawn = new Set<string>();
     for (let i = 0; i < 1440; i++) {
-      const t = start + i * 60000;
-      const d = new Date(t);
-      const key = `${day}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-      pts.push([t, byTs.has(key) ? byTs.get(key)! : null]);
+      const key = `${day}T${pad(Math.floor(i / 60))}:${pad(i % 60)}`;
+      if (byTs.has(key)) drawn.add(key);
+      pts.push([start + i * 60000, byTs.has(key) ? byTs.get(key)! : null]);
     }
+    drawnMinutes.current = drawn.size;  // distinct recorded minutes placed on the chart (checked by an e2e test)
     const clip = (a: string, b: string): [number, number] => [Math.max(toMs(a), start), Math.min(toMs(b) + 60000, end + 60000)];
     const noData = data.segments.filter((s) => s.supply_state === "NO_DATA").map((s) => {
       const [a, b] = clip(s.start_ts, s.end_ts);
@@ -43,13 +48,14 @@ export default function DayView() {
     });
     return {
       animation: false,
+      useUTC: true,
       grid: { left: 54, right: 150, top: 24, bottom: 56 },
       tooltip: { trigger: "axis", axisPointer: { type: "line" },
                  formatter: (ps: any[]) => {
                    const p = ps.find((x) => x.seriesName === "Voltage");
                    if (!p) return "";
                    const t = new Date(p.value[0]);
-                   const hh = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+                   const hh = `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
                    const v = p.value[1];
                    if (v == null) return `${esc(hh)}<br/>no reading (not counted as outage)`;
                    const st = v <= 130 ? "no supply" : v < 205 ? "low voltage" : v <= 270 ? "normal" : "high voltage";
@@ -102,6 +108,8 @@ export default function DayView() {
       <div className="card">
         <EChart option={option} height={380} onClick={onClick} testId="voltage-trace"
                 ariaLabel={`Minute-by-minute voltage on ${day}. Outages and missing readings are listed in the table below.`} />
+        <span hidden data-testid="day-minutes-charted">
+          {option ? drawnMinutes.current : 0}</span>
         <p className="small muted">Select a shaded outage to see its evidence. Drag the slider or scroll to zoom. The grey line is the measured voltage; it breaks where there is no reading.</p>
         <button onClick={() => setShowTable(!showTable)} aria-expanded={showTable}>{showTable ? "Hide" : "Show"} minute segments as a table</button>
         {showTable && (
