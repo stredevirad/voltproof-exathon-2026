@@ -427,3 +427,26 @@ real-data oracle tests are re-run on the new formulations.
   source, and a general grievance sentence outside Uttar Pradesh.
 - **Unchanged:** sql/010-110, `config/method.yaml`, the oracle, the fixtures and every existing test; the
   command-line builds (`load.ps1 -Set first|up|demo`) behave exactly as before.
+
+## D-038 · 2026-10-16 · Web app look: "Civic calm", one lead number per page, measured contrast
+
+- **What:** the pages lead with one thing each: on the month page the tile "Outage time (at least)" comes first and
+  largest, and "Generate evidence report" is its only filled button; the guided demo and the evidence report sit in
+  marked cards. Each number tile has a one-line plain explanation under it (new text; no figure or existing sentence
+  changed). Calm teal header and footer, white cards, a rule under section titles, page titles in a system serif;
+  numbers stay in the sans font with tabular figures. System fonts only, nothing loaded from the internet.
+- **What did not change:** every number, the chart state colours (orange outage ramp, blue low, green high, hatched
+  grey for no reading; D-027), the frozen wording and the SYNTHETIC and UPLOADED banners (still a warm warning colour,
+  never teal), every test id.
+- **Why:** before, every card looked the same and the eye had nowhere to start; and the old blue links and buttons
+  were just below WCAG AA contrast (4.2-4.4:1; 3.6:1 for the dark-mode button) while pages scrolled sideways on a
+  375 px phone.
+- **Checked by tests** (`tests/e2e/test_ui_quality.py`, plus the SYNTHETIC and upload page tests): every visible text
+  element meets WCAG AA against its background on every screen, light and dark; no sideways scrolling at 375 px;
+  the month page leads with the outage lower bound and has one filled button; table rows that open something hold a
+  real link or button (keyboard and screen readers, audit F-14). These tests fail on the previous look.
+- **Charts in dark mode:** chart text, grid and axes now take the page's colours, so they are readable on the dark
+  background; the heat map writes white figures on its darkest step (12 h or more) for contrast. The calendar legend
+  is page text, so it wraps on a phone.
+- **One switch back:** the look is the `data-skin="civic"` attribute on `<html>` (`app/web/index.html`); without it
+  the plain look returns, keeps the page structure, and also passes the contrast checks.

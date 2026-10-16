@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, withDs, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, fmtWindow, type Ev } from "../api";
 import { esc, C, EChart, hatch } from "../charts";
-import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, useApi } from "../ui";
+import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, rowClick, useApi } from "../ui";
 
 const PIECES = [
   { value: 0, label: "no outage", color: C.ramp[0] },
@@ -38,8 +38,8 @@ export default function LocationMonth() {
       animation: false,
       tooltip: {
         formatter: (p: any) => {
-          const d = byDay[p.data[0]];
-          if (!d) return esc(p.data[0]);
+          const d = byDay[p.value[0]];
+          if (!d) return esc(p.value[0]);
           const cov = (100 * d.observed_minutes / 1440).toFixed(0);
           return `<b>${esc(d.cal_day)}</b><br/>Outage: at least ${fmtMin(d.outage_min_lower)}` +
             (d.outage_min_upper > d.outage_min_lower ? ` (up to ${fmtMin(d.outage_min_upper)})` : "") +
@@ -47,24 +47,28 @@ export default function LocationMonth() {
             (d.observed_minutes < FULL_DAY ? "<br/><i>No reading for part of the day, not counted as outage</i>" : "");
         },
       },
-      visualMap: { type: "piecewise", seriesIndex: 0, orient: "horizontal", left: 0, top: 0, pieces: PIECES,
-                   textStyle: { color: C.ink2 }, itemWidth: 14, itemHeight: 12, selectedMode: false },
-      calendar: { top: 64, left: 44, right: 10, cellSize: ["auto", 44], range: month, orient: "horizontal",
+      // the legend is drawn as page text below the title (it wraps on a phone); the map itself stays in the chart
+      visualMap: { type: "piecewise", seriesIndex: 0, show: false, pieces: PIECES },
+      calendar: { top: 16, left: 44, right: 10, cellSize: ["auto", 44], range: month, orient: "horizontal",
                   yearLabel: { show: false }, monthLabel: { show: false }, dayLabel: { firstDay: 1, color: C.ink2, nameMap: "EN" },
-                  splitLine: { show: false }, itemStyle: { borderColor: C.surface, borderWidth: 2, color: "#ffffff" } },
+                  splitLine: { show: false }, itemStyle: { borderColor: C.surface, borderWidth: 2, color: C.surface } },
       series: [
-        { type: "heatmap", coordinateSystem: "calendar", data: full.map((d) => [d.cal_day, d.outage_min_lower]),
-          label: { show: true, color: C.ink1, fontSize: 11,
-                   formatter: (p: any) => `${p.data[0].slice(8)}\n${p.data[1] ? fmtHours(p.data[1]) + " h" : "–"}` } },
+        // cell text is dark on the light ramp steps and white on the darkest one (12 h or more), for contrast
+        { type: "heatmap", coordinateSystem: "calendar",
+          data: full.map((d) => (d.outage_min_lower >= 720
+            ? { value: [d.cal_day, d.outage_min_lower], label: { color: C.cellInkDark } }
+            : { value: [d.cal_day, d.outage_min_lower] })),
+          label: { show: true, color: C.cellInk, fontSize: 11,
+                   formatter: (p: any) => `${p.value[0].slice(8)}\n${p.value[1] ? fmtHours(p.value[1]) + " h" : "–"}` } },
         { type: "heatmap", coordinateSystem: "calendar", data: partial.map((d) => [d.cal_day, d.outage_min_lower]),
           itemStyle: { color: hatch() },
-          label: { show: true, color: C.ink2, fontSize: 10, formatter: (p: any) => `${p.data[0].slice(8)}\nlow data` } },
+          label: { show: true, color: C.cellInk2, fontSize: 10, formatter: (p: any) => `${p.value[0].slice(8)}\nlow data` } },
       ],
     };
   }, [data, month]);
 
   const onDayClick = useCallback((p: any) => {
-    if (p?.data?.[0]) nav(withDs(`/location/${locationId}/day/${p.data[0]}`));
+    if (p?.value?.[0]) nav(withDs(`/location/${locationId}/day/${p.value[0]}`));
   }, [nav, locationId]);
 
   const events = useMemo(() => {
@@ -111,12 +115,17 @@ export default function LocationMonth() {
 
       <h2>This month in numbers</h2>
       <div className="kpis">
-        <Kpi testId="kpi-interruptions" label="Interruptions" value={m.interruptions} sub="counted on the day they start" />
-        <Kpi testId="kpi-outage" label="Outage time (at least)" value={`${fmtHours(m.outage_min_lower)} h`}
-             sub={m.outage_min_upper > m.outage_min_lower ? `up to ${fmtHours(m.outage_min_upper)} h if gaps next to outages were outages` : "no outage borders missing data"} />
-        <Kpi testId="kpi-longest" label="Longest interruption" value={fmtMin(m.longest_interruption)} sub="measured minutes" />
-        <Kpi testId="kpi-low" label="Low voltage" value={`${fmtHours(m.low_minutes)} h`} sub={`131–204 V; high voltage ${fmtHours(m.high_minutes)} h`} />
-        <Kpi testId="kpi-coverage" label="Minutes read" value={fmtPct(m.coverage_calendar)} sub={`${m.observed_minutes.toLocaleString("en-IN")} of ${m.calendar_minutes.toLocaleString("en-IN")}`} />
+        <Kpi testId="kpi-outage" lead label="Outage time (at least)" value={`${fmtHours(m.outage_min_lower)} h`}
+             sub={m.outage_min_upper > m.outage_min_lower ? `up to ${fmtHours(m.outage_min_upper)} h if gaps next to outages were outages` : "no outage borders missing data"}
+             plain="Time with no supply (130 V or less), counted only in minutes that have a reading. Minutes without a reading are left out, so this is a minimum." />
+        <Kpi testId="kpi-interruptions" label="Interruptions" value={m.interruptions} sub="counted on the day they start"
+             plain="Each separate run of minutes with no supply counts once." />
+        <Kpi testId="kpi-longest" label="Longest interruption" value={fmtMin(m.longest_interruption)} sub="measured minutes"
+             plain="The longest single run of minutes with no supply." />
+        <Kpi testId="kpi-low" label="Low voltage" value={`${fmtHours(m.low_minutes)} h`} sub={`131–204 V; high voltage ${fmtHours(m.high_minutes)} h`}
+             plain="Time with supply present but below the normal range (205–270 V)." />
+        <Kpi testId="kpi-coverage" label="Minutes read" value={fmtPct(m.coverage_calendar)} sub={`${m.observed_minutes.toLocaleString("en-IN")} of ${m.calendar_minutes.toLocaleString("en-IN")}`}
+             plain="Share of the month's minutes with a reading. Above 90% makes the month comparable." />
       </div>
       <p className="small muted">
         {m.outage_zero_minutes.toLocaleString("en-IN")} of the outage minutes read exactly 0 V; the rest read 1–130 V, which Prayas
@@ -126,7 +135,10 @@ export default function LocationMonth() {
       <div className="grid-2">
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Outage per day (lower bound) <span className="small muted">— select a day to see its minutes</span></h3>
-          {option && <EChart option={option} height={64 + 7 * 44 + 14} onClick={onDayClick} testId="calendar"
+          <div className="chips small" aria-label="Legend: outage hours per day" data-testid="calendar-legend">
+            {PIECES.map((p) => <span key={p.label} className="state"><span className="swatch" style={{ background: p.color }} />{p.label}</span>)}
+          </div>
+          {option && <EChart option={option} height={16 + 7 * 44 + 14} onClick={onDayClick} testId="calendar"
                              ariaLabel={`Calendar of daily outage minutes for ${loc.display_name} in ${month}. The same values are in the table below.`} />}
           <p className="small muted"><span className="swatch nodata" /> Hatched: less than 90% of the day was read. Missing readings are never counted as outage.</p>
           <button onClick={() => setShowTable(!showTable)} aria-expanded={showTable}>{showTable ? "Hide" : "Show"} daily table</button>
@@ -142,7 +154,7 @@ export default function LocationMonth() {
             </div>
           )}
         </div>
-        <div className="card">
+        <div className="card feature">
           <h3 style={{ marginTop: 0 }}>Evidence report</h3>
           <p className="small muted">A PDF with the calendar, every event with its certainty, potential shared supply events,
             data quality, methodology and a reproducibility appendix (file checksums, SQL hashes, Exasol statement ids).</p>
@@ -177,9 +189,8 @@ export default function LocationMonth() {
               <th className="l">Start / end certainty</th><th className="l">Other monitors</th>
             </tr></thead>
             <tbody>{events.map((e) => (
-              <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(withDs(`/event/${e.event_key}`))}
-                  onKeyDown={(k) => k.key === "Enter" && nav(withDs(`/event/${e.event_key}`))}>
-                <td className="l">{fmtTs(e.start_ts)}</td><td className="l">{fmtTs(e.end_ts).slice(11)}</td>
+              <tr key={e.event_key} className="clickable" onClick={rowClick(() => nav(withDs(`/event/${e.event_key}`)))}>
+                <td className="l"><Link to={withDs(`/event/${e.event_key}`)}>{fmtTs(e.start_ts)}</Link></td><td className="l">{fmtTs(e.end_ts).slice(11)}</td>
                 <td>{fmtMin(e.min_duration)}</td><td>{e.max_duration > e.min_duration ? fmtMin(e.max_duration) : "–"}</td>
                 <td className="l"><Certainty value={e.start_certainty} /> / <Certainty value={e.end_certainty} />{!e.is_interruption && " (below threshold)"}</td>
                 <td className="l">{e.group_key ? <span className="badge">potential shared supply event</span> : ""}</td>

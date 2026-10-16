@@ -10,9 +10,25 @@ import { CanvasRenderer } from "echarts/renderers";
 echarts.use([HeatmapChart, LineChart, CalendarComponent, DataZoomComponent, GridComponent, MarkAreaComponent,
   MarkLineComponent, TooltipComponent, VisualMapComponent, CanvasRenderer]);
 
-// Chart tokens (mirror styles.css; validated in docs/DECISIONS.md D-027).
+/** A colour token from styles.css, read when a chart is drawn, so chart text, grid and axes follow the light or dark
+ *  theme. The state colours and the outage ramp below are fixed: they are the validated palette (D-027). */
+function token(name: string, fallback: string): string {
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export const C = {
-  ink1: "#0b0b0b", ink2: "#52514e", ink3: "#6f6d68", grid: "#e1e0d9", axis: "#c3c2b7", surface: "#fcfcfb",
+  get ink1() { return token("--ink-1", "#0b0b0b"); },
+  get ink2() { return token("--ink-2", "#52514e"); },
+  get ink3() { return token("--ink-3", "#6f6d68"); },
+  get grid() { return token("--grid", "#e1e0d9"); },
+  get axis() { return token("--axis", "#c3c2b7"); },
+  get surface() { return token("--surface-1", "#fcfcfb"); },
+  // text on heat-map cells, which are light orange or hatched paper in both themes; white on the darkest ramp step
+  cellInk: "#0b0b0b", cellInkDark: "#ffffff", cellInk2: "#3f3e3a",
   outage: "#eb6834", low: "#2a78d6", high: "#1baf7a", nodata: "#98a2b3",
   // single-hue orange sequential ramp for outage minutes per day (OKLCH, lightness strictly decreasing)
   ramp: ["#ffede5", "#ffd2c0", "#ffb295", "#f78d66", "#e96a38", "#9b411d"],

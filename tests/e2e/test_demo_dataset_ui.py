@@ -14,6 +14,7 @@ import pytest
 from pipeline.db import connect, schema_dataset
 from tests.support.appserver import REPO_ROOT, app_server, get_json
 from tests.support.claims import forbidden_hits
+from tests.support.contrast import contrast_failures
 
 pytestmark = [pytest.mark.e2e, pytest.mark.exasol]
 SCHEMA = "VOLTPROOF_DEMO"
@@ -92,3 +93,24 @@ def test_every_page_of_the_guided_demo_is_labelled_synthetic(page, demo_server):
         pg.goto(demo_server + route)
         pg.get_by_role("heading").first.wait_for()
         _check(pg, route)
+
+
+def test_synthetic_pages_meet_wcag_aa_contrast_in_light_and_dark(page, demo_server):
+    """The SYNTHETIC banner and pages are readable in both colour schemes (Part 3 UI pass)."""
+    d = get_json(demo_server, "/api/demo")
+    paths = {"start": ("/", "location-table"),
+             "month": (f"/location/{d['location_id']}/{d['month']}?demo=1&day={d['day']}&event={d['event_key']}", "calendar"),
+             "day": (f"/location/{d['location_id']}/day/{d['day']}?event={d['event_key']}", "voltage-trace"),
+             "event": (f"/event/{d['event_key']}", "event-details")}
+    pg = page
+    fails = []
+    for scheme in ("light", "dark"):
+        pg.emulate_media(color_scheme=scheme)
+        for name, (path, testid) in paths.items():
+            pg.goto(demo_server + path)
+            pg.get_by_test_id(testid).wait_for()
+            pg.get_by_test_id("synthetic-banner").wait_for()
+            pg.wait_for_load_state("networkidle")
+            fails += [f"{name} ({scheme}): {f}" for f in contrast_failures(pg)]
+    pg.emulate_media(color_scheme="light")
+    assert not fails, "\n".join(fails)

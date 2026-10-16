@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { api, ApiError, CURRENT_DS, uploads, type DatasetItem } from "./api";
 
 export type Dataset = {
@@ -116,14 +116,26 @@ export function DataWarning({ text }: { text: string | null | undefined }) {
   );
 }
 
-export function Kpi({ label, value, sub, testId }: { label: string; value: ReactNode; sub?: ReactNode; testId?: string }) {
+/** A number tile. `lead` marks the one number the page leads with; `plain` is a one-line explanation in everyday
+ *  words under the number. */
+export function Kpi({ label, value, sub, plain, lead, testId }: { label: string; value: ReactNode; sub?: ReactNode;
+                     plain?: ReactNode; lead?: boolean; testId?: string }) {
   return (
-    <div className="kpi" data-testid={testId}>
+    <div className={lead ? "kpi lead-tile" : "kpi"} data-testid={testId}>
       <div className="label">{label}</div>
       <div className="value">{value}</div>
       {sub && <div className="sub">{sub}</div>}
+      {plain && <div className="plain" data-testid={testId && `${testId}-plain`}>{plain}</div>}
     </div>
   );
+}
+
+/** Click handler for a table row whose first cell holds the real link or button (audit F-14: keyboard and
+ *  screen-reader users reach that element; a mouse click anywhere else on the row does the same). */
+export function rowClick(go: () => void) {
+  return (ev: MouseEvent) => {
+    if (!(ev.target as HTMLElement).closest("a, button")) go();
+  };
 }
 
 export function StateLegend() {

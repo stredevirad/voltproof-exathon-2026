@@ -13,6 +13,7 @@ import pytest
 from pipeline import synthetic, upload
 from tests.support.appserver import REPO_ROOT, app_server, get_json
 from tests.support.claims import forbidden_hits
+from tests.support.contrast import contrast_failures
 
 pytestmark = [pytest.mark.e2e, pytest.mark.exasol]
 PRAYAS_DATA = ["Electricity Supply Monitoring Initiative", "doi:10.7910", "DVN/CLLZZM", "CC0", "Harvard Dataverse",
@@ -44,6 +45,16 @@ def page(base):
 def _upload_page_check(pg, where: str):
     text = pg.inner_text("body")
     assert not forbidden_hits(text), f"{where}: {forbidden_hits(text)}"
+
+
+def _contrast_light_and_dark(pg, where: str):
+    """The upload banner and pages meet WCAG AA text contrast in both colour schemes (Part 3)."""
+    fails = []
+    for scheme in ("light", "dark"):
+        pg.emulate_media(color_scheme=scheme)
+        fails += [f"{where} ({scheme}): {f}" for f in contrast_failures(pg)]
+    pg.emulate_media(color_scheme="light")
+    assert not fails, "\n".join(fails)
 
 
 def _check_upload_page(pg, where: str):
@@ -78,6 +89,7 @@ def test_upload_the_demo_files_through_the_website_and_use_the_new_dataset(page,
     assert "20 monitor(s)" in done and "8,85,480 measured minutes" in done
     assert "0 different, 0 missing" in pg.get_by_test_id("upload-same-method").inner_text()
     _upload_page_check(pg, "upload done")
+    _contrast_light_and_dark(pg, "upload done")
 
     pg.get_by_test_id("upload-open").click()
     pg.wait_for_url("**/?ds=VP_USER_*")
@@ -89,6 +101,8 @@ def test_upload_the_demo_files_through_the_website_and_use_the_new_dataset(page,
     pg.wait_for_url("**/location/**")
     assert f"ds={ds}" in pg.url
     _check_upload_page(pg, "month view")
+    pg.get_by_test_id("calendar").wait_for()
+    _contrast_light_and_dark(pg, "month view")
     pg.get_by_test_id("demo-next-day").click()
     pg.wait_for_url("**/day/**")
     assert f"ds={ds}" in pg.url
@@ -177,5 +191,6 @@ def test_wrong_files_get_a_plain_message_on_the_page(page, base, tmp_path):
     assert "is 130 V or less" in pg.get_by_test_id("upload-refusals").inner_text()
     assert pg.get_by_test_id("upload-build").is_disabled()
     _upload_page_check(pg, "refused upload")
+    _contrast_light_and_dark(pg, "refused upload")
     pg.get_by_role("button", name="Cancel and delete").click()
     pg.wait_for_function("() => !document.querySelector('[data-testid=upload-refusals]')")

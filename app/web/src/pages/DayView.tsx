@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, withDs, fmtMin, fmtTs } from "../api";
 import { esc, C, EChart, hatch } from "../charts";
-import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
+import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, rowClick, useApi } from "../ui";
 
 // The recorded wall-clock time (local time as written in the data) is placed on the chart as if it were UTC, and the
 // chart is drawn in UTC: the viewer's own time zone, and its daylight-saving changes, can never shift or drop a minute.
@@ -76,7 +76,7 @@ export default function DayView() {
             [{ yAxis: 270, itemStyle: { color: C.high, opacity: 0.08 }, name: "High > 270 V" }, { yAxis: 380 }],
           ], label: { position: "right", color: C.ink2, fontSize: 11 } } },
         { name: "No reading", type: "line", data: [], markArea: { silent: true, data: noData,
-          label: { show: true, position: "insideTop", color: C.ink2, fontSize: 10, overflow: "truncate" } } },
+          label: { show: true, position: "insideTop", color: C.cellInk2, fontSize: 10, overflow: "truncate" } } },
         { name: "Outage", type: "line", data: [], markArea: { data: outages } },
       ],
     };
@@ -98,7 +98,7 @@ export default function DayView() {
       <h1 data-testid="day-title">{data.location?.display_name} · {day}</h1>
       <DataWarning text={data.data_warning} />
       {d ? (
-        <p className="muted">
+        <p className="lead">
           {d.interruptions} interruptions · outage at least {fmtMin(d.outage_min_lower)}
           {d.outage_min_upper > d.outage_min_lower && ` (up to ${fmtMin(d.outage_min_upper)})`} ·
           read {((100 * d.observed_minutes) / 1440).toFixed(0)}% of the day · evening outage at least {fmtMin(d.evening_outage_lower)}
@@ -125,18 +125,18 @@ export default function DayView() {
       </div>
       <h2>Outages on this day</h2>
       {data.events.length === 0 ? <p className="muted">No outage on this day.</p> : (
-        <table className="data card" data-testid="day-events">
+        <div className="card scroll" style={{ maxHeight: "none" }}><table className="data" data-testid="day-events">
           <thead><tr><th className="l">Start</th><th className="l">End</th><th>Measured</th><th>Up to</th><th className="l">Certainty</th><th className="l"></th></tr></thead>
           <tbody>{data.events.map((e) => (
-            <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(withDs(`/event/${e.event_key}`))}
-                onKeyDown={(k) => k.key === "Enter" && nav(withDs(`/event/${e.event_key}`))} aria-current={e.event_key === selected}>
-              <td className="l">{fmtTs(e.start_ts)}</td><td className="l">{fmtTs(e.end_ts)}</td><td>{fmtMin(e.min_duration)}</td>
+            <tr key={e.event_key} className={e.event_key === selected ? "clickable selected" : "clickable"}
+                onClick={rowClick(() => nav(withDs(`/event/${e.event_key}`)))} aria-current={e.event_key === selected}>
+              <td className="l"><Link to={withDs(`/event/${e.event_key}`)}>{fmtTs(e.start_ts)}</Link></td><td className="l">{fmtTs(e.end_ts)}</td><td>{fmtMin(e.min_duration)}</td>
               <td>{e.max_duration > e.min_duration ? fmtMin(e.max_duration) : "–"}</td>
               <td className="l"><Certainty value={e.start_certainty} /> / <Certainty value={e.end_certainty} /></td>
               <td className="l">{e.group_key && <span className="badge">other monitors lost supply too</span>}
                 {e.event_key === selected && <Link to={withDs(`/event/${e.event_key}`)} data-testid="open-selected-event"> open evidence →</Link>}</td>
             </tr>))}</tbody>
-        </table>
+        </table></div>
       )}
     </>
   );
