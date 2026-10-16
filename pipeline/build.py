@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 
 from pipeline import load_raw, synthetic
+from pipeline.buildlock import BuildBusy, build_lock
 from pipeline.db import DEFAULT_SCHEMA, REAL_SCHEMA, connect, schema_dataset
 from pipeline.run_sql import flatten_params, resolve_steps, run_steps
 
@@ -31,6 +32,16 @@ def main(argv: list[str] | None = None) -> int:
                     help="the SYNTHETIC demo set (pipeline/synthetic.py) with config/method.demo.yaml (D-033)")
     args = ap.parse_args(argv)
     schema = args.schema.upper()
+    if schema.startswith("VP_USER_"):
+        raise SystemExit(f"Refusing: {schema} is an upload schema; uploads are built by pipeline.upload only.")
+    try:  # one database build at a time, shared with upload builds (pipeline/buildlock.py)
+        with build_lock(f"command-line build of {schema}"):
+            return _build(args, schema)
+    except BuildBusy as e:
+        raise SystemExit(str(e)) from None
+
+
+def _build(args, schema: str) -> int:
     t0 = time.perf_counter()
     # Synthetic and real data never share a schema (D-033)
     if args.demo and schema == REAL_SCHEMA:
@@ -41,6 +52,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"Refusing: schema {schema} holds real ESMI files; build the synthetic set elsewhere.")
     if not args.demo and (held["synthetic_files"] or held["synthetic"]):
         raise SystemExit(f"Refusing: schema {schema} holds the SYNTHETIC demo set; load real data into another schema.")
+    if held["upload"]:
+        raise SystemExit(f"Refusing: schema {schema} holds uploaded data; build into another schema.")
     override = None
     load_args = ["--schema", schema]
     if args.demo:

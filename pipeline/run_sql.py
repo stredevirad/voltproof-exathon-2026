@@ -122,7 +122,9 @@ def ensure_schema(conn, schema: str) -> None:
 
 
 def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None = None,
-              quiet: bool = False) -> list[dict]:
+              quiet: bool = False, progress=None) -> list[dict]:
+    """Run `steps` in `schema`. `progress(step_name, statement_index)`, if given, is called after each statement
+    (the upload page shows the step names as they finish)."""
     if conn.attr.get("autocommit"):
         raise RuntimeError("run_steps needs a connection opened with autocommit=False "
                            "(statement ids for provenance are only exact without auto-commits).")
@@ -162,6 +164,8 @@ def run_steps(conn, schema: str, steps: list[Path], params_override: dict | None
             if not quiet:
                 first_line = " ".join(stmt.split())[:90]
                 print(f"  {path.name} #{idx:<3} {wall:8.3f}s rows={rows!s:<12} {first_line}")
+            if progress:
+                progress(path.name, idx)
         # write this step's provenance (RUN_LOG exists after 010)
         conn.ext.insert_multi(
             "RUN_LOG",
@@ -185,9 +189,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     steps = resolve_steps(args.steps)
     with connect() as c:
-        if schema_dataset(c, args.schema)["synthetic"]:
-            raise SystemExit(f"Schema {args.schema.upper()} holds the SYNTHETIC demo set; rebuild it with "
-                             "scripts\\load.ps1 -Set demo (running steps here would apply the real-data parameters).")
+        held = schema_dataset(c, args.schema)
+    if held["synthetic"]:
+        raise SystemExit(f"Schema {args.schema.upper()} holds the SYNTHETIC demo set; rebuild it with "
+                         "scripts\\load.ps1 -Set demo (running steps here would apply the real-data parameters).")
+    if held["upload"]:
+        raise SystemExit(f"Schema {args.schema.upper()} holds uploaded data; rebuild it with pipeline.upload "
+                         "(running steps here would apply the real-data parameters).")
     with connect(autocommit=False) as conn:
         res = run_steps(conn, args.schema.upper(), steps)
     total = sum(r["wall_seconds"] for r in res)

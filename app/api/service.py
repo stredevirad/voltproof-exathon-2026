@@ -9,10 +9,10 @@ import subprocess
 from functools import lru_cache
 from pathlib import Path
 
-from app.api.db import SCHEMA, query, query_one
+from app.api.db import CURRENT, current_schema, query, query_one
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-S = SCHEMA
+S = CURRENT  # the current request's dataset (app/api/db.py using()); the server's dataset by default
 
 DATA_CITATION = ('Prayas, Energy Group, 2019, "Minute-wise voltage data collected in Electricity Supply Monitoring '
                  'Initiative", https://doi.org/10.7910/DVN/CLLZZM, Harvard Dataverse, V2, '
@@ -22,6 +22,10 @@ SYNTHETIC_CITATION = ("SYNTHETIC demo data: invented monitors, districts and rea
                       "pipeline/synthetic.py (fixed seed) in the ESMI file format. Not ESMI data; no figure here "
                       "describes real electricity supply.")
 SYNTHETIC_ATTRIBUTION = "SYNTHETIC DEMO DATA: invented, not ESMI data."
+# Uploaded data (pipeline/upload.py): never presented as Prayas or ESMI data, never verified by VoltProof
+UPLOAD_ATTRIBUTION = "UPLOADED DATA: not verified by VoltProof."
+UPLOAD_LICENCE = ("Supplied by the person who uploaded it, who must have the right to use it. The file and its "
+                  "analysis stay on this computer.")
 
 # Guided demo selection rule (documented in docs/DEMO_SCRIPT.md), inside the demo window from PARAMS
 # (demo.window_*: 2018 June-August for the real data, the file in the smallest download set; the synthetic
@@ -42,13 +46,27 @@ def _param(name: str):
     return None if row is None else (row["num_value"] if row["num_value"] is not None else row["str_value"])
 
 
-@lru_cache(maxsize=1)
 def dataset() -> dict:
-    """Which data this schema holds. SYNTHETIC demo data (D-033) switches the app and reports to their
-    SYNTHETIC labels; schemas built before the dataset.* parameters existed are real ESMI data."""
+    """Which data the current request's schema holds: kind 'real' (Prayas ESMI), 'synthetic' (D-033) or 'upload'
+    (pipeline/upload.py). Labels and attribution follow the kind; schemas built before the dataset.* parameters
+    existed are real ESMI data."""
+    return _dataset(current_schema())
+
+
+@lru_cache(maxsize=64)
+def _dataset(schema: str) -> dict:
     synthetic = bool(_param("dataset.synthetic") or 0)
+    kind_param = _param("dataset.kind")
+    kind = "synthetic" if synthetic else "real" if kind_param is None else "upload"  # any other kind: upload labels
     window = (_param("demo.window_from") or REAL_DEMO_WINDOW[0], _param("demo.window_to_exclusive") or REAL_DEMO_WINDOW[1])
-    return {"synthetic": synthetic, "label": _param("dataset.label") or ATTRIBUTION, "demo_window": window}
+    out = {"synthetic": synthetic, "kind": kind, "label": _param("dataset.label") or ATTRIBUTION,
+           "demo_window": window}
+    if kind == "upload":
+        f = query_one(f"SELECT FILE_NAME, SHA256, BYTES, LOADED_AT FROM {S}.SOURCE_FILE "
+                      f"WHERE FILE_KIND = 'readings' ORDER BY FILE_ID LIMIT 1") or {}
+        out["upload"] = {"file_name": f.get("file_name"), "sha256": f.get("sha256"), "bytes": f.get("bytes"),
+                         "uploaded_at": (f.get("loaded_at") or "").replace("T", " ")}
+    return out
 
 
 def _window_text(window: tuple[str, str]) -> str:
@@ -72,7 +90,10 @@ def data_warnings() -> list[dict]:
 
 
 def warning_for(first_day: str, last_day: str | None = None) -> str | None:
-    """The data warning that applies to any day in [first_day, last_day] (ISO dates), if one does."""
+    """The data warning that applies to any day in [first_day, last_day] (ISO dates), if one does. The warnings
+    describe Prayas's published files, so they apply to the Prayas ESMI data only."""
+    if dataset()["kind"] != "real":
+        return None
     last_day = last_day or first_day
     hits = [w["warning"] for w in data_warnings() if w["period_from"] <= last_day and first_day <= w["period_to"]]
     return " ".join(hits) or None
@@ -102,7 +123,7 @@ def method_version() -> str:
 def health() -> dict:
     row = query_one(f"SELECT (SELECT COUNT(*) FROM {S}.EVENT) AS EVENTS, (SELECT COUNT(*) FROM {S}.QUALITY_LOCATION)"
                     f" AS LOCATIONS, (SELECT MAX(FINISHED_AT) FROM {S}.RUN_LOG) AS LAST_RUN")
-    return {"database": "ok", "schema": S, **row, "git_commit": git_commit()}
+    return {"database": "ok", "schema": current_schema(), **row, "git_commit": git_commit()}
 
 
 def meta() -> dict:
@@ -126,12 +147,22 @@ def meta() -> dict:
         "last_run": last, "totals": totals, "citation": DATA_CITATION, "attribution": ATTRIBUTION,
         "licence": "CC0 1.0 (dataset metadata); Prayas terms of use: non-commercial, academic and research use "
                    "with acknowledgement (see docs/data/SOURCE_TERMS.md)",
-        "synthetic": ds["synthetic"], "dataset_label": ds["label"],
+        "synthetic": ds["synthetic"], "dataset_label": ds["label"], "dataset_kind": ds["kind"],
     }
     if ds["synthetic"]:  # D-033: never present invented data as ESMI data
         out.update({"citation": SYNTHETIC_CITATION, "attribution": SYNTHETIC_ATTRIBUTION,
                     "licence": "Generated by VoltProof (MIT); not ESMI data"})
+    elif ds["kind"] == "upload":  # never Prayas, ESMI or the DOI on uploaded data
+        u = ds["upload"]
+        out.update({"citation": upload_citation(u), "attribution": UPLOAD_ATTRIBUTION, "licence": UPLOAD_LICENCE,
+                    "upload": u})
     return out
+
+
+def upload_citation(u: dict) -> str:
+    return (f"Uploaded file \"{u.get('file_name')}\", uploaded {u.get('uploaded_at')}, SHA-256 {u.get('sha256')}. "
+            "Analysed by VoltProof with the same method as every dataset in the app; nobody has checked where the "
+            "readings came from.")
 
 
 def states() -> list[dict]:

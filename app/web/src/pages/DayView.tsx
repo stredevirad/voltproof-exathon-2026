@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, fmtMin, fmtTs } from "../api";
-import { C, EChart, hatch } from "../charts";
+import { api, withDs, fmtMin, fmtTs } from "../api";
+import { esc, C, EChart, hatch } from "../charts";
 import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
 
 const toMs = (ts: string) => new Date(ts + ":00").getTime(); // local wall-clock (IST as recorded)
@@ -51,9 +51,9 @@ export default function DayView() {
                    const t = new Date(p.value[0]);
                    const hh = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
                    const v = p.value[1];
-                   if (v == null) return `${hh}<br/>no reading (not counted as outage)`;
+                   if (v == null) return `${esc(hh)}<br/>no reading (not counted as outage)`;
                    const st = v <= 130 ? "no supply" : v < 205 ? "low voltage" : v <= 270 ? "normal" : "high voltage";
-                   return `${hh}<br/><b>${v} V</b>, ${st}`;
+                   return `${esc(hh)}<br/><b>${esc(v)} V</b>, ${esc(st)}`;
                  } },
       xAxis: { type: "time", min: start, max: end + 60000, axisLine: { lineStyle: { color: C.axis } },
                axisLabel: { color: C.ink2, formatter: "{HH}:{mm}" }, splitLine: { show: false } },
@@ -77,7 +77,7 @@ export default function DayView() {
   }, [data, day, selected]);
 
   const onClick = useCallback((p: any) => {
-    if (p?.componentType === "markArea" && p?.seriesName === "Outage" && p?.data?.name) nav(`/event/${p.data.name}`);
+    if (p?.componentType === "markArea" && p?.seriesName === "Outage" && p?.data?.name) nav(withDs(`/event/${p.data.name}`));
   }, [nav]);
 
   if (loading && !data) return <Skeleton height={420} label="the day" />;
@@ -87,7 +87,7 @@ export default function DayView() {
   return (
     <>
       <p className="small muted" style={{ marginBottom: 0 }}>
-        <Link to="/">Start</Link> / <Link to={`/location/${locationId}/${day!.slice(0, 7)}`}>{data.location?.display_name} · {day!.slice(0, 7)}</Link>
+        <Link to={withDs("/")}>Start</Link> / <Link to={withDs(`/location/${locationId}/${day!.slice(0, 7)}`)}>{data.location?.display_name} · {day!.slice(0, 7)}</Link>
       </p>
       <h1 data-testid="day-title">{data.location?.display_name} · {day}</h1>
       <DataWarning text={data.data_warning} />
@@ -120,13 +120,13 @@ export default function DayView() {
         <table className="data card" data-testid="day-events">
           <thead><tr><th className="l">Start</th><th className="l">End</th><th>Measured</th><th>Up to</th><th className="l">Certainty</th><th className="l"></th></tr></thead>
           <tbody>{data.events.map((e) => (
-            <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(`/event/${e.event_key}`)}
-                onKeyDown={(k) => k.key === "Enter" && nav(`/event/${e.event_key}`)} aria-current={e.event_key === selected}>
+            <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(withDs(`/event/${e.event_key}`))}
+                onKeyDown={(k) => k.key === "Enter" && nav(withDs(`/event/${e.event_key}`))} aria-current={e.event_key === selected}>
               <td className="l">{fmtTs(e.start_ts)}</td><td className="l">{fmtTs(e.end_ts)}</td><td>{fmtMin(e.min_duration)}</td>
               <td>{e.max_duration > e.min_duration ? fmtMin(e.max_duration) : "–"}</td>
               <td className="l"><Certainty value={e.start_certainty} /> / <Certainty value={e.end_certainty} /></td>
               <td className="l">{e.group_key && <span className="badge">other monitors lost supply too</span>}
-                {e.event_key === selected && <Link to={`/event/${e.event_key}`} data-testid="open-selected-event"> open evidence →</Link>}</td>
+                {e.event_key === selected && <Link to={withDs(`/event/${e.event_key}`)} data-testid="open-selected-event"> open evidence →</Link>}</td>
             </tr>))}</tbody>
         </table>
       )}

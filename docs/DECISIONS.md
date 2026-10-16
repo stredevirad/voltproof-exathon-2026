@@ -384,3 +384,46 @@ real-data oracle tests are re-run on the new formulations.
   the top saying that items it does not verify are not cited anywhere in the app, the reports, the deck or the
   README. It is a working record, not a claim to users; `tests/unit/test_grievance_wording.py` already treats it
   as record-only.
+
+## D-036 · 2026-10-16 · ECharts advisory: escape tooltip text, keep ECharts 5.6
+
+- **Problem:** `npm audit` reports a moderate advisory for ECharts before 6.1.0: text placed in a tooltip is
+  shown as HTML. Uploads bring text from users' files into the app.
+- **Choice:** no user text is placed in chart tooltips or labels (only dates, numbers and fixed wording), and every
+  tooltip value goes through `esc()` (`app/web/src/charts.tsx`). ECharts stays at 5.6: version 6 changes the
+  default chart styling, which we would have to re-check on every screen a week before submission.
+- **Also:** evidence reports carry a Content-Security-Policy that lets them load nothing (no scripts, images or
+  network requests), and names are escaped by the report template.
+
+## D-037 · 2026-10-16 · Upload your own voltage data: same SQL, its own database user, honest labels
+
+- **What:** a person can upload 1-minute voltage readings (the ESMI layout, also as the Harvard Dataverse `.tab`
+  file, or one reading per line) on the Upload page or with `python -m pipeline.upload`. The file stays on this
+  computer (`data/uploads/<id>/`, gitignored) and can be deleted with one button.
+- **Same analysis:** the upload is staged unchanged in its own schema `VP_USER_<id>`, checked by SQL
+  (`sql/ingest/u20_validate.sql`), turned into the standard raw rows (`u30_canonical.sql`: dates written one way,
+  confirmed 1-24 hours shifted, readings in one-per-line files pivoted to the hourly layout with missing minutes
+  left empty) and analysed by the unchanged steps 020-100, with provenance checked against Exasol's audit log.
+  Checked by tests: the SYNTHETIC demo files uploaded give the same 33 result tables as the command-line demo build;
+  the 2018 June-August ESMI file uploaded gives the same figures as its command-line build for every Uttar Pradesh
+  location and district; the same readings one per line, in a semicolon file with decimal commas, or with a
+  12-hour clock give the same results.
+- **Isolation:** the upload schema is created by a separate database user (`VP_UPLOADER`) that the database
+  refuses any access to the Prayas and SYNTHETIC schemas. User text never enters SQL text. The API answers a
+  dataset only from a whitelist (`ds`), and requests that change an upload need the page's own header and origin.
+  One database build at a time (a lock shared with the command-line build).
+- **The data decides, the user confirms, nothing is guessed:** the day/month order is taken from the data whenever
+  a date part is above 12; the user is asked only when it cannot be decided, and an answer never overrides the
+  data. Hours 1-24, time zones (only +05:30 is accepted, as India time; one-per-line files must be confirmed as
+  local clock time) and typed district and state are asked in plain words, and the summary shows how a date is
+  read ("03/04/2018 is read as 3 April 2018").
+- **Refused, with the reason:** not numbers; outside 0-500 V; not a 230 V supply (almost every reading at or
+  below 130 V, or a typical supply reading outside 150-300 V, counting only readings above 130 V so that a home
+  with many cuts is not refused); not 1-minute data; a broken hour column; other time zones; Excel workbooks
+  (save as CSV); files over 150 MB (measured: a 140 MB file is checked and built in about a minute and a half, with free memory never below
+  1 GB on the 16 GB laptop).
+- **Labels:** uploaded data is never presented as Prayas data: banner "Uploaded data — not verified by VoltProof",
+  report ids `VP-USER-`, a diagonal mark and a footer on every PDF page, its own file name, time and SHA-256 as the
+  source, and a general grievance sentence outside Uttar Pradesh.
+- **Unchanged:** sql/010-110, `config/method.yaml`, the oracle, the fixtures and every existing test; the
+  command-line builds (`load.ps1 -Set first|up|demo`) behave exactly as before.

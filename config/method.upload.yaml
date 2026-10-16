@@ -1,0 +1,11 @@
+# Overrides for uploaded datasets only (schemas VP_USER_<id>, built by pipeline/upload.py).
+# Every analytical threshold stays as in config/method.yaml; only the scope and the dataset labels change.
+# The guided-demo window (demo.*) and the user's confirmed reading choices (upload.*) are added per upload at build
+# time. Never used for the Prayas ESMI data or the SYNTHETIC demo set.
+subset:
+  states: ""        # every state in the uploaded file
+  locations: ""
+dataset:
+  synthetic: false
+  kind: upload
+  label: "Uploaded data — not verified by VoltProof"
