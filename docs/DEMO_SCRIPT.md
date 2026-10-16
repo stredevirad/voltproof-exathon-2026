@@ -42,12 +42,14 @@ This script and the recorded video use the real data.
 The narration lives only in `docs/deliverables/video_timeline.json` (eight screens: start page with the
 "Illustrative example" caption, the guided month with its lead tile, the demo day, the outage's evidence page,
 the evidence report, the upload page, the 2019 files on Data & sources, and the start page again) and is read
-aloud from `docs/deliverables/VOICEOVER_SCRIPT.md`: 344 words, about 2:27 of speech. An earlier hand-written
+aloud from `docs/deliverables/VOICEOVER_SCRIPT.md`: 343 words, about 2:27 of speech. An earlier hand-written
 table here was replaced by the timeline so that there is one source.
 
 Numbers checked against the build on 2026-10-12 (and again on 2026-10-16 for the new screens). Huzurpur-Bahraich, 2018-07: 320 interruptions; outage at
 least 21,970 minutes (366.2 h), up to 22,030 minutes (367.2 h); 90.7% of minutes read (comparable). The
-scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. Never quote a number that
+scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. The narration rounds them: 366 and
+367 hours; about 103 million minutes (102,845,781 clean minute readings); about three and a half minutes (the
+210.4 s full build). At 18:27 on 25 July the recorded voltage is 0 V (all 67 minutes of that cut read exactly 0 V). Never quote a number that
 is not on screen or in those files. The shopkeeper is an illustrative example, not a real person in the
 data; the video must caption her as "Illustrative example".
 

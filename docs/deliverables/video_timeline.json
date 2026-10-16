@@ -1,5 +1,5 @@
 {
-  "about": "Single source for the demo video: the e2e recording (tests/e2e/test_demo_flow.py with VOLTPROOF_RECORD_VIDEO=1) holds each screen for `hold` seconds, docs/deliverables/VOICEOVER_SCRIPT.md is generated from `text`, and pipeline/video.py places each narration piece at the segment's actual start. Holds are set from the measured narration length (pipeline/video.py tts --update-holds); never speed up the audio. The holds below are estimates from the word count (about 2.3 words a second plus a pause); run tts --update-holds before recording.",
+  "about": "Single source for the demo video: the e2e recording (tests/e2e/test_demo_flow.py with VOLTPROOF_RECORD_VIDEO=1) holds each screen for `hold` seconds, docs/deliverables/VOICEOVER_SCRIPT.md is generated from `text`, and pipeline/video.py places each narration piece at the segment's actual start. Holds are set from the measured narration length (pipeline/video.py tts --update-holds); never speed up the audio. The holds below are estimates from the word count (about 2.3 words a second plus a pause of about 1.5 s); run tts --update-holds before recording.",
   "segments": [
     {
       "id": "intro",
@@ -11,44 +11,44 @@
     {
       "id": "month",
       "screen": "Start guided demo: the month view, lead tile 'Outage time (at least)' with its plain caption, then the calendar",
-      "hold": 25,
-      "text": "The guided demo opens one real monitor, chosen by a fixed rule, not by hand: Huzurpur, in Bahraich, July 2018. The first number is the one that matters: at least 366 hours without supply that month. It is a minimum, because a minute without a reading is never counted as an outage."
+      "hold": 30,
+      "text": "The guided demo opens one real monitor, chosen by a fixed rule, not by hand: Huzurpur, in Bahraich, July 2018. The first number is the one that matters: at least 366 hours without supply that month. It is a minimum: a minute without a reading is never counted, and even if every unread minute next to a cut were a cut, it would be 367."
     },
     {
       "id": "day",
       "screen": "The demo day: the minute-by-minute voltage trace",
       "hold": 18,
-      "text": "This is the twenty-fifth of July, minute by minute. The grey line is the measured voltage. Orange blocks are outages, and hatching means there was no reading. At 6:27 in the evening, the supply drops to zero."
+      "text": "This is the twenty-fifth of July, minute by minute. The grey line is the measured voltage. Orange blocks are outages, and hatching means there was no reading. At 6:27 in the evening, the voltage drops to zero."
     },
     {
       "id": "event",
       "screen": "The outage's evidence page: times, certainty, source lines and statement ids, and the panel of other monitors",
-      "hold": 28,
+      "hold": 27,
       "text": "The evidence page gives the exact start and end, how certain each one is, and the lines of the source file, with the database statements that computed them. Sixteen other monitors in the district lost supply within two minutes. VoltProof calls this a potential shared supply event. Coincidence is not cause, and no cause or equipment is named."
     },
     {
       "id": "report",
       "screen": "Back to the month: Generate evidence report, the report links",
-      "hold": 18,
-      "text": "One click makes an evidence report: every outage with its bounds, data quality, and checksums and statement ids for anyone who wants to check. It ends with where a consumer can seek redress. It is not legal advice and states no amount owed."
+      "hold": 17,
+      "text": "One click makes an evidence report: every outage with its bounds, data quality, checksums and statement ids. It ends with where a consumer can seek redress. It is not legal advice and states no amount owed."
     },
     {
       "id": "upload",
       "screen": "Upload your data: the page that says the file stays on this computer",
-      "hold": 17,
-      "text": "Anyone can also upload readings from their own monitor. The file stays on this computer, is checked, and is analysed by the same steps in its own space, and every page then says it is not verified."
+      "hold": 13,
+      "text": "Anyone can also upload readings from their own monitor. The file stays on this computer and is analysed by the same steps, in its own space."
     },
     {
       "id": "sources",
       "screen": "Data and sources: the two 2019 files",
-      "hold": 16,
+      "hold": 15,
       "text": "Defects in the published data are shown, not hidden. One 2019 file lost its hour column, so it is excluded; another leaves out most zero-volt hours, so its figures are lower bounds."
     },
     {
       "id": "close",
       "screen": "Start page",
-      "hold": 18,
-      "text": "All of this runs as versioned SQL inside Exasol: about 103 million minutes of Uttar Pradesh data, rebuilt from the raw files in about three and a half minutes on this laptop. VoltProof. Data: Prayas Energy Group."
+      "hold": 19,
+      "text": "All of this runs as versioned SQL inside Exasol: about 103 million minutes of Uttar Pradesh data, rebuilt from the raw files in about three and a half minutes on this laptop. VoltProof. Data: Prayas Energy Group, Electricity Supply Monitoring Initiative."
     }
   ]
 }

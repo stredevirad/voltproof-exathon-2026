@@ -122,8 +122,13 @@ scripts\load.ps1 -Set demo
 scripts\start.ps1                # stop it with Ctrl+C; stop it before rebuilding with load.ps1
 ```
 
-On a first visit a short tour (five steps, skippable) shows where things are; **How to use** in the menu
-explains every colour and number and can start the tour again.
+**What you should see:** a SYNTHETIC DEMO DATA banner on every page; **Start guided demo** opens an invented
+monitor in January 2030; its day (17 January) and the outage's evidence page, where 8 other monitors lost supply
+within 2 minutes.
+
+On a first visit a short, skippable tour shows where things are (four or five steps, depending on how many
+datasets are on the computer). **How to use** in the menu explains every colour and number; its button **Show the
+short tour of the start page** starts the tour again.
 
 **4. Run the tests** (unit, integration, differential, end-to-end):
 
@@ -204,6 +209,11 @@ Choose one of these:
      files, choose "Original File Format (Comma Separated Values)".
   3. Run `scripts\load.ps1 -Set first`.
 
+**What you should see on the real data** (measured on the full Uttar Pradesh build): **Start guided demo** opens
+Huzurpur-Bahraich, July 2018, with OUTAGE TIME (AT LEAST) at least 366.2 h (up to 367.2 h) and 320 interruptions;
+on 25 July the 18:27 outage's evidence page says 16 other monitors lost supply within 2 minutes, and the chance
+comparison shows 3,945 coincident pairs observed against about 1827.5 expected.
+
 Once `VOLTPROOF` is built, `start.ps1`, `test.ps1` and `warmup.ps1` use it. To look at the demo set again,
 set `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_DEMO'` first. To build next to an existing build without touching it,
 set another schema name the same way. To use another port, run `scripts\start.ps1 -Port 8090`.
@@ -226,18 +236,25 @@ set another schema name the same way. To use another port, run `scripts\start.ps
 ## Use your own data
 
 Readings from your own voltage monitor can be analysed the same way. Open **Upload your data** in the app (or use
-the command line below), choose the file and press **Upload and preview**, then **Check the file**, answer any
-question VoltProof cannot decide from the data (for example the date order), and press **Analyse this file**. The
-new dataset appears in the **Data** menu.
+the command line below):
+
+1. Choose the file (and the location file, if you have one) and press **Upload and preview**.
+2. Press **Check the file**. If VoltProof asks a question it cannot decide from the data (for example the date
+   order), answer it and press **Use my answers and check again**.
+3. Press **Analyse this file**, then **Open this dataset**. From then on the **Data** menu at the top (shown when
+   there are two or more datasets) lists it as "Your upload: <file name>".
+4. To remove it: **Delete this upload**, then **Yes, delete** (before the analysis: **Cancel and delete**).
 
 - **Formats:** the ESMI layout (`Location name, Date, Hour, Min 0 … Min 59`, with an optional location file), the
   Harvard Dataverse `.tab` file, or one reading per line (time and voltage, with an optional monitor column).
-  Spreadsheet exports with semicolons or decimal commas work; Excel workbooks must be saved as CSV first. The
-  upload page offers small SYNTHETIC sample files to try it.
-- **What is refused, with the reason:** values that are not numbers or lie outside 0–500 V, files that do not look
-  like a 230 V supply, data that is not one reading per minute, a broken hour column, and time zones other than
-  India time (+05:30). Limits: 150 MB per file, 10 uploads, at least 10 GB free on C:. Checking and building a
-  140 MB file took about a minute and a half on the build laptop.
+  Spreadsheet exports with semicolons or decimal commas work. The upload page links small invented (SYNTHETIC)
+  sample files to try it: "readings in the ESMI layout", "its location file" and "one reading per line".
+- **What is refused, with the reason:** Excel workbooks (save them as CSV first), values that are not numbers or lie
+  outside 0–500 V, files that do not look like a 230 V supply, data that is not one reading per minute, a broken
+  hour column, and time zones other than India time (+05:30). Limits: 150 MB per file, 10 uploads, 200 typed-in
+  monitor locations, at least 10 GB free on C:. Checking and analysing one 140 MB file took about a minute and a
+  half on the build laptop (the full Uttar Pradesh build from the published files is a different measurement:
+  210.4 s, see Performance).
 - **Same analysis, kept apart:** the file is stored unchanged, checked by SQL (`sql/ingest/`) and analysed by the
   same steps (`sql/020`–`sql/100`) in its own schema `VP_USER_<id>`. That schema belongs to a separate database user
   (`VP_UPLOADER`, created on the first upload; its password is kept in `data/.uploader.json`, gitignored) that has
@@ -249,10 +266,14 @@ new dataset appears in the **Data** menu.
   have the right to use.
 
 ```powershell
-.venv\Scripts\python.exe -m pipeline.upload new --readings my_readings.csv   # prints the upload id
-.venv\Scripts\python.exe -m pipeline.upload validate <id>                    # the checks and questions
-.venv\Scripts\python.exe -m pipeline.upload build <id>                       # the same SQL steps, its own schema
-.venv\Scripts\python.exe -m pipeline.upload list                             # or: delete <id>
+.venv\Scripts\python.exe -m pipeline.upload new --readings my_readings.csv [--locations my_locations.csv]
+#   prints "upload <id> -> schema VP_USER_<ID>; layout ..." (and, for one reading per line, the suggested columns)
+.venv\Scripts\python.exe -m pipeline.upload validate <id>    # = "Check the file": the checks, questions and refusals
+#   answers to its questions: one reading per line: --long-columns 0,1,2 (positions of monitor, time and voltage,
+#   counted from 0; '-' if there is no monitor column) and --long-order YMD|DMY|MDY; ESMI layout: --dash-order or
+#   --slash-order DMY|MDY and --hour-base 0|1
+.venv\Scripts\python.exe -m pipeline.upload build <id>       # = "Analyse this file": the same SQL steps, its own schema
+.venv\Scripts\python.exe -m pipeline.upload list             # or: delete <id>
 ```
 
 Decisions and evidence: [DECISIONS D-037](docs/DECISIONS.md); tests in `tests/integration/test_uploads.py`,
