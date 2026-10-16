@@ -107,6 +107,21 @@ def test_empty_cells_stay_missing_data_and_never_become_an_outage(tmp_path):
     upload.delete(up["id"])
 
 
+def test_missing_minutes_in_a_one_reading_per_line_file_stay_missing_data(tmp_path):
+    """A minute with no line in a one-reading-per-line file stays NO_DATA, never 0 V. Added after a planted change
+    (the long pivot in sql/ingest/u30 turning a missing minute 0 into "0") went unnoticed by the other tests."""
+    lines = [f"Shop A,2024-03-13 {h:02d}:{m:02d},231" for h in range(24) for m in range(60)
+             if not (h == 10 and m == 0) and not (h == 11 and m < 30)]
+    up = _upload(_long(tmp_path / "gaps.csv", lines), _locations(tmp_path / "l.csv", ["Shop A"]), LONG_MAP)
+    assert up["summary"]["ready_to_build"], up["summary"]
+    rec = upload.build(up["id"])
+    with connect() as c:
+        no_data = c.execute(f"SELECT SUM(MINUTES) FROM {rec['schema']}.SEGMENT WHERE SUPPLY_STATE = 'NO_DATA'").fetchval()
+        events = c.execute(f"SELECT COUNT(*) FROM {rec['schema']}.EVENT").fetchval()
+    assert int(no_data) >= 31 and events == 0, (no_data, events)
+    upload.delete(up["id"])
+
+
 # ---------------------------------------------------------------- spreadsheet exports
 
 def _wide_semicolon(path: Path, rows, bom: bool, decimal_comma: bool) -> Path:
