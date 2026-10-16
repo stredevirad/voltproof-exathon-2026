@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api, fmtHours, fmtPct, withDs } from "../api";
 import { ErrorBox, Skeleton, rowClick, useApi, useDataset } from "../ui";
+import { Tour } from "../Tour";
 
 export default function Home() {
   const nav = useNavigate();
@@ -35,9 +36,16 @@ export default function Home() {
 
   return (
     <>
+      <Tour />
       <section className="hero">
         <div>
           <h1>Turn minute-by-minute voltage records into traceable evidence of power cuts and poor supply.</h1>
+          {ds?.kind === "real" && (
+            <p className="lead" data-testid="home-scope">VoltProof shows what small voltage monitors recorded, minute by
+              minute, at homes and shops in Uttar Pradesh, 2016–2019. These are historical records from monitors run by
+              Prayas (Energy Group), an independent research group. They are not your own supply today. If your area is
+              not listed, there is no record for it here; you can <Link to="/upload">upload your own readings</Link>.</p>
+          )}
           <p className="muted">
             Pick a monitored location and a month. VoltProof shows every interruption the independent monitor recorded,
             how certain each one is, and whether other monitors in the district lost supply at the same time. Then it
@@ -46,9 +54,12 @@ export default function Home() {
               ? <>Data: your uploaded file “{ds.upload?.file_name}”, not verified by VoltProof.</>
               : ds?.synthetic
               ? <>Data: the SYNTHETIC demo set (invented monitors, January 2030), for trying the app without a download.</>
-              : <>Data: Prayas (Energy Group) ESMI, Uttar Pradesh, 2016–2019 (historical). January–June 2019 figures are lower
-                bounds because of a defect in the published file (see Data &amp; sources).</>}
+              : <>Data: Prayas (Energy Group) ESMI, Uttar Pradesh, 2016–2019 (historical).</>}
           </p>
+          {ds?.kind === "real" && (
+            <p className="small muted" data-testid="home-2019-note">January–June 2019 figures are lower bounds because of
+              a defect in the published file (see Data &amp; sources).</p>
+          )}
         </div>
         <div className="card feature">
           <h3 style={{ marginTop: 0 }}>Guided demo</h3>
@@ -65,7 +76,7 @@ export default function Home() {
         </div>
       </section>
 
-      <h2>Choose a monitor</h2>
+      <h2>Choose a monitored location</h2>
       {states.error && <ErrorBox error={states.error} what="the list of states" />}
       <div className="row">
         <label className="field">State

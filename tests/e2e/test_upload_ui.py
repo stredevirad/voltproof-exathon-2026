@@ -111,10 +111,14 @@ def test_upload_the_demo_files_through_the_website_and_use_the_new_dataset(page,
     pg.wait_for_url("**/event/**")
     assert f"ds={ds}" in pg.url
     _check_upload_page(pg, "event view")
-    for path in ("/sources", "/methodology"):
+    for path in ("/sources", "/methodology", "/guide"):
         pg.goto(f"{base}{path}?ds={ds}")
         pg.get_by_role("heading", level=1).wait_for()
         _check_upload_page(pg, path)
+    # the beginner's guide names the uploaded file as the data, and adds what VoltProof cannot know about it
+    pg.goto(f"{base}/guide?ds={ds}")
+    pg.get_by_test_id("guide-data").filter(has_text="uploaded file").wait_for()
+    assert "whether an uploaded file is genuine" in pg.get_by_test_id("guide-limits").inner_text()
     pg.goto(f"{base}/sources?ds={ds}")
     pg.get_by_role("heading", level=1).wait_for()
     assert "SHA-256 of the uploaded file" in pg.inner_text("body")

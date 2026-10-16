@@ -104,6 +104,12 @@ def test_month_page_leads_with_the_outage_lower_bound_and_one_action(base, scree
     legend = pg.get_by_test_id("calendar-legend").inner_text()
     assert "no outage" in legend and "≥ 12 h" in legend
     assert "day of the month" in pg.get_by_test_id("calendar-key").inner_text()
+    # orientation and next step for someone who opens this page from a link (council P4-A)
+    assert "may not be typical" in pg.get_by_test_id("month-scope").inner_text()
+    assert "seek redress" in pg.get_by_test_id("report-next-step").inner_text()
+    assert "not a measure of supply quality" in pg.get_by_test_id("kpi-coverage-plain").inner_text()
+    assert "timing only" in pg.get_by_test_id("baseline-gloss").inner_text()
+    assert pg.get_by_test_id("kpi-outage").locator(".value").inner_text().startswith("at least")
     ctx.close()
 
 

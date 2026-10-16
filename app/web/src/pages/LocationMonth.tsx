@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, withDs, fmtHours, fmtMin, fmtP, fmtPct, fmtTs, fmtWindow, type Ev } from "../api";
 import { esc, C, EChart, hatch } from "../charts";
-import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, rowClick, useApi } from "../ui";
+import { Certainty, DataWarning, ErrorBox, Kpi, Skeleton, rowClick, useApi, useDataset } from "../ui";
 
 const PIECES = [
   { value: 0, label: "no outage", color: C.ramp[0] },
@@ -27,6 +27,7 @@ export default function LocationMonth() {
   const [reportErr, setReportErr] = useState<Error | null>(null);
   const [showTable, setShowTable] = useState(false);
   const isDemo = sp.get("demo") === "1";
+  const kind = useDataset()?.kind;
   const demo = useApi(() => (isDemo ? api.demo() : Promise.resolve(null)), [isDemo]);  // its window names the period
 
   const option = useMemo(() => {
@@ -105,6 +106,8 @@ export default function LocationMonth() {
       )}
       <p className="small muted" style={{ marginBottom: 0 }}><Link to={withDs("/")}>Start</Link> / {loc.state_name} / {loc.district}</p>
       <h1 data-testid="location-title">{loc.display_name} · {month}</h1>
+      <p className="small muted" style={{ marginTop: 0 }} data-testid="month-scope">What one monitor recorded in one month.
+        It may not be typical of its district{kind === "real" ? " or of Uttar Pradesh" : ""}.</p>
       <DataWarning text={data.data_warning} />
       <div className="row small muted" style={{ alignItems: "center" }}>
         <span>{loc.source_category} · {loc.connection_type} connection</span>
@@ -115,7 +118,8 @@ export default function LocationMonth() {
 
       <h2>This month in numbers</h2>
       <div className="kpis">
-        <Kpi testId="kpi-outage" lead label="Outage time (at least)" value={`${fmtHours(m.outage_min_lower)} h`}
+        <Kpi testId="kpi-outage" lead label="Outage time (at least)"
+             value={<><span className="qualifier">at least</span> {fmtHours(m.outage_min_lower)} h</>}
              sub={m.outage_min_upper > m.outage_min_lower
                ? `up to ${fmtHours(m.outage_min_upper)} h if every minute with no reading next to an outage was also an outage`
                : "no outage borders a minute with no reading"}
@@ -127,11 +131,12 @@ export default function LocationMonth() {
         <Kpi testId="kpi-low" label="Low voltage" value={`${fmtHours(m.low_minutes)} h`} sub={`131–204 V; high voltage ${fmtHours(m.high_minutes)} h`}
              plain="Time when the voltage read 131–204 V, below the normal range (205–270 V)." />
         <Kpi testId="kpi-coverage" label="Minutes read" value={fmtPct(m.coverage_calendar)} sub={`${m.observed_minutes.toLocaleString("en-IN")} of ${m.calendar_minutes.toLocaleString("en-IN")}`}
-             plain="Share of the month's minutes with a reading. Above 90% makes the month comparable." />
+             plain="Share of the month's minutes with a reading. This is not a measure of supply quality. Above 90% makes the month comparable with other months." />
       </div>
       <p className="small muted" style={{ marginBottom: 0 }}>
         {m.outage_zero_minutes.toLocaleString("en-IN")} of the outage minutes read exactly 0 V; the rest read 1–130 V.</p>
-      <p className="small muted" style={{ marginTop: 0 }}>Evening (17:00–23:00) outage: at least {fmtMin(m.evening_outage_lower)}.</p>
+      <p className="small muted" style={{ marginTop: 0 }}>Evening (17:00–23:00) outage: at least {fmtMin(m.evening_outage_lower)}.{" "}
+        <Link to={withDs("/guide")} data-testid="month-guide-link">How to read this page</Link></p>
 
       <div className="grid-2">
         <div className="card">
@@ -163,6 +168,8 @@ export default function LocationMonth() {
           <button className="primary" onClick={makeReport} disabled={reportBusy} data-testid="generate-report">
             {reportBusy ? "Generating…" : "Generate evidence report"}
           </button>
+          <p className="small muted" data-testid="report-next-step" style={{ marginBottom: 0 }}>The report ends with a section
+            on where a consumer can seek redress.</p>
           {reportErr && <div style={{ marginTop: 8 }}><ErrorBox error={reportErr} what="the report" /></div>}
           {report && (
             <p data-testid="report-links">Report <span className="mono">{report.report_id}</span>:{" "}
@@ -172,7 +179,8 @@ export default function LocationMonth() {
           )}
           <h3>Chance comparison for {loc.district}</h3>
           {data.baseline && <p className="small muted" data-testid="baseline-gloss">How often power cuts at different monitors in
-            this district started together, compared with how often chance alone would give.</p>}
+            this district started together, compared with how often chance alone would give. This compares timing only.
+            It does not say why supply was lost.</p>}
           {data.baseline ? (
             <p className="small" data-testid="baseline">
               In {data.baseline.month_key}, monitors in this district had <b>{data.baseline.observed_pairs.toLocaleString("en-IN")}</b> coincident

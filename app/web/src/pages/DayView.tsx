@@ -101,7 +101,7 @@ export default function DayView() {
         <p className="lead">
           {d.interruptions} interruptions · outage at least {fmtMin(d.outage_min_lower)}
           {d.outage_min_upper > d.outage_min_lower && ` (up to ${fmtMin(d.outage_min_upper)})`} ·
-          read {((100 * d.observed_minutes) / 1440).toFixed(0)}% of the day · evening outage at least {fmtMin(d.evening_outage_lower)}
+          readings for {((100 * d.observed_minutes) / 1440).toFixed(0)}% of the day's minutes · evening outage at least {fmtMin(d.evening_outage_lower)}
         </p>
       ) : <p className="muted">This day is outside the monitoring window.</p>}
       <StateLegend />

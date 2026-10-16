@@ -148,7 +148,8 @@ a.button.primary { background: var(--primary-bg); color: var(--primary-ink); }
 .kpi.lead-tile { grid-column: span 2; border-top: 4px solid var(--st-outage); }
 .kpi.lead-tile .label { color: var(--ink-1); font-size: var(--fs-sm); }
 .kpi.lead-tile .value { font-size: var(--fs-lead); }
-.kpi.lead-tile .sub { font-size: 14px; color: var(--ink-1); }
+.kpi.lead-tile .sub { font-size: 14px; color: var(--ink-2); }
+.kpi .value .qualifier { font-size: var(--fs-md); font-weight: 700; letter-spacing: 0; vertical-align: 0.35em; }
 .kpi.lead-tile .plain { font-size: 14px; }
 
 /* Tables */
@@ -201,6 +202,20 @@ details summary { cursor: pointer; color: var(--ink-2); }
 :root[data-skin="civic"] .ds-switch select { background: #1d4541; color: #ffffff; border-color: #3c6b66; }
 fieldset.note { border: 1px solid var(--border); }
 
+/* Beginner's guide and first-visit tour (Part 4) */
+.guide { max-width: 860px; }
+.guide section { margin-bottom: var(--space-5); }
+ul.plain-list { list-style: none; padding-left: 0; }
+ul.plain-list li { margin: var(--space-2) 0; }
+ul.plain-list .swatch { vertical-align: -1px; }
+.tour { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: 30; max-width: 380px;
+  background: var(--surface-1); color: var(--ink-1); border: 1px solid var(--border); border-top: 4px solid var(--accent);
+  border-radius: var(--radius); padding: var(--space-4); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); }
+.tour h2 { margin: var(--space-1) 0 var(--space-2); padding: 0; border: none; font-size: var(--fs-lg); }
+.tour:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tour-target { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+header.top .tour-target { outline-color: var(--header-focus); }
+
 /* Phone width: a 16 px side gutter, header on several lines, no sideways page scroll */
 @media (max-width: 700px) {
   .shell { padding: var(--space-3) var(--space-4) var(--space-6); }
@@ -212,4 +227,5 @@ fieldset.note { border: 1px solid var(--border); }
   .hero h1 { font-size: var(--fs-xl); }
   .kpi.lead-tile .value { font-size: var(--fs-hero); }
   .synthetic-banner { font-size: var(--fs-sm); padding: var(--space-2) var(--space-3); }
+  .tour { left: var(--space-3); right: var(--space-3); bottom: var(--space-3); max-width: none; }
 }

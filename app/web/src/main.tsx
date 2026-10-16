@@ -11,6 +11,7 @@ import GroupView from "./pages/GroupView";
 import Methodology from "./pages/Methodology";
 import Sources from "./pages/Sources";
 import Upload from "./pages/Upload";
+import Guide from "./pages/Guide";
 import { DatasetSwitcher, SyntheticBanner, UploadBanner, useDataset } from "./ui";
 
 /** Keeps the dataset in the address bar when a link leaves it out, so a reload or a shared link stays on it. */
@@ -34,6 +35,7 @@ function Layout() {
         <a className="brand" href={withDs("/")}>VoltProof<small>evidence of power cuts and poor supply</small></a>
         <nav className="main" aria-label="Main">
           <NavLink to={withDs("/")} end>Start</NavLink>
+          <NavLink to={withDs("/guide")} data-testid="nav-guide">How to use</NavLink>
           <NavLink to={withDs("/methodology")}>Methodology</NavLink>
           <NavLink to={withDs("/sources")}>Data &amp; sources</NavLink>
           <NavLink to="/upload">Upload your data</NavLink>
@@ -49,6 +51,7 @@ function Layout() {
           <Route path="/location/:id/day/:day" element={<DayView />} />
           <Route path="/event/:key" element={<EventView />} />
           <Route path="/group" element={<GroupView />} />
+          <Route path="/guide" element={<Guide />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/sources" element={<Sources />} />
           <Route path="/upload" element={<Upload />} />

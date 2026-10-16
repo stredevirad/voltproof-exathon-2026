@@ -450,3 +450,31 @@ real-data oracle tests are re-run on the new formulations.
   is page text, so it wraps on a phone.
 - **One switch back:** the look is the `data-skin="civic"` attribute on `<html>` (`app/web/index.html`); without it
   the plain look returns, keeps the page structure, and also passes the contrast checks.
+- **Wording after review:** the lead tile says exactly what is measured ("Time when the voltage read 130 V or less,
+  which Prayas counts as no supply. Only minutes with a reading count, so this is a minimum.") and its range line says
+  "if every minute with no reading next to an outage was also an outage"; the caution box under "Coincidence is not
+  cause" has a neutral bar (orange stays for outage data); the chosen monitor is marked by a tick and bold text, not by
+  colour alone.
+
+## D-039 · 2026-10-16 · A beginner's guide and an optional first-visit tour
+
+- **What:** a "How to use VoltProof" page (`/guide`, "How to use" in the menu, and "How to read this page" on every
+  month page) explains in plain words what VoltProof does and whose data it shows, what the colours and classes mean,
+  how to pick a place and read a month and a day (including exact, bounded and censored), the shared-supply check
+  (timing only, coincidence is not cause), the evidence report, what VoltProof can and cannot tell you, and uploads.
+  It adapts to the dataset: it names Prayas's data only on Prayas's data.
+- **Orientation on the pages themselves**, for people who arrive by a link: the start page says these are historical
+  records from monitors in Uttar Pradesh, 2016–2019, not the reader's own supply today, and that an unlisted area has no
+  record here (the 2019 lower-bound sentence follows on its own line, unchanged); every month page says it shows one
+  monitor in one month, which may not be typical; "Minutes read" says it is not a measure of supply quality; the
+  report card says the report ends with where a consumer can seek redress (no law named on the page; the report's own
+  section carries the sources).
+- **Tour:** five short steps on the start page (welcome, the guided demo, picking a place, the dataset switcher when
+  there are several datasets, the guide). It appears on a person's first visit, can be skipped (button or Escape) or
+  finished, is remembered in this browser's storage (if storage is blocked it simply shows again next time), and can
+  be reopened from the guide. Automated browsers (tests, screenshots, the demo recording) never see it unless the
+  address asks for it with `?tour=1`.
+- **Not done (council P4-A):** a derived "days without supply" figure (a new number), Hindi, more tours, glossary
+  pop-ups. **Checked by tests:** `tests/e2e/test_guide.py` (every dataset kind, attribution, blocked words, contrast,
+  phone width, tour first visit / finish / skip / Escape / reopen / storage blocked / SYNTHETIC set, stable step count)
+  and new assertions in `tests/e2e/test_ui_quality.py` and `tests/e2e/test_upload_ui.py`.
