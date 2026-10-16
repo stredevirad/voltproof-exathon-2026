@@ -9,7 +9,8 @@ them, and renders evidence reports from them.
 from __future__ import annotations
 
 import re
-from contextlib import contextmanager
+import threading
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -24,7 +25,20 @@ from app.api.db import using
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WEB_DIST = REPO_ROOT / "app" / "web" / "dist"
 
-app = FastAPI(title="VoltProof", version="0.1.0",
+def _tidy_uploads() -> None:
+    try:  # after a crash or a stopped build: drop orphaned upload schemas and half-written folders
+        uploads.upload.reconcile()
+    except Exception:  # noqa: BLE001 - housekeeping must never stop the app from starting
+        pass
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    threading.Thread(target=_tidy_uploads, daemon=True, name="tidy-uploads").start()
+    yield
+
+
+app = FastAPI(title="VoltProof", version="0.1.0", lifespan=lifespan,
               description="Traceable evidence of power cuts and poor supply from ESMI minute-wise voltage data.")
 # The app is served on 127.0.0.1 only. Refusing any other Host header (400) stops a web page that points its
 # own host name at 127.0.0.1 (DNS rebinding) from reading the app as if it were the same site.
@@ -128,6 +142,9 @@ def group(group_key: str, ds: str | None = DS):
 @app.get("/api/demo")
 def demo(ds: str | None = DS):
     with _dataset(ds):
+        if service.dataset()["kind"] == "upload":
+            return service.demo() or _404("guided example: this upload has no evening potential shared supply event "
+                                          "to open. Pick a monitor below instead")
         return service.demo() or _404("demo preset (build the 2018 June-August data first)")
 
 

@@ -57,7 +57,11 @@ export default function Home() {
           <button className="primary" onClick={startDemo} disabled={demoBusy} data-testid="guided-demo">
             {demoBusy ? "Opening…" : "Start guided demo"}
           </button>
-          {demoError && <div style={{ marginTop: 8 }}><ErrorBox error={demoError} what="the demo preset" /></div>}
+          {demoError && ds?.kind === "upload" && (demoError as { status?: number }).status === 404
+            ? <p className="small muted" role="status" data-testid="demo-unavailable" style={{ marginTop: 8 }}>
+                This upload has no evening potential shared supply event to open as a guided example. Pick a monitor
+                below instead.</p>
+            : demoError && <div style={{ marginTop: 8 }}><ErrorBox error={demoError} what="the demo preset" /></div>}
         </div>
       </section>
 

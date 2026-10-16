@@ -20,7 +20,7 @@ import os
 import threading
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel
 
 from app.api import datasets
@@ -59,6 +59,25 @@ def check_request(request: Request) -> None:
 
 class Mapping(BaseModel):
     mapping: dict = {}
+
+
+SAMPLES = {"readings": ("SYNTHETIC ESMI minute-wise voltage data 2030 Jan.csv", "readings in the ESMI layout"),
+           "locations": ("SYNTHETIC ESMI location information.csv", "the matching location file")}
+
+
+@router.get("/sample/{which}")
+def sample(which: str):
+    """Invented sample files to try the upload page with: the SYNTHETIC demo files, or a small one-reading-per-line file."""
+    if which == "long":
+        return Response(upload.sample_long_csv(), media_type="text/csv", headers={
+            "Content-Disposition": 'attachment; filename="SYNTHETIC sample one reading per line.csv"'})
+    if which not in SAMPLES:
+        raise HTTPException(status_code=404, detail="unknown sample file")
+    from pipeline import synthetic
+    path = synthetic.OUT_DIR / SAMPLES[which][0]
+    if not path.exists():
+        synthetic.generate()
+    return FileResponse(path, media_type="text/csv", filename=path.name)
 
 
 @router.get("")

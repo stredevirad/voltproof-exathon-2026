@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
+import subprocess
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -149,6 +152,49 @@ def test_upload_reports_are_marked_kept_with_the_upload_and_use_the_right_grieva
                                                "company. For the grievance procedure that applies in this state")
     assert "UPERC" not in other["data"]["redress"]
     assert "UPERC (Consumer Grievance Redressal Forum & Electricity Ombudsman) Regulations, 2003" in up["data"]["redress"]
+
+
+def test_upload_reports_carry_a_diagonal_mark_and_cannot_load_anything_from_outside(base, uploads):
+    r = _report(base, uploads["other"])
+    html = r["html"]
+    assert 'class="watermark"' in html and "UPLOADED DATA &mdash; NOT VERIFIED" in html
+    assert "Content-Security-Policy" in html and "default-src 'none'" in html
+    assert "uploaded data" in " ".join(r["data"]["method"]["limitations"]).lower()
+    assert any("UPS, inverter or stabiliser" in x for x in r["data"]["method"]["limitations"])
+    assert any("grouped by those entries" in x for x in r["data"]["method"]["limitations"])
+    pdftotext = shutil.which("pdftotext") or (r"C:\Program Files\Git\mingw64\bin\pdftotext.exe"
+                                             if Path(r"C:\Program Files\Git\mingw64\bin\pdftotext.exe").exists() else None)
+    if pdftotext:   # the mark and the footer are on every printed page
+        pdf = upload.UPLOAD_DIR / uploads["other"]["id"] / "reports" / f"{r['links']['report_id']}.pdf"
+        text = subprocess.run([pdftotext, "-layout", str(pdf), "-"], capture_output=True, text=True, check=True).stdout
+        pages = [p for p in text.split("\f") if p.strip()]
+        assert len(pages) >= 2
+        for i, p in enumerate(pages, start=1):
+            assert "NOT VERIFIED" in p.upper().replace("—", " ") and "UPLOADED DATA" in p, f"page {i}"
+
+
+def test_sample_files_can_be_downloaded_from_the_upload_page_and_are_invented(base):
+    for which, name in (("readings", "voltage data 2030 Jan.csv"), ("locations", "location information.csv"),
+                        ("long", "one reading per line.csv")):
+        resp = urllib.request.urlopen(f"{base}/api/uploads/sample/{which}", timeout=60)
+        body = resp.read().decode("utf-8")
+        assert name in urllib.parse.unquote(resp.headers["content-disposition"]) and "SYNTHETIC" in body
+    assert _status(base, "/api/uploads/sample/passwd") == 404
+    assert _status(base, "/api/uploads/sample/..%2F..%2Fsecrets") in (404, 422)
+
+
+def test_changing_requests_without_the_page_header_or_from_another_site_are_refused(base):
+    assert _status(base, "/api/uploads", "POST") == 403
+    req = urllib.request.Request(f"{base}/api/uploads", method="POST",
+                                 headers={"X-VoltProof": "1", "Origin": "http://evil.example"})
+    try:
+        urllib.request.urlopen(req, timeout=30)
+        code = 200
+    except urllib.error.HTTPError as e:
+        code = e.code
+    assert code == 403
+    assert _status(base, "/api/uploads/bebad8f4", "DELETE") == 403
+    assert _status(base, "/api/uploads/00000000/validate", "POST", {"mapping": {}}) == 403
 
 
 def test_concurrent_requests_to_different_datasets_never_mix(base, uploads):

@@ -66,6 +66,45 @@ def test_a_single_monitor_file_needs_a_name_and_typed_text_is_cleaned():
     assert m["typed_locations"] == [{"name": "Shop meter", "district": "Pune", "state": "Maharashtra"}]
 
 
+def test_a_typed_state_is_stored_in_one_spelling_and_decides_the_grievance_text():
+    for written in ["up", "UP", "U.P.", "u p", "uttar pradesh", "Uttar  Pradesh", "UTTAR-PRADESH"]:
+        assert upload.canonical_state(written) == "Uttar Pradesh", written
+        assert upload.is_uttar_pradesh(written), written
+    for written in ["Maharashtra", "mp", "Kerala", "", None, "Uttarakhand", "Up and Down"]:
+        assert not upload.is_uttar_pradesh(written), written
+    assert upload.canonical_state("tamil nadu") == "Tamil Nadu" and upload.canonical_state("mp") == "Madhya Pradesh"
+    assert upload.canonical_state("Atlantis") == "Atlantis"        # anything else is kept as typed
+    m = check_mapping(_rec(header=("time", "volts")),
+                      {"long": {"location_col": None, "ts_col": 0, "value_col": 1, "single_monitor_name": "Meter"},
+                       "typed_locations": [{"name": "Meter", "district": "Pune", "state": "mh"}]})
+    assert m["typed_locations"][0]["state"] == "mh"                 # unknown short forms are not guessed
+
+
+def test_clock_and_decimal_choices_come_from_fixed_lists():
+    base = {"long": {"location_col": 0, "ts_col": 1, "value_col": 2}}
+    assert check_mapping(_rec(), {**base, "clock_local": "yes"})["clock_local"] == "yes"
+    assert check_mapping(_rec(), {**base, "clock_local": "no"})["clock_local"] == "no"
+    assert check_mapping(_rec(), {**base, "clock_local": "'; DROP"})["clock_local"] is None
+    rec = _rec()
+    rec["preview"]["decimal_comma"] = True
+    assert check_mapping(rec, base)["decimal_comma"] == 1 and check_mapping(_rec(), base)["decimal_comma"] == 0
+
+
+def test_a_date_is_echoed_in_words_with_the_chosen_order():
+    assert upload._echo_date("03/04/2018", "DMY") == "3 April 2018"
+    assert upload._echo_date("03/04/2018", "MDY") == "4 March 2018"
+    assert upload._echo_date("2018-04-03 17:30", "YMD") == "3 April 2018"
+    assert upload._echo_date("31/02/2018", "DMY") is None and upload._echo_date("x", "DMY") is None
+
+
+def test_the_sample_file_is_one_invented_meter_with_one_evening_cut():
+    lines = upload.sample_long_csv().splitlines()
+    assert lines[0] == "monitor,time,voltage" and len(lines) == 1 + 2 * 1440 - 4
+    assert all(x.startswith("SYNTHETIC sample meter,") for x in lines[1:])
+    zeros = [x for x in lines[1:] if x.endswith(",0")]
+    assert len(zeros) == 38 and zeros[0].split(",")[1] == "2030-01-17 18:42"
+
+
 def test_upload_limits_are_the_documented_ones():
     assert upload.MAX_BYTES == 150_000_000
     assert upload.READINGS_FILE_ID >= 800000000 and upload.TYPED_LOCATIONS_FILE_ID < 900000000

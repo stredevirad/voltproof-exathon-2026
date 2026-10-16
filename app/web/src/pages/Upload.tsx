@@ -14,6 +14,10 @@ const ORDER_TEXT: Record<string, string> = {
   YMD: "Year first (2018-06-01 18:42)", DMY: "Day first (01-06-2018 18:42)", MDY: "Month first (06/01/2018 18:42)",
 };
 const MB = 1_000_000;
+const INDIAN_STATES = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Chandigarh", "Jammu and Kashmir", "Ladakh", "Puducherry"];
 
 type LongMap = { location_col: number | null; ts_col: number | null; value_col: number | null; order: string;
                  single_monitor_name: string };
@@ -152,8 +156,13 @@ export default function Upload() {
             <b>Readings</b> (required): a CSV file of 1-minute voltage readings, either in the ESMI layout (one row per
             monitor and hour: Location name, Date, Hour, Min 0 … Min 59, as in the Prayas files, also as the Harvard
             Dataverse .tab file) or with one reading per line (a monitor, a date and time, and a voltage).
-            Up to {150} MB per file, because larger files can exhaust the memory of a 16 GB laptop.
+            Up to {150} MB per file, because larger files can exhaust the memory of a 16 GB laptop. Files saved from
+            Excel work if they are CSV (commas or semicolons; 230,5 and 6:42 PM are understood).
           </p>
+          <p className="small" data-testid="upload-samples">No file at hand? Download an invented sample:{" "}
+            <a href="/api/uploads/sample/readings" download>readings in the ESMI layout</a>{" · "}
+            <a href="/api/uploads/sample/locations" download>its location file</a>{" · "}
+            <a href="/api/uploads/sample/long" download>one reading per line</a>.</p>
           <label className="field">Readings file
             <input type="file" accept=".csv,.tab,.txt,text/csv" data-testid="upload-readings"
                    onChange={(e) => setReadings(e.target.files?.[0] || null)} />
@@ -236,7 +245,13 @@ export default function Upload() {
           <p>{v.rows.toLocaleString("en-IN")} lines · {v.monitors} monitor(s) ·{" "}
             {v.first_day ? `${v.first_day} to ${v.last_day}` : "dates not read yet"}
             {v.states.length > 0 && ` · ${v.states.join(", ")}`}
-            {v.typical_voltage != null && ` · typical reading ${v.typical_voltage} V`}</p>
+            {v.typical_voltage != null && ` · typical supply reading ${v.typical_voltage} V`}</p>
+          <p className="small muted">A monitor is one voltage recorder at one place. Check these dates: a wrong
+            day-and-month choice would move every event to the wrong month.</p>
+          {v.reads_as.length > 0 && (
+            <div className="note small" data-testid="upload-reads-as"><b>How VoltProof reads your file:</b>
+              <ul>{v.reads_as.map((r, i) => <li key={i}>{r}</li>)}</ul></div>
+          )}
           {v.refusals.length > 0 && (
             <div className="error" role="alert" data-testid="upload-refusals">
               <strong>This file cannot be analysed:</strong>
@@ -260,11 +275,13 @@ export default function Upload() {
                       <td className="l"><input aria-label={`District of ${name}`} value={typed[name]?.district || ""} maxLength={200}
                         onChange={(e) => setTyped({ ...typed, [name]: { state: typed[name]?.state || "", district: e.target.value } })} /></td>
                       <td className="l"><input aria-label={`State of ${name}`} value={typed[name]?.state || ""} maxLength={200}
+                        list="indian-states"
                         onChange={(e) => setTyped({ ...typed, [name]: { district: typed[name]?.district || "", state: e.target.value } })} /></td>
                     </tr>))}</tbody></table>
               )}
             </fieldset>
           ))}
+          <datalist id="indian-states">{INDIAN_STATES.map((s) => <option key={s} value={s} />)}</datalist>
           {v.set_aside.length > 0 && (
             <div className="note small" data-testid="upload-set-aside" style={{ marginTop: 8 }}>
               <b>Set aside, not analysed</b> (missing or unreadable lines are never counted as power cuts):
@@ -292,6 +309,8 @@ export default function Upload() {
       {rec?.status === "failed" && (
         <div className="error" role="alert" style={{ marginTop: 16 }} data-testid="upload-failed">
           <strong>The analysis did not finish.</strong> {rec.error}{" "}
+          {rec.validation?.ready_to_build && <><button className="primary" onClick={build} disabled={!!busy}
+                                                       data-testid="upload-retry">Try again</button>{" "}</>}
           <button onClick={() => remove(rec.id)}>Delete this upload</button>
         </div>
       )}
@@ -303,9 +322,18 @@ export default function Upload() {
             {rec.build.events.toLocaleString("en-IN")} outage events, {rec.build.shared_events} potential shared supply
             event(s), in {rec.build.seconds} s.</p>
           <p className="small muted" data-testid="upload-same-method">Same method as every dataset here:{" "}
-            {rec.build.statements} SQL statements ran inside Exasol, and every one was matched to Exasol's own audit log
-            ({rec.build.provenance.matches} matched, {rec.build.provenance.different} different,{" "}
-            {rec.build.provenance.missing} missing).</p>
+            {rec.build.statements} SQL statements ran inside Exasol, and each one was matched to Exasol's own record of
+            what it ran ({rec.build.provenance.matches} matched, {rec.build.provenance.different} different,{" "}
+            {rec.build.provenance.missing} missing). This shows which SQL produced the figures; it does not show that
+            the readings are true.</p>
+          <ul className="small muted" data-testid="upload-done-notes">
+            <li>A potential shared supply event is when monitors in the same district lost supply within two minutes of
+              each other. It is a coincidence, not a finding about the cause.</li>
+            {(rec.mapping?.typed_locations?.length ?? 0) > 0 && <li>The districts here are the ones you typed, so shared
+              events are grouped by your entries.</li>}
+            <li>A recorder behind a UPS, inverter or stabiliser keeps showing about 230 V during a cut, so it cannot
+              record the cut.</li>
+          </ul>
           <a className="button primary" href={`/?ds=${encodeURIComponent(rec.schema)}`} data-testid="upload-open">
             Open this dataset</a>{" "}
           <button onClick={reset}>Upload another file</button>
@@ -313,6 +341,8 @@ export default function Upload() {
       )}
 
       <h2 style={{ marginTop: 24 }}>Your uploads on this computer</h2>
+      <p className="small muted">Delete removes the upload's database schema, its stored files and the reports made from
+        it. Copies you already downloaded (a PDF, for example) stay where you saved them.</p>
       {!list ? <p className="muted">Loading…</p> : list.length === 0 ? <p className="muted">None yet.</p> : (
         <div className="card scroll">
           <table className="data" data-testid="upload-list">

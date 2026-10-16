@@ -112,7 +112,7 @@ export type UploadSummary = {
   refusals: string[]; questions: UploadQuestion[]; set_aside: { what: string; rows: number }[]; warnings: string[];
   rows: number; monitors: number; monitor_list: { name: string; rows: number; district: string | null;
   state: string | null; has_location: boolean }[]; first_day: string | null; last_day: string | null;
-  states: string[]; typical_voltage: number | null; ready_to_build: boolean;
+  states: string[]; typical_voltage: number | null; ready_to_build: boolean; reads_as: string[];
 };
 export type UploadFile = { name: string; bytes: number; sha256: string; received_at: string };
 export type UploadRec = {

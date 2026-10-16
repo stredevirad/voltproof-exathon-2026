@@ -228,3 +228,12 @@ We do not know, and we report the gap rather than tune it away (docs/VALIDATION.
   slightly (566 to 574 min/day), because months with less coverage have more outage.
 - What we cannot test from the publication: Prayas's exact location-months, how Figure 2 averages, and any
   verification or exclusion step applied to it.
+
+## Security
+
+**26. `npm audit` reports an ECharts advisory. Is the app exposed?**
+No. The advisory (ECharts before 6.1.0) is about text placed in a chart tooltip being shown as HTML. VoltProof
+puts only dates, numbers and its own fixed wording in tooltips, never a monitor name or anything from an
+uploaded file. Even so, every tooltip value goes through an escape function (`esc()` in
+`app/web/src/charts.tsx`), so text could never become markup. We kept ECharts 5.6 rather than upgrade to 6 a
+week before submission, because version 6 changes the default chart styling (DECISIONS D-036).

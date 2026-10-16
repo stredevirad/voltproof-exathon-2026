@@ -141,12 +141,16 @@ def test_a_one_reading_per_line_file_with_typed_locations(page, base, tmp_path):
     assert pg.get_by_test_id("map-order").input_value() == "YMD"
     pg.get_by_test_id("upload-check").click()
     pg.get_by_test_id("question-typed_locations").wait_for()
+    pg.get_by_test_id("question-clock_local").wait_for()   # one-reading-per-line files: are these local clock times?
+    assert pg.get_by_test_id("upload-build").is_disabled()
+    pg.get_by_label("Yes, local clock time").check()
     pg.get_by_label("District of Shop counter").fill("Pune")
-    pg.get_by_label("State of Shop counter").fill("Maharashtra")
+    pg.get_by_label("State of Shop counter").fill("up")      # typed in short form: stored as Uttar Pradesh
     pg.get_by_test_id("upload-recheck").click()
     pg.wait_for_function("() => !document.querySelector('[data-testid=question-typed_locations]')")
     summary = pg.get_by_test_id("upload-summary").inner_text()
-    assert "2,880 lines" in summary and "Maharashtra" in summary
+    assert "2,880 lines" in summary and "Uttar Pradesh" in summary
+    assert "read as 13 March 2024" in pg.get_by_test_id("upload-reads-as").inner_text()   # the worked date example
     pg.get_by_test_id("upload-build").click()
     pg.get_by_test_id("upload-done").wait_for(timeout=180_000)
     assert "1 monitor(s)" in pg.get_by_test_id("upload-done").inner_text()
@@ -170,7 +174,7 @@ def test_wrong_files_get_a_plain_message_on_the_page(page, base, tmp_path):
     pg.get_by_test_id("map-single-name").fill("Kitchen")
     pg.get_by_test_id("upload-check").click()
     pg.get_by_test_id("upload-refusals").wait_for()
-    assert "typical reading is about 119 V" in pg.get_by_test_id("upload-refusals").inner_text()
+    assert "is 130 V or less" in pg.get_by_test_id("upload-refusals").inner_text()
     assert pg.get_by_test_id("upload-build").is_disabled()
     _upload_page_check(pg, "refused upload")
     pg.get_by_role("button", name="Cancel and delete").click()

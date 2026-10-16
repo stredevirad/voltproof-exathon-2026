@@ -224,15 +224,19 @@ LOCATIONS_KEY = _norm_header(LOCATIONS_HEADER)
 
 def _head_lines(path: Path, n: int) -> tuple[list[str], str]:
     raw = path.read_bytes()[: 1 << 16]
+    if raw.startswith(b"PK\x03\x04") or raw.startswith(b"\xd0\xcf\x11\xe0"):
+        raise UploadError("This is an Excel workbook (.xlsx or .xls), not a CSV file. In Excel choose File, Save As, "
+                          "CSV (comma delimited) or CSV UTF-8, then upload the CSV file.")
     if raw.startswith((b"\xff\xfe", b"\xfe\xff")) or b"\x00" in raw[:400]:
         raise UploadError("The file looks like UTF-16 text. Save it as a UTF-8 (or plain) CSV file and upload it again.")
     text = raw.decode("utf-8", errors="replace").lstrip("\ufeff")
     lines = text.splitlines()[: n + 1]
     if not lines or not lines[0].strip():
         raise UploadError("The first line of the file is empty; it must hold the column names.")
-    first = lines[0]
-    sep = "\t" if ("\t" in first and "," not in first) else ","
-    return lines, sep
+    first = re.sub(r'"[^"]*"', "", lines[0])  # separators inside quotes do not count
+    counts = {s: first.count(s) for s in (",", ";", "\t")}
+    sep = max(counts, key=lambda s: (counts[s], s == ","))  # the most frequent; a comma wins a tie
+    return lines, sep if counts[sep] else ","
 
 
 def _cells(line: str, sep: str) -> list[str]:
@@ -251,7 +255,7 @@ def _suggest_long(header: list[str], rows: list[list[str]]) -> dict:
     value = pick(["volt", "value", "reading"], exclude={ts})
     if value is None:
         value = next((i for i in range(len(header)) if i != ts and rows
-                      and all(re.fullmatch(r"-?\d+(\.\d+)?", (r[i] if i < len(r) else "").strip() or "x")
+                      and all(re.fullmatch(r"-?\d+([.,]\d+)?", (r[i] if i < len(r) else "").strip() or "x")
                               for r in rows[:5])), None)
     loc = pick(["location", "monitor", "site", "meter", "device", "name"], exclude={ts, value})
     order = "DMY"
@@ -277,14 +281,18 @@ def preview(upload_id: str) -> dict:
     if key == LOCATIONS_KEY:
         raise UploadError("This looks like a location file (Location name, From date, To date, District, State, ...). "
                           "Upload it as the location file, and upload the voltage readings as the readings file.")
+    # A comma used as the decimal mark (230,5) appears in files separated by semicolons (or quoted in other files)
+    decimal_comma = any(re.fullmatch(r"-?\d{1,3},\d{1,2}", c.strip()) for r in rows for c in r)
     if key == WIDE_KEY:
         out = {"layout": "wide", "sep": sep, "header": [h[:60] for h in header], "rows": rows,
+               "decimal_comma": decimal_comma,
                "explain": "ESMI layout: one row per monitor and hour, with 60 minute columns (Min 0 to Min 59)."}
     else:
         if len(header) < 2:
             raise UploadError("The file has only one column. VoltProof needs at least a date-and-time column and a "
-                              "voltage column, separated by commas.")
+                              "voltage column, separated by commas, semicolons or tabs.")
         out = {"layout": "long", "sep": sep, "header": [h[:60] for h in header], "rows": rows,
+               "decimal_comma": decimal_comma,
                "suggest": _suggest_long(header, rows),
                "explain": "One reading per line: pick which column holds the monitor, the date and time, and the "
                           "voltage."}
@@ -421,7 +429,9 @@ def check_mapping(rec: dict, mapping: dict | None) -> dict:
     m = {"layout": layout, "sep": pv.get("sep", ","), "locations_sep": pv.get("locations_sep", ","),
          "dash_order": mapping.get("dash_order") if mapping.get("dash_order") in DATE_ORDERS else None,
          "slash_order": mapping.get("slash_order") if mapping.get("slash_order") in DATE_ORDERS else None,
-         "hour_base": 1 if mapping.get("hour_base") in (1, "1") else 0, "long": None, "typed_locations": []}
+         "hour_base": 1 if mapping.get("hour_base") in (1, "1") else 0, "long": None, "typed_locations": [],
+         "decimal_comma": 1 if pv.get("decimal_comma") else 0,
+         "clock_local": mapping.get("clock_local") if mapping.get("clock_local") in ("yes", "no") else None}
     if layout == "long":
         lm = mapping.get("long") or {}
         n = len(pv.get("header") or [])
@@ -458,8 +468,42 @@ def check_mapping(rec: dict, mapping: dict | None) -> dict:
     for t in typed:
         name, district, state = (_clean_text(t.get(k), 300) for k in ("name", "district", "state"))
         if name and district and state:
-            m["typed_locations"].append({"name": name, "district": district[:200], "state": state[:200]})
+            m["typed_locations"].append({"name": name, "district": district[:200],
+                                         "state": canonical_state(state)[:200]})
     return m
+
+
+# States and union territories of India, so that a typed state ("up", "U.P.", "uttar pradesh") is stored in one
+# spelling; it decides which grievance text a report shows. Anything else is kept as typed.
+INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
+    "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+    "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Delhi",
+    "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+    "Dadra and Nagar Haveli and Daman and Diu"]
+STATE_ALIASES = {"up": "Uttar Pradesh", "mp": "Madhya Pradesh", "hp": "Himachal Pradesh", "ap": "Andhra Pradesh",
+                 "tn": "Tamil Nadu", "wb": "West Bengal", "uk": "Uttarakhand", "odisha": "Odisha",
+                 "orissa": "Odisha", "new delhi": "Delhi", "nct of delhi": "Delhi"}
+
+
+def _state_key(name: str) -> str:
+    """Letters only, lower case: 'U.P.', 'u p' and 'UP' are all 'up'; 'Uttar  Pradesh' is 'uttarpradesh'."""
+    return re.sub(r"[^a-z]+", "", str(name or "").lower())
+
+
+def canonical_state(name: str) -> str:
+    key = _state_key(name)
+    for s in INDIAN_STATES:
+        if _state_key(s) == key:
+            return s
+    return {_state_key(k): v for k, v in STATE_ALIASES.items()}.get(key, name)
+
+
+def is_uttar_pradesh(name: str | None) -> bool:
+    """True for 'Uttar Pradesh' however it is written ('UP', 'U.P.', 'uttar pradesh'): UP reports cite the UPERC
+    regulations, every other state gets the general sentence."""
+    return canonical_state(name or "") == "Uttar Pradesh"
 
 
 def _stage_key(rec: dict, m: dict) -> str:
@@ -474,6 +518,7 @@ def params_for(rec: dict, m: dict, window: tuple[str, str] | None = None) -> dic
     lm = m.get("long") or {}
     over.update({"upload.layout": m["layout"], "upload.dash_order": m.get("dash_order") or "",
                  "upload.slash_order": m.get("slash_order") or "", "upload.hour_base": int(m.get("hour_base") or 0),
+                 "upload.decimal_comma": int(m.get("decimal_comma") or 0),
                  "upload.long_order": lm.get("order") or "", "upload.single_monitor_name":
                  lm.get("single_monitor_name") or ""})
     if window:
@@ -548,14 +593,32 @@ def _read_stats(conn) -> dict:
                       "ORDER BY LOCATION_NAME LIMIT 1000")
     stats["monitors"] = [{"name": r[0], "rows": int(r[1] or 0), "district": r[2], "state": r[3],
                           "has_location": bool(r[4])} for r in st.fetchall()]
+    mv = conn.execute("SELECT LOC, N_NUMERIC, N_ABOVE_130, MEDIAN_ABOVE_130 FROM UPLOAD_MONITOR_VALUES "
+                      "ORDER BY LOC LIMIT 5000")
+    stats["monitor_values"] = [{"name": r[0], "n": int(r[1] or 0), "above_130": int(r[2] or 0),
+                                "median": None if r[3] is None else float(r[3])} for r in mv.fetchall()]
     return stats
+
+
+def _echo_date(text: str | None, order: str | None) -> str | None:
+    """'03/04/2018' read day first -> '3 April 2018': shown to the user so that a wrong day/month choice is seen
+    before anything is built."""
+    mt = re.search(r"(\d{1,4})[-/.](\d{1,2})[-/.](\d{1,4})", text or "")
+    if not mt or order not in LONG_ORDERS:
+        return None
+    a, b, c = (int(x) for x in mt.groups())
+    try:
+        d = dt.date(a, b, c) if order == "YMD" else dt.date(c, b, a) if order == "DMY" else dt.date(c, a, b)
+    except ValueError:
+        return None
+    return f"{d.day} {d:%B %Y}"
 
 
 def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
     """Turn the counts computed in Exasol into: refusals (no build), questions (the user must answer), what will be
     set aside, warnings, and the resolved reading choices. The data decides the date order whenever it can; the
     user is asked only when it cannot, and an answer never overrides what the data shows."""
-    refuse, questions, aside, warn = [], [], [], []
+    refuse, questions, aside, warn, reads_as = [], [], [], [], []
     resolved = {"dash_order": None, "slash_order": None, "hour_base": 0, "long_order": None}
     w, lg, v = stats["upload_wide_stats"], stats["upload_long_stats"], stats["upload_value_stats"]
 
@@ -584,16 +647,25 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
         d = order_from(w.get("dash_max1"), w.get("dash_max2"), w.get("n_dash"), m.get("dash_order"), "dash_order",
                        w.get("dash_example"))
         resolved["dash_order"] = "DMY" if d == "BOTH" else d   # as step 030 reads dash dates
+        if d in DATE_ORDERS and _echo_date(w.get("dash_example"), d):
+            reads_as.append(f"Dates like {w.get('dash_example')} are read as {_echo_date(w.get('dash_example'), d)} "
+                            f"({DATE_ORDER_TEXT[d].split(' (')[0].lower()}).")
         if d == "BOTH":
             warn.append("Some dates with dashes have a number above 12 in both the day and the month place; those "
                         "lines cannot be read and will be set aside.")
         s = order_from(w.get("slash_max1"), w.get("slash_max2"), w.get("n_slash"), m.get("slash_order"),
                        "slash_order", w.get("slash_example"))
         resolved["slash_order"] = None if s == "BOTH" else s
+        if s in DATE_ORDERS and _echo_date(w.get("slash_example"), s):
+            reads_as.append(f"Dates like {w.get('slash_example')} are read as {_echo_date(w.get('slash_example'), s)} "
+                            f"({DATE_ORDER_TEXT[s].split(' (')[0].lower()}).")
         if s == "BOTH":
             aside.append({"what": "lines with dates like 13/13/2018 that cannot be read either way",
                           "rows": int(w.get("n_slash") or 0)})
         if w.get("n_date_other"):
+            if rows and int(w["n_date_other"]) > rows / 2:
+                refuse.append(f"Most dates could not be read (for example {w.get('date_other_example') or 'an empty date'!r}). "
+                              "VoltProof reads dates like 13-02-2019, 13/02/2019 or 2019-02-13.")
             aside.append({"what": f"lines with a date VoltProof cannot read (for example "
                                   f"{w.get('date_other_example') or 'an empty date'})", "rows": int(w["n_date_other"])})
         h0, h24 = int(w.get("n_hour_0") or 0), int(w.get("n_hour_24") or 0)
@@ -603,6 +675,7 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
         if h24 and not h0:
             if m.get("hour_base") == 1:
                 resolved["hour_base"] = 1
+                reads_as.append("Hour 1 is read as 00:00 to 00:59, and hour 24 as 23:00 to 23:59 of the same day.")
             else:
                 questions.append({"key": "hour_base", "text": "Your file numbers the hours 1 to 24. Is hour 1 the "
                                   "first hour of the day (00:00 to 00:59)?",
@@ -626,8 +699,20 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
         if lg.get("n_long_name"):
             refuse.append("Some monitor names are longer than 300 characters.")
         if lg.get("n_offset"):
-            refuse.append("The times carry a time-zone offset (like +05:30 or Z). VoltProof reads clock times as local "
-                          "time and does not convert them; remove the offset and upload again.")
+            refuse.append(f"Some times end with a time-zone mark other than +05:30 (for example "
+                          f"{lg.get('offset_example')!r}). A mark such as Z means UTC. VoltProof reads clock times as "
+                          "local time and does not convert them, so a cut at 7 pm would be shown at the wrong hour. "
+                          "Convert the times to Indian local time, or remove the mark, and upload again.")
+        if lg.get("n_ist_offset"):
+            warn.append("Times ending +05:30 are read as India local clock time (the mark is ignored).")
+        if m.get("clock_local") == "no":
+            refuse.append("The times are not local clock times. VoltProof does not convert time zones: convert the "
+                          "times to Indian local time in a spreadsheet and upload the file again.")
+        elif m.get("clock_local") != "yes":
+            questions.append({"key": "clock_local", "text": "Are the times in your file local clock times, what a clock "
+                              "on the wall in India showed (not UTC or another time zone)?",
+                              "options": [{"value": "yes", "label": "Yes, local clock time"},
+                                          {"value": "no", "label": "No, another time zone (for example UTC)"}]})
         order = (m.get("long") or {}).get("order")
         if order != "YMD":
             p1, p2 = lg.get("part1_max") or 0, lg.get("part2_max") or 0
@@ -642,11 +727,15 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
                                       "options": [{"value": "DMY", "label": DATE_ORDER_TEXT["DMY"]},
                                                   {"value": "MDY", "label": DATE_ORDER_TEXT["MDY"]}]})
         resolved["long_order"] = order
-        ok, bad = int(lg.get("n_ts_ok") or 0), rows - int(lg.get("n_ts_ok") or 0) - int(lg.get("n_offset") or 0)
+        if lg.get("ts_example") and _echo_date(lg.get("ts_example"), order):
+            reads_as.append(f"Times like {lg.get('ts_example')} are read as {_echo_date(lg.get('ts_example'), order)} "
+                            f"({DATE_ORDER_TEXT[order].split(' (')[0].lower()}); the clock time is used as written.")
+        ok, bad = int(lg.get("n_ts_ok") or 0), rows - int(lg.get("n_ts_ok") or 0)
         if rows and ok < rows / 2:
             refuse.append(f"Most times could not be read with the chosen format (for example "
                           f"{lg.get('ts_bad_example')!r}). VoltProof reads 'date time' such as 2018-06-01 18:42, "
-                          f"01-06-2018 18:42 or 06/01/2018 18:42:00.")
+                          f"01-06-2018 18:42, 06/01/2018 6:42 PM or 06/01/2018 18:42:00 (a spreadsheet's date "
+                          f"serial number such as 43252.78 is not read: format the column as text).")
         elif bad > 0:
             aside.append({"what": f"lines whose time could not be read (for example {lg.get('ts_bad_example')!r})",
                           "rows": bad})
@@ -662,18 +751,38 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
             aside.append({"what": "lines without a monitor name", "rows": int(lg["n_no_name"])})
         first, last = lg.get("first_day"), lg.get("last_day")
     n_values, n_num = int(v.get("n_values") or 0), int(v.get("n_numeric") or 0)
-    median = v.get("median_positive")
+    median = v.get("median_above_130")  # the typical supply voltage: readings of 130 V or less are no supply
+    n_above_130 = int(v.get("n_above_130") or 0)
     if rows and not n_values:
         refuse.append("The file has no voltage readings (all reading cells are empty).")
     elif n_values and n_num < 0.9 * n_values:
-        refuse.append("Most reading values are not numbers, so this does not look like voltage readings.")
+        refuse.append("Most reading values are not plain numbers such as 231 or 230.5, so this does not look like "
+                      "voltage readings.")
     elif n_num and int(v.get("n_0_500") or 0) < 0.95 * n_num:
         refuse.append("Many values are below 0 or above 500, so this does not look like household voltage readings "
                       "in volts.")
+    elif n_num and n_above_130 < 0.10 * n_num:
+        refuse.append(f"Almost every reading ({100 - round(100 * n_above_130 / n_num)}%) is 130 V or less, which "
+                      "VoltProof counts as no supply. If your supply is 110-120 V (as in the USA or Japan), its voltage "
+                      "classes, made for India's 230 V supply, would show the whole file as one long power cut. The "
+                      "file was not analysed.")
     elif median is not None and not 150 <= float(median) <= 300:
-        refuse.append(f"The typical reading is about {float(median):.0f} V. VoltProof's voltage classes are made for "
-                      "India's 230 V household supply (Prayas ESMI thresholds: 130 V or less is no supply), so this "
-                      "file would be misread. It was not analysed.")
+        refuse.append(f"The typical supply reading (leaving out readings of 130 V or less, which are counted as no "
+                      f"supply) is about {float(median):.0f} V. VoltProof's voltage classes are made for India's 230 V "
+                      "household supply, so this file would be misread. It was not analysed.")
+    if int(v.get("n_above_500") or 0):
+        warn.append(f"{int(v['n_above_500']):,} of the readings checked are above 500 V (for example logger codes such "
+                    "as 999). They are analysed as high voltage; remove or empty them before uploading if they mean "
+                    "'no data'.")
+    if int(v.get("n_zero") or 0):
+        warn.append(f"{int(v['n_zero']):,} of the readings checked are exactly 0 V. VoltProof counts 0 V as no supply. If "
+                    "your logger writes 0 when it is switched off or has no data, remove those lines or empty the "
+                    "cells before uploading, or those minutes will show as power cuts.")
+    odd = [x["name"] for x in stats.get("monitor_values", [])
+           if x["n"] and (x["above_130"] < 0.10 * x["n"] or x["median"] is None or not 150 <= x["median"] <= 300)]
+    if odd and not refuse:
+        warn.append(f"{len(odd)} monitor(s) have a typical reading far from a 230 V supply (for example "
+                    f"{odd[0]!r}); their figures may not be meaningful.")
     monitors = stats["monitors"]
     missing = [x["name"] for x in monitors if not x["has_location"] and x["name"]]
     if not has_location_source and monitors and len(missing) == len(monitors):
@@ -691,7 +800,7 @@ def _decide(stats: dict, m: dict, has_location_source: bool) -> dict:
     return {"refusals": refuse, "questions": questions, "set_aside": aside, "warnings": warn, "resolved": resolved,
             "rows": rows, "monitors": len(monitors), "monitor_list": monitors[:300], "first_day": first,
             "last_day": last, "states": states, "typical_voltage": None if median is None else round(float(median)),
-            "ready_to_build": not refuse and not questions}
+            "reads_as": reads_as, "ready_to_build": not refuse and not questions}
 
 
 def validate(upload_id: str, mapping: dict | None = None) -> dict:
@@ -711,7 +820,8 @@ def validate(upload_id: str, mapping: dict | None = None) -> dict:
                      if (mapping or {}).get(k) is not None or (k == "long_order" and ((mapping or {}).get("long") or {})
                                                                .get("order_confirmed"))]
     key = _stage_key(rec, m)
-    with uploader_connect(autocommit=False) as conn:
+    # Staging a large file is a database load: it shares the one-build-at-a-time lock (pipeline/buildlock.py)
+    with buildlock.build_lock(f"checking upload {rec['readings']['name']}"), uploader_connect(autocommit=False) as conn:
         if rec.get("stage_key") != key:
             _stage(conn, rec, m)
             rec["stage_key"] = key
@@ -837,6 +947,66 @@ def delete(upload_id: str) -> None:
     shutil.rmtree(folder, ignore_errors=False)
 
 
+def reconcile(max_age_minutes: int = 60, drop_schemas: bool | None = None) -> dict:
+    """Clean up after a crash or a build the RAM guard stopped: upload schemas without an upload record are dropped,
+    folders without a record (older than `max_age_minutes`) and empty 'new' uploads are removed, and a build whose
+    process ended is marked as not finished (load() does that). Never touches any schema that is not VP_USER_<id>.
+    Schemas are dropped only when this process uses the standard upload folder (data/uploads), because uploads kept
+    in another folder (tests) would look like orphans from here; `drop_schemas=True` overrides that."""
+    out = {"schemas_dropped": [], "folders_removed": [], "uploads_removed": []}
+    if drop_schemas is None:
+        drop_schemas = UPLOAD_DIR.resolve() == (REPO_ROOT / "data" / "uploads").resolve()
+    if buildlock.current():
+        return out  # a build is running: do not touch anything
+    known = set()
+    now = time.time()
+    if UPLOAD_DIR.exists():
+        for d in sorted(UPLOAD_DIR.iterdir()):
+            if not d.is_dir():
+                continue
+            if not ID_RE.fullmatch(d.name) or not (d / "upload.json").exists():
+                if now - d.stat().st_mtime > max_age_minutes * 60:
+                    shutil.rmtree(d, ignore_errors=True)
+                    out["folders_removed"].append(d.name)
+                continue
+            rec = load(d.name)
+            if rec["status"] == "new" and not rec.get("readings"):
+                created = dt.datetime.fromisoformat(rec["created_at"]).timestamp()
+                if now - created > max_age_minutes * 60:
+                    delete(d.name)
+                    out["uploads_removed"].append(d.name)
+                    continue
+            known.add(rec["schema"])
+    if not drop_schemas:
+        return out
+    with connect() as c:
+        schemas = [r[0] for r in c.execute("SELECT SCHEMA_NAME FROM EXA_ALL_SCHEMAS WHERE SCHEMA_OWNER = {o}",
+                                           {"o": UPLOADER}).fetchall()]
+    for s in schemas:
+        if is_upload_schema(s) and s not in known:
+            with uploader_connect() as c:
+                c.execute(f"DROP SCHEMA IF EXISTS {s} CASCADE")
+            out["schemas_dropped"].append(s)
+    return out
+
+
+def sample_long_csv() -> str:
+    """A small SYNTHETIC one-reading-per-line sample for the upload page: one invented meter, 17-18 January 2030, one
+    evening power cut (18:42 to 19:20) and a few missing minutes. Invented, not a measurement."""
+    rows = ["monitor,time,voltage"]
+    for day in (17, 18):
+        for minute in range(24 * 60):
+            h, mi = divmod(minute, 60)
+            if day == 17 and (18 * 60 + 42 <= minute < 19 * 60 + 20):
+                v = 0
+            elif day == 18 and 300 <= minute < 304:
+                continue  # four minutes with no reading
+            else:
+                v = 228 + ((minute * 7 + day) % 9) - 4
+            rows.append(f"SYNTHETIC sample meter,2030-01-{day:02d} {h:02d}:{mi:02d},{v}")
+    return "\n".join(rows) + "\n"
+
+
 def schema_exists(schema: str) -> bool:
     with connect() as c:
         return bool(c.execute("SELECT COUNT(*) FROM EXA_ALL_SCHEMAS WHERE SCHEMA_NAME = {s}", {"s": schema}).fetchval())
@@ -876,6 +1046,7 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("build")
     b.add_argument("id")
     sub.add_parser("list")
+    sub.add_parser("reconcile")
     d = sub.add_parser("delete")
     d.add_argument("id")
     args = ap.parse_args(argv)
@@ -914,6 +1085,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "list":
             for r in list_uploads():
                 print(f"{r['id']}  {r['status']:<10} {r.get('created_at')}  {(r.get('readings') or {}).get('name')}")
+        elif args.cmd == "reconcile":
+            print(reconcile(max_age_minutes=0, drop_schemas=True))
         elif args.cmd == "delete":
             delete(args.id)
             print(f"deleted upload {args.id} (schema and files)")

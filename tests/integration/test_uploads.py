@@ -115,14 +115,16 @@ def test_the_upload_user_cannot_read_or_change_any_other_schema(demo_upload):
 
 
 def test_one_build_at_a_time(tmp_path):
+    readings, locations = _demo_files()
+    up = _upload(readings, locations)
     with buildlock.build_lock("a test build"):
         assert buildlock.current()["what"] == "a test build"
         with pytest.raises(SystemExit, match="Another database build is running: a test build"):
             build.main(["--schema", "VP_TEST_LOCKED", "--demo"])
-        readings, locations = _demo_files()
-        up = _upload(readings, locations)
         with pytest.raises(buildlock.BuildBusy, match="Only one build can run at a time"):
             upload.build(up["id"])
+        with pytest.raises(buildlock.BuildBusy, match="Only one build can run at a time"):
+            upload.validate(up["id"], {"typed_locations": []})    # checking a file loads it: same lock
     assert buildlock.current() is None
     upload.delete(up["id"])
 
@@ -155,7 +157,8 @@ def test_long_layout_gives_the_same_results(demo_upload, tmp_path):
     lines = _write_long_from_demo(long_file)
     _, locations = _demo_files()
     up = _upload(long_file, locations,
-                 {"long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "YMD", "order_confirmed": True}})
+                 {"clock_local": "yes", "long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "YMD",
+                                                  "order_confirmed": True}})
     assert up["summary"]["ready_to_build"], up["summary"]
     assert up["summary"]["rows"] == lines
     rec = upload.build(up["id"])
@@ -223,8 +226,8 @@ def test_wide_files_that_are_not_230_volt_minute_readings_are_refused(tmp_path, 
         "120_volt": _days("Shop A", DAYS, value="119"),
         "hour_column_broken": _days("Shop A", DAYS, hours=[0] * 24),
     }[case]
-    expected = {"not_numbers": "not numbers", "out_of_range": "below 0 or above 500",
-                "120_volt": "typical reading is about 119 V", "hour_column_broken": "hour column looks broken"}[case]
+    expected = {"not_numbers": "not plain numbers", "out_of_range": "below 0 or above 500",
+                "120_volt": "is 130 V or less", "hour_column_broken": "hour column looks broken"}[case]
     s = _check(tmp_path, _wide(tmp_path / "r.csv", rows), _locations(tmp_path / "l.csv", ["Shop A"]))
     assert not s["ready_to_build"]
     assert any(expected in r for r in s["refusals"]), s["refusals"]
@@ -242,10 +245,11 @@ def test_long_files_that_are_not_one_minute_local_readings_are_refused(tmp_path,
         lines = [f"Shop A,2024-03-01 {h:02d}:{m:02d},231" for h in range(5) for m in range(60)] * 2
         expected = "more than one reading per minute"
     else:
-        lines = [f"Shop A,2024-03-01T{h:02d}:{m:02d}:00+05:30,231" for h in range(5) for m in range(60)]
-        expected = "time-zone offset"
+        lines = [f"Shop A,2024-03-01T{h:02d}:{m:02d}:00Z,231" for h in range(5) for m in range(60)]
+        expected = "time-zone mark other than +05:30"
     s = _check(tmp_path, _long(tmp_path / "r.csv", lines), _locations(tmp_path / "l.csv", ["Shop A"]),
-               {"long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "YMD", "order_confirmed": True}})
+               {"clock_local": "yes", "long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "YMD",
+                                                  "order_confirmed": True}})
     assert not s["ready_to_build"]
     assert any(expected in r for r in s["refusals"]), s["refusals"]
 
@@ -314,7 +318,8 @@ def test_dates_and_hours_the_data_cannot_decide_are_asked_not_guessed(tmp_path, 
     # a long file whose dates contradict the chosen order is refused, never silently misread
     lines = [f"Shop A,15-03-2024 {h:02d}:{m:02d},231" for h in range(3) for m in range(60)]
     s = _check(tmp_path, _long(tmp_path / "c.csv", lines), locs,
-               {"long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "MDY", "order_confirmed": True}})
+               {"clock_local": "yes", "long": {"location_col": 0, "ts_col": 1, "value_col": 2, "order": "MDY",
+                                                  "order_confirmed": True}})
     assert any("The dates say day first" in r for r in s["refusals"]), s["refusals"]
 
 

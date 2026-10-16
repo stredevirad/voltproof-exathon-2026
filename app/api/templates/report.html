@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <title>VoltProof evidence report {{ d.report_id }}</title>
 <style>
   :root { --ink:#1b1f24; --muted:#5b6470; --line:#d5dae0; --out:#b42318; --low:#b54708; --high:#6941c6;
@@ -43,10 +44,14 @@
   ul { margin: 4px 0; padding-left: 16px; }
   footer { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 6px; color: var(--muted); font-size: 9px; }
   .synthetic { border: 2px solid var(--ink); background: #fff4e5; padding: 6px 10px; margin: 0 0 10px; font-size: 11px; }
+  /* Uploaded data only: a diagonal mark that repeats on every printed page, so a cropped page still shows it */
+  .watermark { position: fixed; top: 42%; left: -8%; width: 116%; text-align: center; font-size: 44px; font-weight: 700;
+               letter-spacing: 2px; color: rgba(180, 35, 24, 0.13); transform: rotate(-28deg); pointer-events: none; }
 </style>
 </head>
 <body>
 {% set s = d.summary %}
+{% if d.upload %}<div class="watermark" data-testid="upload-watermark" aria-hidden="true">UPLOADED DATA &mdash; NOT VERIFIED</div>{% endif %}
 {% if d.synthetic %}<div class="synthetic" data-testid="synthetic-banner"><strong>SYNTHETIC DEMO DATA.</strong> The monitors,
 districts and readings in this report are invented (pipeline/synthetic.py) so VoltProof can be tried without
 downloading the real data. Not ESMI data; no figure here describes real electricity supply.</div>{% endif %}

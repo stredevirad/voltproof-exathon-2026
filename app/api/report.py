@@ -68,7 +68,10 @@ UPLOAD_LIMITATIONS = [
     "also come from a tripped breaker, wiring or the monitor itself.",
     LIMITATIONS[2],
     "The accuracy of the device that recorded these readings is not known; readings close to a class boundary are "
-    "sensitive.",
+    "sensitive. A monitor behind a UPS, inverter or stabiliser keeps showing about 230 V during a cut and cannot "
+    "record it.",
+    "Districts and states in an uploaded dataset come from the location file or were typed by the person who "
+    "uploaded it. Potential shared supply events are grouped by those entries.",
     LIMITATIONS[4],
 ]
 # Outside Uttar Pradesh (uploads only): one general sentence, no citation (owner decision, Checkpoint A).
@@ -186,7 +189,7 @@ def build_data(location_id: int, month_key: str) -> dict:
         data["upload"] = {**meta["upload"], "upload_id": uid}
         data["provenance"]["regenerate"] = (f"python -m pipeline.upload build {uid} ; then POST /api/reports "
                                             f"{{\"location_id\": {location_id}, \"month\": \"{month_key}\"}}")
-        if (m["location"].get("state_name") or "").strip().lower() != "uttar pradesh":
+        if not upload.is_uttar_pradesh(m["location"].get("state_name")):
             data["redress"] = REDRESS_GENERAL
     return data
 
