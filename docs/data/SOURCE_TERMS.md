@@ -2,8 +2,14 @@
 
 VoltProof analyses **real, public** voltage measurements from the **Electricity Supply Monitoring
 Initiative (ESMI)** run by **Prayas (Energy Group)**, Pune, India. No employer, proprietary or personal
-data is used. The only synthetic data in this repository is the small hand-written test fixtures in
-`tests/fixtures/`, which are labelled as synthetic.
+data is used. Synthetic data appears in two places, always labelled as such: the small hand-written test
+fixtures in `tests/fixtures/`, and the SYNTHETIC demo set that `pipeline/synthetic.py` generates (invented
+monitors, January 2030, built into its own schema; DECISIONS D-033). Neither is ESMI data.
+
+**Uploads.** A person can upload their own voltage readings to analyse them on their own computer (DECISIONS
+D-037). Those files are not part of this repository and never leave that computer; VoltProof labels them
+"Uploaded data — not verified by VoltProof" and never shows the Prayas attribution on them. Whoever uploads a
+file is responsible for having the right to use it; the upload page says so.
 
 ## Source
 

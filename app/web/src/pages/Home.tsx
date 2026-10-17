@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { api, fmtHours, fmtPct } from "../api";
-import { ErrorBox, Skeleton, useApi, useDataset } from "../ui";
+import { Link, useNavigate } from "react-router-dom";
+import { api, fmtHours, fmtPct, withDs } from "../api";
+import { ErrorBox, Skeleton, rowClick, useApi, useDataset } from "../ui";
+import { Tour } from "../Tour";
 
 export default function Home() {
   const nav = useNavigate();
@@ -25,7 +26,7 @@ export default function Home() {
     setDemoError(null);
     try {
       const d = await api.demo();
-      nav(`/location/${d.location_id}/${d.month}?demo=1&day=${d.day}&event=${d.event_key}`);
+      nav(withDs(`/location/${d.location_id}/${d.month}?demo=1&day=${d.day}&event=${d.event_key}`));
     } catch (e) {
       setDemoError(e as Error);
     } finally {
@@ -35,31 +36,47 @@ export default function Home() {
 
   return (
     <>
+      <Tour />
       <section className="hero">
         <div>
           <h1>Turn minute-by-minute voltage records into traceable evidence of power cuts and poor supply.</h1>
+          {ds?.kind === "real" && (
+            <p className="lead" data-testid="home-scope">VoltProof shows what small voltage monitors recorded, minute by
+              minute, at homes and shops in Uttar Pradesh, 2016–2019. These are historical records from monitors run by
+              Prayas (Energy Group), an independent research group. They are not your own supply today. If your area is
+              not listed, there is no record for it here; you can <Link to="/upload">upload your own readings</Link>.</p>
+          )}
           <p className="muted">
             Pick a monitored location and a month. VoltProof shows every interruption the independent monitor recorded,
             how certain each one is, and whether other monitors in the district lost supply at the same time. Then it
             produces a report that traces every number back to the source file and line.{" "}
-            {ds?.synthetic
+            {ds?.kind === "upload"
+              ? <>Data: your uploaded file “{ds.upload?.file_name}”, not verified by VoltProof.</>
+              : ds?.synthetic
               ? <>Data: the SYNTHETIC demo set (invented monitors, January 2030), for trying the app without a download.</>
-              : <>Data: Prayas (Energy Group) ESMI, Uttar Pradesh, 2016–2019 (historical). January–June 2019 figures are lower
-                bounds because of a defect in the published file (see Data &amp; sources).</>}
+              : <>Data: Prayas (Energy Group) ESMI, Uttar Pradesh, 2016–2019 (historical).</>}
           </p>
+          {ds?.kind === "real" && (
+            <p className="small muted" data-testid="home-2019-note">January–June 2019 figures are lower bounds because of
+              a defect in the published file (see Data &amp; sources).</p>
+          )}
         </div>
-        <div className="card">
+        <div className="card feature">
           <h3 style={{ marginTop: 0 }}>Guided demo</h3>
-          <p className="small muted">Opens one {ds?.synthetic ? "SYNTHETIC" : "real"} location-month chosen by a fixed, documented rule (shown on the next page).
+          <p className="small muted">Opens one {ds?.kind === "upload" ? "uploaded" : ds?.synthetic ? "SYNTHETIC" : "real"} location-month chosen by a fixed, documented rule (shown on the next page).
             It is one example, not a typical month.</p>
           <button className="primary" onClick={startDemo} disabled={demoBusy} data-testid="guided-demo">
             {demoBusy ? "Opening…" : "Start guided demo"}
           </button>
-          {demoError && <div style={{ marginTop: 8 }}><ErrorBox error={demoError} what="the demo preset" /></div>}
+          {demoError && ds?.kind === "upload" && (demoError as { status?: number }).status === 404
+            ? <p className="small muted" role="status" data-testid="demo-unavailable" style={{ marginTop: 8 }}>
+                This upload has no evening potential shared supply event to open as a guided example. Pick a monitor
+                below instead.</p>
+            : demoError && <div style={{ marginTop: 8 }}><ErrorBox error={demoError} what="the demo preset" /></div>}
         </div>
       </section>
 
-      <h2>Choose a monitor</h2>
+      <h2>Choose a monitored location</h2>
       {states.error && <ErrorBox error={states.error} what="the list of states" />}
       <div className="row">
         <label className="field">State
@@ -75,7 +92,7 @@ export default function Home() {
           </select>
         </label>
         <label className="field">Search a location
-          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={ds?.synthetic ? "e.g. Synthpur" : "e.g. Lucknow"} data-testid="location-search" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={ds?.kind === "upload" ? "a monitor name" : ds?.synthetic ? "e.g. Synthpur" : "e.g. Lucknow"} data-testid="location-search" />
         </label>
       </div>
 
@@ -88,9 +105,11 @@ export default function Home() {
                   <thead><tr><th className="l">Location</th><th className="l">District</th><th>Months (comparable)</th><th>Coverage</th></tr></thead>
                   <tbody>
                     {shown.map((l) => (
-                      <tr key={l.location_id} className="clickable" tabIndex={0} aria-selected={locId === l.location_id}
-                          onClick={() => setLocId(l.location_id)} onKeyDown={(e) => e.key === "Enter" && setLocId(l.location_id)}>
-                        <td className="l">{l.display_name}{l.is_offline && <span className="muted small"> (monitoring ended)</span>}</td>
+                      <tr key={l.location_id} className={locId === l.location_id ? "clickable selected" : "clickable"}
+                          onClick={rowClick(() => setLocId(l.location_id))}>
+                        <td className="l"><button type="button" className="link" aria-pressed={locId === l.location_id}
+                            onClick={() => setLocId(l.location_id)}>{l.display_name}</button>
+                          {l.is_offline && <span className="muted small"> (monitoring ended)</span>}</td>
                         <td className="l">{l.district}</td>
                         <td>{l.months_in_window} ({l.comparable_months})</td>
                         <td>{fmtPct(l.coverage_window)}</td>
@@ -112,10 +131,9 @@ export default function Home() {
                     <thead><tr><th className="l">Month</th><th>Interruptions</th><th>Outage hours (min.)</th><th>Coverage</th></tr></thead>
                     <tbody>
                       {loc.data.months.map((m) => (
-                        <tr key={m.month_key} className="clickable" tabIndex={0}
-                            onClick={() => nav(`/location/${locId}/${m.month_key}`)}
-                            onKeyDown={(e) => e.key === "Enter" && nav(`/location/${locId}/${m.month_key}`)}>
-                          <td className="l">{m.month_key} {m.is_comparable ? <span className="badge ok">comparable</span> : <span className="badge warn">low coverage</span>}
+                        <tr key={m.month_key} className="clickable"
+                            onClick={rowClick(() => nav(withDs(`/location/${locId}/${m.month_key}`)))}>
+                          <td className="l"><Link to={withDs(`/location/${locId}/${m.month_key}`)}>{m.month_key}</Link> {m.is_comparable ? <span className="badge ok">comparable</span> : <span className="badge warn">low coverage</span>}
                             {m.data_warning && <span className="badge warn" title="Source-file defect: outage figures are lower bounds">lower bound</span>}</td>
                           <td>{m.interruptions}</td><td>{fmtHours(m.outage_min_lower)}</td><td>{fmtPct(m.coverage_calendar)}</td>
                         </tr>

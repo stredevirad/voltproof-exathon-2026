@@ -62,7 +62,7 @@ Tag each passed gate (`gate-N-name`). Deadline: submit by Sat 24 Oct 2026 IST (h
 - Before every push: secret scan (gitleaks in `.tools\`), size check (>5 MB flagged; the one exception is the
   final narrated video `docs/deliverables/VoltProof_demo.mp4`, up to 40 MB, enforced by
   `tests/unit/test_tracked_sizes.py`), no raw data/private docs tracked.
-- The first push to origin needs explicit user approval (not yet given as of 2026-10-11).
+- Pushing to origin was approved by the owner (the repository is public); every push still needs the checks above.
 
 ## Never do
 - Never commit raw ESMI data, `.env`, `secrets.json`, the private docs folder (see `.gitignore`), or anything under `data/`.

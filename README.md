@@ -23,7 +23,7 @@ This project was built with AI coding assistance (Claude Code).
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
 | Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
 
-![Location-month view: calendar of daily outage minutes, KPIs and the chance comparison](docs/deliverables/screenshots/02_month_calendar.png)
+![Location-month view: the outage lower bound first, a plain caption under each number, and the calendar of daily outage hours](docs/deliverables/screenshots/02_month_calendar.png)
 
 ## The problem
 
@@ -48,13 +48,19 @@ analysis is versioned SQL that runs **inside Exasol**.
 - **An evidence report (PDF).** It traces every number to the source file and line, the SQL statement's
   hash and its Exasol statement id, and it points to the statutory grievance route.
 - **A web app.** A guided demo walks through one real case, from calendar to minute trace to event evidence
-  to report.
+  to report. A "How to use" page explains every colour and number in plain words, and a short optional tour
+  shows a first-time visitor where things are.
+- **Your own data.** Readings from your own monitor can be uploaded on this computer and analysed by the same
+  SQL, in their own schema, always labelled "Uploaded data — not verified by VoltProof"
+  ([Use your own data](#use-your-own-data)).
 
 | | Status |
 |---|---|
 | Minute classification (Prayas thresholds), events with certainty and bounds, daily/monthly aggregates, coverage, quarantine | **Implemented and tested** (hand-written fixtures, independent oracle, Hypothesis, real data) |
 | Coincidence across monitors with a chance baseline | **Implemented and tested** |
 | Evidence report with provenance; web app; guided demo | **Implemented and tested** (report consistency tests, Playwright end-to-end) |
+| Uploading your own readings (ESMI layout, Dataverse `.tab`, one reading per line) | **Implemented and tested** (an uploaded file gives the same results as the command-line build of the same file) |
+| Beginner's guide, first-visit tour; readable in dark mode and on a phone; WCAG AA text contrast | **Implemented and tested** (Playwright, contrast measured on every screen) |
 | Comparison with Prayas's published figures | **Done**, with an honest result: see [Validation](#validation-against-prayas) |
 | Live monitors or smart-meter feeds; state-specific standards of performance; other states | **Future scope**, not claimed |
 
@@ -115,6 +121,14 @@ scripts\load.ps1 -Set demo
 ```powershell
 scripts\start.ps1                # stop it with Ctrl+C; stop it before rebuilding with load.ps1
 ```
+
+**What you should see:** a SYNTHETIC DEMO DATA banner on every page; **Start guided demo** opens an invented
+monitor in January 2030; its day (17 January) and the outage's evidence page, where 8 other monitors lost supply
+within 2 minutes.
+
+On a first visit a short, skippable tour shows where things are (four or five steps, depending on how many
+datasets are on the computer). **How to use** in the menu explains every colour and number; its button **Show the
+short tour of the start page** starts the tour again.
 
 **4. Run the tests** (unit, integration, differential, end-to-end):
 
@@ -195,6 +209,11 @@ Choose one of these:
      files, choose "Original File Format (Comma Separated Values)".
   3. Run `scripts\load.ps1 -Set first`.
 
+**What you should see on the real data** (measured on the full Uttar Pradesh build): **Start guided demo** opens
+Huzurpur-Bahraich, July 2018, with OUTAGE TIME (AT LEAST) at least 366.2 h (up to 367.2 h) and 320 interruptions;
+on 25 July the 18:27 outage's evidence page says 16 other monitors lost supply within 2 minutes, and the chance
+comparison shows 3,945 coincident pairs observed against about 1827.5 expected.
+
 Once `VOLTPROOF` is built, `start.ps1`, `test.ps1` and `warmup.ps1` use it. To look at the demo set again,
 set `$env:VOLTPROOF_SCHEMA = 'VOLTPROOF_DEMO'` first. To build next to an existing build without touching it,
 set another schema name the same way. To use another port, run `scripts\start.ps1 -Port 8090`.
@@ -214,6 +233,52 @@ set another schema name the same way. To use another port, run `scripts\start.ps
    Keep other heavy applications closed: on a 16 GB machine the database uses most of the memory during
    this build.
 
+## Use your own data
+
+Readings from your own voltage monitor can be analysed the same way. Open **Upload your data** in the app (or use
+the command line below):
+
+1. Choose the file (and the location file, if you have one) and press **Upload and preview**.
+2. Press **Check the file**. If VoltProof asks a question it cannot decide from the data (for example the date
+   order), answer it and press **Use my answers and check again**.
+3. Press **Analyse this file**, then **Open this dataset**. From then on the **Data** menu at the top (shown when
+   there are two or more datasets) lists it as "Your upload: <file name>".
+4. To remove it: **Delete this upload**, then **Yes, delete** (before the analysis: **Cancel and delete**).
+
+- **Formats:** the ESMI layout (`Location name, Date, Hour, Min 0 … Min 59`, with an optional location file), the
+  Harvard Dataverse `.tab` file, or one reading per line (time and voltage, with an optional monitor column).
+  Spreadsheet exports with semicolons or decimal commas work. The upload page links small invented (SYNTHETIC)
+  sample files to try it: "readings in the ESMI layout", "its location file" and "one reading per line".
+- **What is refused, with the reason:** Excel workbooks (save them as CSV first), values that are not numbers or lie
+  outside 0–500 V, files that do not look like a 230 V supply, data that is not one reading per minute, a broken
+  hour column, and time zones other than India time (+05:30). Limits: 150 MB per file, 10 uploads, 200 typed-in
+  monitor locations, at least 10 GB free on C:. Checking and analysing one 140 MB file took about a minute and a
+  half on the build laptop (the full Uttar Pradesh build from the published files is a different measurement:
+  210.4 s, see Performance).
+- **Same analysis, kept apart:** the file is stored unchanged, checked by SQL (`sql/ingest/`) and analysed by the
+  same steps (`sql/020`–`sql/100`) in its own schema `VP_USER_<id>`. That schema belongs to a separate database user
+  (`VP_UPLOADER`, created on the first upload; its password is kept in `data/.uploader.json`, gitignored) that has
+  no access to the Prayas or SYNTHETIC data.
+- **Honest labels:** every page and report says "Uploaded data — not verified by VoltProof", reports get
+  `VP-USER-` ids and a mark on every PDF page, and the Prayas attribution never appears on uploaded data.
+- **Privacy:** the file stays on this computer (`data/uploads/<id>/`, gitignored) and is never sent anywhere.
+  **Delete** on the upload page removes the schema, the file and any reports made from it. Only upload data you
+  have the right to use.
+
+```powershell
+.venv\Scripts\python.exe -m pipeline.upload new --readings my_readings.csv [--locations my_locations.csv]
+#   prints "upload <id> -> schema VP_USER_<ID>; layout ..." (and, for one reading per line, the suggested columns)
+.venv\Scripts\python.exe -m pipeline.upload validate <id>    # = "Check the file": the checks, questions and refusals
+#   answers to its questions: one reading per line: --long-columns 0,1,2 (positions of monitor, time and voltage,
+#   counted from 0; '-' if there is no monitor column) and --long-order YMD|DMY|MDY; ESMI layout: --dash-order or
+#   --slash-order DMY|MDY and --hour-base 0|1
+.venv\Scripts\python.exe -m pipeline.upload build <id>       # = "Analyse this file": the same SQL steps, its own schema
+.venv\Scripts\python.exe -m pipeline.upload list             # or: delete <id>
+```
+
+Decisions and evidence: [DECISIONS D-037](docs/DECISIONS.md); tests in `tests/integration/test_uploads.py`,
+`tests/differential/test_upload_real.py` and `tests/e2e/test_upload_ui.py`.
+
 ## How it works
 
 ```
@@ -225,6 +290,9 @@ Dataverse CSV ──verify MD5──▶ Exasol IMPORT (raw rows + file id + line
    ▶ sql/095  data quality per file and location
    ▶ sql/100  coincident interruptions across monitors; chance baseline (20 whole-day shifts)
    ▶ FastAPI + React app, PDF evidence report (every number traced to file line and Exasol statement id)
+
+Your upload ──staged unchanged (sql/ingest/u10)──▶ checked in SQL (u20) ──▶ standard raw rows (u30)
+   ▶ the same steps sql/020–100 in its own schema VP_USER_<id>, under a separate database user
 ```
 
 The rules are in [docs/METHODOLOGY.md](docs/METHODOLOGY.md), and every choice is recorded in
@@ -302,8 +370,8 @@ Every statement in every build matched Exasol's audit log. Why this is Exasol's 
 
 | Path | What |
 |---|---|
-| `sql/` | Numbered SQL steps: the single source of analytical truth |
-| `pipeline/` | Download checks, native IMPORT, step runner with provenance, benchmarks, validation scripts |
+| `sql/` | Numbered SQL steps: the single source of analytical truth; `sql/ingest/` checks and shapes uploads |
+| `pipeline/` | Download checks, native IMPORT, step runner with provenance, uploads, benchmarks, validation scripts |
 | `app/api`, `app/web` | FastAPI service and evidence report; React + ECharts web app |
 | `tests/` | Fixtures, independent oracle, Hypothesis differential, report and end-to-end tests |
 | `config/` | Thresholds and parameters (each with its source), declared file periods |

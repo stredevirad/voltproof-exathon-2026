@@ -1,17 +1,60 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { api, ApiError } from "./api";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { api, ApiError, CURRENT_DS, uploads, type DatasetItem } from "./api";
 
-export type Dataset = { synthetic: boolean; dataset_label: string };
+export type Dataset = {
+  synthetic: boolean; dataset_label: string; kind: "real" | "synthetic" | "upload";
+  upload?: { file_name: string; sha256: string; uploaded_at: string; bytes: number };
+};
 let datasetPromise: Promise<Dataset> | null = null;
 
-/** Which data this build holds (real ESMI data or the SYNTHETIC demo set, D-033); fetched once per page load. */
+/** Which data this page shows: real Prayas ESMI data, the SYNTHETIC demo set (D-033) or an upload; fetched once per
+ *  page load (a page shows one dataset; switching loads the start page again). */
 export function useDataset(): Dataset | null {
   const [ds, setDs] = useState<Dataset | null>(null);
   useEffect(() => {
-    if (!datasetPromise) datasetPromise = api.meta().then((m) => ({ synthetic: !!m.synthetic, dataset_label: m.dataset_label }));
+    if (!datasetPromise) datasetPromise = api.meta().then((m) => ({
+      synthetic: !!m.synthetic, dataset_label: m.dataset_label,
+      kind: m.dataset_kind || (m.synthetic ? "synthetic" : "real"), upload: m.upload }));
     datasetPromise.then(setDs).catch(() => setDs(null));
   }, []);
   return ds;
+}
+
+/** Shown on every page while the app shows an uploaded file. */
+export function UploadBanner() {
+  const ds = useDataset();
+  if (ds?.kind !== "upload") return null;
+  return (
+    <div className="synthetic-banner" role="status" data-testid="upload-banner">
+      <strong>Uploaded data — not verified by VoltProof.</strong> Your file “{ds.upload?.file_name}”, analysed with the
+      same method as every dataset here. Nobody has checked where the readings came from.{" "}
+      <a href="/upload">Your uploads</a>
+    </div>
+  );
+}
+
+export function datasetName(d: DatasetItem): string {
+  if (d.kind === "real") return "Prayas ESMI data (real, Uttar Pradesh 2016–2019)";
+  if (d.kind === "synthetic") return "SYNTHETIC demo set (invented monitors)";
+  return `Your upload: ${d.file_name || "file"}`;
+}
+
+/** Choose which dataset the app shows. Switching opens the start page of that dataset. */
+export function DatasetSwitcher() {
+  const [items, setItems] = useState<DatasetItem[] | null>(null);
+  useEffect(() => { uploads.datasets().then(setItems).catch(() => setItems(null)); }, []);
+  if (!items || items.length < 2) return null;
+  const current = CURRENT_DS || items.find((d) => d.default)?.ds || "";
+  return (
+    <label className="ds-switch">Data
+      <select value={current} data-testid="dataset-select" onChange={(e) => {
+        const d = items.find((x) => x.ds === e.target.value);
+        window.location.assign(d && !d.default ? `/?ds=${encodeURIComponent(d.ds)}` : "/");
+      }}>
+        {items.map((d) => <option key={d.ds} value={d.ds}>{datasetName(d)}</option>)}
+      </select>
+    </label>
+  );
 }
 
 /** Shown on every page while the app runs on the SYNTHETIC demo set. */
@@ -51,7 +94,9 @@ export function Skeleton({ height = 160, label }: { height?: number; label: stri
 export function ErrorBox({ error, what }: { error: Error; what: string }) {
   const status = error instanceof ApiError ? error.status : 0;
   let next = "Check that the VoltProof server is running (scripts\\start.ps1) and reload the page.";
-  if (status === 404) next = "This item does not exist in the analysed data. Go back to the start page and pick a monitor and month.";
+  if (status === 404) next = CURRENT_DS && /dataset not found/.test(error.message)
+    ? "This dataset is no longer on this computer (it may have been deleted). Open the start page to pick another."
+    : "This item does not exist in the analysed data. Go back to the start page and pick a monitor and month.";
   if (status === 503) next = "Start the database with scripts\\exa.ps1 start, build the data with scripts\\load.ps1, then reload.";
   return (
     <div className="error" role="alert">
@@ -71,14 +116,26 @@ export function DataWarning({ text }: { text: string | null | undefined }) {
   );
 }
 
-export function Kpi({ label, value, sub, testId }: { label: string; value: ReactNode; sub?: ReactNode; testId?: string }) {
+/** A number tile. `lead` marks the one number the page leads with; `plain` is a one-line explanation in everyday
+ *  words under the number. */
+export function Kpi({ label, value, sub, plain, lead, testId }: { label: string; value: ReactNode; sub?: ReactNode;
+                     plain?: ReactNode; lead?: boolean; testId?: string }) {
   return (
-    <div className="kpi" data-testid={testId}>
+    <div className={lead ? "kpi lead-tile" : "kpi"} data-testid={testId}>
       <div className="label">{label}</div>
       <div className="value">{value}</div>
       {sub && <div className="sub">{sub}</div>}
+      {plain && <div className="plain" data-testid={testId && `${testId}-plain`}>{plain}</div>}
     </div>
   );
+}
+
+/** Click handler for a table row whose first cell holds the real link or button (audit F-14: keyboard and
+ *  screen-reader users reach that element; a mouse click anywhere else on the row does the same). */
+export function rowClick(go: () => void) {
+  return (ev: MouseEvent) => {
+    if (!(ev.target as HTMLElement).closest("a, button")) go();
+  };
 }
 
 export function StateLegend() {

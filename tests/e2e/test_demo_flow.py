@@ -191,7 +191,11 @@ def test_guided_demo_workflow(page, server):
     _shot(pg, "05_report_ready")
     _hold(pg, "report")
 
-    if RECORDING:  # data and sources (the 2019 files), then the start page
+    if RECORDING:  # the upload page, data and sources (the 2019 files), then the start page
+        pg.goto(server + "/upload")
+        _segment("upload")
+        pg.get_by_test_id("upload-privacy").wait_for()
+        _hold(pg, "upload")
         pg.goto(server + "/sources")
         _segment("sources")
         pg.get_by_test_id("files-table").wait_for()

@@ -17,12 +17,16 @@ OUT = REPO_ROOT / "docs" / "TEST_REPORT.md"
 SUITES = ["unit", "integration", "differential", "e2e"]
 WHAT = {
     "unit": "No database: claims vocabulary, published-text scan, tracked-file sizes, source compile check, "
-            "download checks, loader edge cases, SYNTHETIC demo generator (deterministic, labelled)",
+            "download checks, loader edge cases, SYNTHETIC demo generator (deterministic, labelled), licence, "
+            "grievance wording, report footer, upload name and choice rules, docs labels match the app",
     "integration": "Hand-written fixtures through the real SQL in Exasol, oracle equality, harness sensitivity, "
-                   "evidence-report consistency, SYNTHETIC demo set (separation guards, oracle equality)",
-    "differential": "Independent oracle vs SQL on random Hypothesis batches and on real Uttar Pradesh slices",
+                   "evidence-report consistency, SYNTHETIC demo set (separation guards, oracle equality), static-route "
+                   "safety, uploads (same results as the command-line build, inputs, refusals, API guards, delete)",
+    "differential": "Independent oracle vs SQL on random Hypothesis batches and on real Uttar Pradesh slices; a real "
+                    "ESMI file uploaded gives the same figures as its command-line build",
     "e2e": "Playwright drives the guided demo in Chromium against a real server; wording scan on every page; "
-           "SYNTHETIC banner and no real-data figures on the demo set",
+           "SYNTHETIC banner and no real-data figures on the demo set; uploads through the website; guide and tour; "
+           "WCAG AA text contrast (light and dark), phone width, table-row links; day view in three time zones",
 }
 
 

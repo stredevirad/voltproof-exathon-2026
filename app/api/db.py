@@ -3,10 +3,15 @@
 pyexasol connections are not thread-safe, so each request checks out its own connection (pool size 4,
 well under the 18 usable connections). The app only SELECTs from tables the pipeline materialised; it
 must not run while scripts\\load.ps1 rebuilds them (CREATE OR REPLACE swaps tables).
+
+Dataset per request: every query names its schema through `S` (service.py, report.py). `S` formats as the schema
+of the current request, set with `using(schema)` inside the request's own worker thread (a context variable, so
+two requests never see each other's dataset). Without `using`, it is the server's dataset (VOLTPROOF_SCHEMA).
 """
 
 from __future__ import annotations
 
+import contextvars
 import os
 import queue
 import threading
@@ -18,6 +23,34 @@ from pipeline.db import connect
 
 SCHEMA = os.environ.get("VOLTPROOF_SCHEMA", "VOLTPROOF")
 POOL_SIZE = 4
+_CURRENT = contextvars.ContextVar("voltproof_schema", default=SCHEMA)
+
+
+class _CurrentSchema:
+    """Formats as the current request's schema: f"{S}.EVENT" names the right dataset's table."""
+
+    def __str__(self) -> str:
+        return _CURRENT.get()
+
+    def __format__(self, spec: str) -> str:
+        return format(_CURRENT.get(), spec)
+
+
+CURRENT = _CurrentSchema()
+
+
+def current_schema() -> str:
+    return _CURRENT.get()
+
+
+@contextmanager
+def using(schema: str):
+    """Run the block against `schema` (already checked against the dataset whitelist by app/api/datasets.py)."""
+    token = _CURRENT.set(schema)
+    try:
+        yield
+    finally:
+        _CURRENT.reset(token)
 
 
 class Pool:

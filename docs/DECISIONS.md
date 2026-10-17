@@ -384,3 +384,112 @@ real-data oracle tests are re-run on the new formulations.
   the top saying that items it does not verify are not cited anywhere in the app, the reports, the deck or the
   README. It is a working record, not a claim to users; `tests/unit/test_grievance_wording.py` already treats it
   as record-only.
+
+## D-036 · 2026-10-16 · ECharts advisory: escape tooltip text, keep ECharts 5.6
+
+- **Problem:** `npm audit` reports a moderate advisory for ECharts before 6.1.0: text placed in a tooltip is
+  shown as HTML. Uploads bring text from users' files into the app.
+- **Choice:** no user text is placed in chart tooltips or labels (only dates, numbers and fixed wording), and every
+  tooltip value goes through `esc()` (`app/web/src/charts.tsx`). ECharts stays at 5.6: version 6 changes the
+  default chart styling, which we would have to re-check on every screen a week before submission.
+- **Also:** evidence reports carry a Content-Security-Policy that lets them load nothing (no scripts, images or
+  network requests), and names are escaped by the report template.
+
+## D-037 · 2026-10-16 · Upload your own voltage data: same SQL, its own database user, honest labels
+
+- **What:** a person can upload 1-minute voltage readings (the ESMI layout, also as the Harvard Dataverse `.tab`
+  file, or one reading per line) on the Upload page or with `python -m pipeline.upload`. The file stays on this
+  computer (`data/uploads/<id>/`, gitignored) and can be deleted with one button.
+- **Same analysis:** the upload is staged unchanged in its own schema `VP_USER_<id>`, checked by SQL
+  (`sql/ingest/u20_validate.sql`), turned into the standard raw rows (`u30_canonical.sql`: dates written one way,
+  confirmed 1-24 hours shifted, readings in one-per-line files pivoted to the hourly layout with missing minutes
+  left empty) and analysed by the unchanged steps 020-100, with provenance checked against Exasol's audit log.
+  Checked by tests: the SYNTHETIC demo files uploaded give the same 33 result tables as the command-line demo build;
+  the 2018 June-August ESMI file uploaded gives the same figures as its command-line build for every Uttar Pradesh
+  location and district; the same readings one per line, in a semicolon file with decimal commas, or with a
+  12-hour clock give the same results.
+- **Isolation:** the upload schema is created by a separate database user (`VP_UPLOADER`) that the database
+  refuses any access to the Prayas and SYNTHETIC schemas. User text never enters SQL text. The API answers a
+  dataset only from a whitelist (`ds`), and requests that change an upload need the page's own header and origin.
+  One database build at a time (a lock shared with the command-line build).
+- **The data decides, the user confirms, nothing is guessed:** the day/month order is taken from the data whenever
+  a date part is above 12; the user is asked only when it cannot be decided, and an answer never overrides the
+  data. Hours 1-24, time zones (only +05:30 is accepted, as India time; one-per-line files must be confirmed as
+  local clock time) and typed district and state are asked in plain words, and the summary shows how a date is
+  read ("03/04/2018 is read as 3 April 2018").
+- **Refused, with the reason:** not numbers; outside 0-500 V; not a 230 V supply (almost every reading at or
+  below 130 V, or a typical supply reading outside 150-300 V, counting only readings above 130 V so that a home
+  with many cuts is not refused); not 1-minute data; a broken hour column; other time zones; Excel workbooks
+  (save as CSV); files over 150 MB (measured: a 140 MB file is checked and built in about a minute and a half, with free memory never below
+  1 GB on the 16 GB laptop).
+- **Labels:** uploaded data is never presented as Prayas data: banner "Uploaded data — not verified by VoltProof",
+  report ids `VP-USER-`, a diagonal mark and a footer on every PDF page, its own file name, time and SHA-256 as the
+  source, and a general grievance sentence outside Uttar Pradesh.
+- **Unchanged:** sql/010-110, `config/method.yaml`, the oracle, the fixtures and every existing test; the
+  command-line builds (`load.ps1 -Set first|up|demo`) behave exactly as before.
+
+## D-038 · 2026-10-16 · Web app look: "Civic calm", one lead number per page, measured contrast
+
+- **What:** the pages lead with one thing each: on the month page the tile "Outage time (at least)" comes first and
+  largest, and "Generate evidence report" is its only filled button; the guided demo and the evidence report sit in
+  marked cards. Each number tile has a one-line plain explanation under it (new text; no figure or existing sentence
+  changed). Calm teal header and footer, white cards, a rule under section titles, page titles in a system serif;
+  numbers stay in the sans font with tabular figures. System fonts only, nothing loaded from the internet.
+- **What did not change:** every number, the chart state colours (orange outage ramp, blue low, green high, hatched
+  grey for no reading; D-027), the frozen wording and the SYNTHETIC and UPLOADED banners (still a warm warning colour,
+  never teal), every test id.
+- **Why:** before, every card looked the same and the eye had nowhere to start; and the old blue links and buttons
+  were just below WCAG AA contrast (4.2-4.4:1; 3.6:1 for the dark-mode button) while pages scrolled sideways on a
+  375 px phone.
+- **Checked by tests** (`tests/e2e/test_ui_quality.py`, plus the SYNTHETIC and upload page tests): every visible text
+  element meets WCAG AA against its background on every screen, light and dark; no sideways scrolling at 375 px;
+  the month page leads with the outage lower bound and has one filled button; table rows that open something hold a
+  real link or button (keyboard and screen readers, audit F-14). These tests fail on the previous look.
+- **Charts in dark mode:** chart text, grid and axes now take the page's colours, so they are readable on the dark
+  background; the heat map writes white figures on its darkest step (12 h or more) for contrast. The calendar legend
+  is page text, so it wraps on a phone.
+- **One switch back:** the look is the `data-skin="civic"` attribute on `<html>` (`app/web/index.html`); without it
+  the plain look returns, keeps the page structure, and also passes the contrast checks.
+- **Wording after review:** the lead tile says exactly what is measured ("Time when the voltage read 130 V or less,
+  which Prayas counts as no supply. Only minutes with a reading count, so this is a minimum.") and its range line says
+  "if every minute with no reading next to an outage was also an outage"; the caution box under "Coincidence is not
+  cause" has a neutral bar (orange stays for outage data); the chosen monitor is marked by a tick and bold text, not by
+  colour alone.
+
+## D-039 · 2026-10-16 · A beginner's guide and an optional first-visit tour
+
+- **What:** a "How to use VoltProof" page (`/guide`, "How to use" in the menu, and "How to read this page" on every
+  month page) explains in plain words what VoltProof does and whose data it shows, what the colours and classes mean,
+  how to pick a place and read a month and a day (including exact, bounded and censored), the shared-supply check
+  (timing only, coincidence is not cause), the evidence report, what VoltProof can and cannot tell you, and uploads.
+  It adapts to the dataset: it names Prayas's data only on Prayas's data.
+- **Orientation on the pages themselves**, for people who arrive by a link: the start page says these are historical
+  records from monitors in Uttar Pradesh, 2016–2019, not the reader's own supply today, and that an unlisted area has no
+  record here (the 2019 lower-bound sentence follows on its own line, unchanged); every month page says it shows one
+  monitor in one month, which may not be typical; "Minutes read" says it is not a measure of supply quality; the
+  report card says the report ends with where a consumer can seek redress (no law named on the page; the report's own
+  section carries the sources).
+- **Tour:** five short steps on the start page (welcome, the guided demo, picking a place, the dataset switcher when
+  there are several datasets, the guide). It appears on a person's first visit, can be skipped (button or Escape) or
+  finished, is remembered in this browser's storage (if storage is blocked it simply shows again next time), and can
+  be reopened from the guide. Automated browsers (tests, screenshots, the demo recording) never see it unless the
+  address asks for it with `?tour=1`.
+- **Not done (council P4-A):** a derived "days without supply" figure (a new number), Hindi, more tours, glossary
+  pop-ups. **Checked by tests:** `tests/e2e/test_guide.py` (every dataset kind, attribution, blocked words, contrast,
+  phone width, tour first visit / finish / skip / Escape / reopen / storage blocked / SYNTHETIC set, stable step count)
+  and new assertions in `tests/e2e/test_ui_quality.py` and `tests/e2e/test_upload_ui.py`.
+
+## D-040 · 2026-10-16 · The deck tells one story for a non-technical judge; the figures move to an appendix
+
+- **What:** `docs/deliverables/deck/deck.html` (built into `VoltProof_deck.pdf` by `python -m pipeline.deck`) now
+  follows one story, one idea per slide: the shopkeeper's problem (Illustrative), the record that already exists,
+  what VoltProof gives him, one evening in Bahraich, how it works in four plain steps, how Exasol Personal is used
+  (one diagram with the same four steps, the in-Exasol timings and the audit-log match), why the numbers can be
+  checked, the data defects, where we differ from Prayas, what VoltProof does not claim, what changes if adopted, and
+  the team.
+- **Nothing dropped:** the earlier slides with benchmarks, correctness evidence, the validation table and the data
+  defects are kept word for word as appendix A1-A4; A5 adds the headline figures and the "150 of 276 district-months,
+  about 13 by chance" sentence from the README. The problem statement, the attribution and every frozen sentence are
+  unchanged; every number on a slide also appears in the README or docs (checked by the deck build).
+- **No speed comparison** with other engines is made (as in `docs/WHY_EXASOL.md`); the only before/after timings are
+  VoltProof's own SQL fixes, timed from Exasol's audit log.

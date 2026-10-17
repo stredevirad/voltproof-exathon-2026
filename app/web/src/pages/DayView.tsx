@@ -1,10 +1,13 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { api, fmtMin, fmtTs } from "../api";
-import { C, EChart, hatch } from "../charts";
-import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, useApi } from "../ui";
+import { api, withDs, fmtMin, fmtTs } from "../api";
+import { esc, C, EChart, hatch } from "../charts";
+import { Certainty, DataWarning, ErrorBox, Skeleton, StateLegend, rowClick, useApi } from "../ui";
 
-const toMs = (ts: string) => new Date(ts + ":00").getTime(); // local wall-clock (IST as recorded)
+// The recorded wall-clock time (local time as written in the data) is placed on the chart as if it were UTC, and the
+// chart is drawn in UTC: the viewer's own time zone, and its daylight-saving changes, can never shift or drop a minute.
+const toMs = (ts: string) => Date.parse(ts + ":00Z");
+const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function DayView() {
   const { id, day } = useParams();
@@ -15,18 +18,20 @@ export default function DayView() {
   const { data, error, loading } = useApi(() => api.day(locationId, day!), [locationId, day]);
   const [showTable, setShowTable] = useState(false);
 
+  const drawnMinutes = useRef(0);
   const option = useMemo(() => {
     if (!data) return null;
     const start = toMs(`${day}T00:00`);
     const end = toMs(`${day}T23:59`);
     const byTs = new Map(data.readings.map((r) => [r.ts, r.voltage]));
     const pts: [number, number | null][] = [];
+    const drawn = new Set<string>();
     for (let i = 0; i < 1440; i++) {
-      const t = start + i * 60000;
-      const d = new Date(t);
-      const key = `${day}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-      pts.push([t, byTs.has(key) ? byTs.get(key)! : null]);
+      const key = `${day}T${pad(Math.floor(i / 60))}:${pad(i % 60)}`;
+      if (byTs.has(key)) drawn.add(key);
+      pts.push([start + i * 60000, byTs.has(key) ? byTs.get(key)! : null]);
     }
+    drawnMinutes.current = drawn.size;  // distinct recorded minutes placed on the chart (checked by an e2e test)
     const clip = (a: string, b: string): [number, number] => [Math.max(toMs(a), start), Math.min(toMs(b) + 60000, end + 60000)];
     const noData = data.segments.filter((s) => s.supply_state === "NO_DATA").map((s) => {
       const [a, b] = clip(s.start_ts, s.end_ts);
@@ -43,17 +48,18 @@ export default function DayView() {
     });
     return {
       animation: false,
+      useUTC: true,
       grid: { left: 54, right: 150, top: 24, bottom: 56 },
       tooltip: { trigger: "axis", axisPointer: { type: "line" },
                  formatter: (ps: any[]) => {
                    const p = ps.find((x) => x.seriesName === "Voltage");
                    if (!p) return "";
                    const t = new Date(p.value[0]);
-                   const hh = `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+                   const hh = `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
                    const v = p.value[1];
-                   if (v == null) return `${hh}<br/>no reading (not counted as outage)`;
+                   if (v == null) return `${esc(hh)}<br/>no reading (not counted as outage)`;
                    const st = v <= 130 ? "no supply" : v < 205 ? "low voltage" : v <= 270 ? "normal" : "high voltage";
-                   return `${hh}<br/><b>${v} V</b>, ${st}`;
+                   return `${esc(hh)}<br/><b>${esc(v)} V</b>, ${esc(st)}`;
                  } },
       xAxis: { type: "time", min: start, max: end + 60000, axisLine: { lineStyle: { color: C.axis } },
                axisLabel: { color: C.ink2, formatter: "{HH}:{mm}" }, splitLine: { show: false } },
@@ -70,14 +76,14 @@ export default function DayView() {
             [{ yAxis: 270, itemStyle: { color: C.high, opacity: 0.08 }, name: "High > 270 V" }, { yAxis: 380 }],
           ], label: { position: "right", color: C.ink2, fontSize: 11 } } },
         { name: "No reading", type: "line", data: [], markArea: { silent: true, data: noData,
-          label: { show: true, position: "insideTop", color: C.ink2, fontSize: 10, overflow: "truncate" } } },
+          label: { show: true, position: "insideTop", color: C.cellInk2, fontSize: 10, overflow: "truncate" } } },
         { name: "Outage", type: "line", data: [], markArea: { data: outages } },
       ],
     };
   }, [data, day, selected]);
 
   const onClick = useCallback((p: any) => {
-    if (p?.componentType === "markArea" && p?.seriesName === "Outage" && p?.data?.name) nav(`/event/${p.data.name}`);
+    if (p?.componentType === "markArea" && p?.seriesName === "Outage" && p?.data?.name) nav(withDs(`/event/${p.data.name}`));
   }, [nav]);
 
   if (loading && !data) return <Skeleton height={420} label="the day" />;
@@ -87,21 +93,23 @@ export default function DayView() {
   return (
     <>
       <p className="small muted" style={{ marginBottom: 0 }}>
-        <Link to="/">Start</Link> / <Link to={`/location/${locationId}/${day!.slice(0, 7)}`}>{data.location?.display_name} · {day!.slice(0, 7)}</Link>
+        <Link to={withDs("/")}>Start</Link> / <Link to={withDs(`/location/${locationId}/${day!.slice(0, 7)}`)}>{data.location?.display_name} · {day!.slice(0, 7)}</Link>
       </p>
       <h1 data-testid="day-title">{data.location?.display_name} · {day}</h1>
       <DataWarning text={data.data_warning} />
       {d ? (
-        <p className="muted">
+        <p className="lead">
           {d.interruptions} interruptions · outage at least {fmtMin(d.outage_min_lower)}
           {d.outage_min_upper > d.outage_min_lower && ` (up to ${fmtMin(d.outage_min_upper)})`} ·
-          read {((100 * d.observed_minutes) / 1440).toFixed(0)}% of the day · evening outage at least {fmtMin(d.evening_outage_lower)}
+          readings for {((100 * d.observed_minutes) / 1440).toFixed(0)}% of the day's minutes · evening outage at least {fmtMin(d.evening_outage_lower)}
         </p>
       ) : <p className="muted">This day is outside the monitoring window.</p>}
       <StateLegend />
       <div className="card">
         <EChart option={option} height={380} onClick={onClick} testId="voltage-trace"
                 ariaLabel={`Minute-by-minute voltage on ${day}. Outages and missing readings are listed in the table below.`} />
+        <span hidden data-testid="day-minutes-charted">
+          {option ? drawnMinutes.current : 0}</span>
         <p className="small muted">Select a shaded outage to see its evidence. Drag the slider or scroll to zoom. The grey line is the measured voltage; it breaks where there is no reading.</p>
         <button onClick={() => setShowTable(!showTable)} aria-expanded={showTable}>{showTable ? "Hide" : "Show"} minute segments as a table</button>
         {showTable && (
@@ -117,18 +125,18 @@ export default function DayView() {
       </div>
       <h2>Outages on this day</h2>
       {data.events.length === 0 ? <p className="muted">No outage on this day.</p> : (
-        <table className="data card" data-testid="day-events">
+        <div className="card scroll" style={{ maxHeight: "none" }}><table className="data" data-testid="day-events">
           <thead><tr><th className="l">Start</th><th className="l">End</th><th>Measured</th><th>Up to</th><th className="l">Certainty</th><th className="l"></th></tr></thead>
           <tbody>{data.events.map((e) => (
-            <tr key={e.event_key} className="clickable" tabIndex={0} onClick={() => nav(`/event/${e.event_key}`)}
-                onKeyDown={(k) => k.key === "Enter" && nav(`/event/${e.event_key}`)} aria-current={e.event_key === selected}>
-              <td className="l">{fmtTs(e.start_ts)}</td><td className="l">{fmtTs(e.end_ts)}</td><td>{fmtMin(e.min_duration)}</td>
+            <tr key={e.event_key} className={e.event_key === selected ? "clickable selected" : "clickable"}
+                onClick={rowClick(() => nav(withDs(`/event/${e.event_key}`)))} aria-current={e.event_key === selected}>
+              <td className="l"><Link to={withDs(`/event/${e.event_key}`)}>{fmtTs(e.start_ts)}</Link></td><td className="l">{fmtTs(e.end_ts)}</td><td>{fmtMin(e.min_duration)}</td>
               <td>{e.max_duration > e.min_duration ? fmtMin(e.max_duration) : "–"}</td>
               <td className="l"><Certainty value={e.start_certainty} /> / <Certainty value={e.end_certainty} /></td>
               <td className="l">{e.group_key && <span className="badge">other monitors lost supply too</span>}
-                {e.event_key === selected && <Link to={`/event/${e.event_key}`} data-testid="open-selected-event"> open evidence →</Link>}</td>
+                {e.event_key === selected && <Link to={withDs(`/event/${e.event_key}`)} data-testid="open-selected-event"> open evidence →</Link>}</td>
             </tr>))}</tbody>
-        </table>
+        </table></div>
       )}
     </>
   );

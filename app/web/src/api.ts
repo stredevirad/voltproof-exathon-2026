@@ -55,8 +55,20 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+/** The dataset this page shows: the `ds` URL parameter (a schema name from /api/datasets), or null for the server's
+ *  own dataset. Fixed for the page's lifetime: switching datasets loads the start page with the new `ds`. */
+const DS_PARAM = new URLSearchParams(window.location.search).get("ds");
+export const CURRENT_DS: string | null = DS_PARAM && /^[A-Z][A-Z0-9_]{0,39}$/.test(DS_PARAM) ? DS_PARAM : null;
+
+/** `path` (an app or API path) with the current dataset added, so links and requests stay on the same dataset. */
+export function withDs(path: string): string {
+  if (!CURRENT_DS) return path;
+  const [p, hash] = path.split("#");
+  return `${p}${p.includes("?") ? "&" : "?"}ds=${encodeURIComponent(CURRENT_DS)}${hash ? "#" + hash : ""}`;
+}
+
 async function get<T>(path: string): Promise<T> {
-  const r = await fetch(path);
+  const r = await fetch(withDs(path));
   if (!r.ok) {
     let detail = `${r.status} ${r.statusText}`;
     try { const j = await r.json(); detail = j.detail || detail; } catch { /* plain text */ }
@@ -83,12 +95,82 @@ export const api = {
   group: (key: string) => get<GroupData>(`/api/groups/${encodeURIComponent(key)}`),
   demo: () => get<Demo>("/api/demo"),
   report: async (location_id: number, month: string) => {
-    const r = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await fetch(withDs("/api/reports"), { method: "POST", headers: { "Content-Type": "application/json" },
                                              body: JSON.stringify({ location_id, month }) });
     if (!r.ok) throw new ApiError(r.status, (await r.json().catch(() => ({}))).detail || r.statusText);
     return r.json() as Promise<{ report_id: string; pdf_url: string; html_url: string; json_url: string;
                                  generated_at_ist: string; reused: boolean }>;
   },
+};
+
+export type DatasetItem = { ds: string; kind: "real" | "synthetic" | "upload"; default: boolean; upload_id?: string;
+                            file_name?: string; uploaded_at?: string; sha256?: string; locations?: number;
+                            first_day?: string; last_day?: string };
+export type UploadQuestion = { key: string; text: string; options?: { value: string | number; label: string }[];
+                               monitors?: string[] };
+export type UploadSummary = {
+  refusals: string[]; questions: UploadQuestion[]; set_aside: { what: string; rows: number }[]; warnings: string[];
+  rows: number; monitors: number; monitor_list: { name: string; rows: number; district: string | null;
+  state: string | null; has_location: boolean }[]; first_day: string | null; last_day: string | null;
+  states: string[]; typical_voltage: number | null; ready_to_build: boolean; reads_as: string[];
+};
+export type UploadFile = { name: string; bytes: number; sha256: string; received_at: string };
+export type UploadRec = {
+  id: string; schema: string; status: "new" | "uploaded" | "validated" | "building" | "ready" | "failed";
+  created_at: string; readings: UploadFile | null; locations: UploadFile | null; preview: any; mapping: any;
+  validation: UploadSummary | null; error: string | null; progress: { step: string | null; done: number; total: number } | null;
+  build: { built_at: string; seconds: number; statements: number; provenance: { matches: number; different: number;
+           missing: number }; locations: number; minutes: number; events: number; months: number;
+           comparable_months: number; shared_events: number } | null;
+};
+export type UploadPreview = { layout: "wide" | "long"; sep: string; header: string[]; rows: string[][]; explain: string;
+                              suggest?: { location_col: number | null; ts_col: number | null; value_col: number | null;
+                                          order: string } };
+
+// Requests that change something carry this header; the server refuses them without it (cross-site guard).
+const CHANGE = { "X-VoltProof": "1" };
+
+async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const r = await fetch(path, { method, headers: { ...CHANGE, "Content-Type": "application/json" },
+                                body: body === undefined ? undefined : JSON.stringify(body) });
+  if (!r.ok) throw new ApiError(r.status, (await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json() as Promise<T>;
+}
+
+async function plain<T>(path: string): Promise<T> {  // no dataset parameter: uploads are not tied to one dataset
+  const r = await fetch(path);
+  if (!r.ok) throw new ApiError(r.status, (await r.json().catch(() => ({}))).detail || r.statusText);
+  return r.json() as Promise<T>;
+}
+
+/** Send one file as the request body, reporting progress (0-1). */
+function putFile(id: string, role: "readings" | "locations", file: File, onProgress: (f: number) => void): Promise<UploadRec> {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open("PUT", `/api/uploads/${id}/files/${role}?name=${encodeURIComponent(file.name)}`);
+    x.setRequestHeader("X-VoltProof", "1");
+    x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    x.onload = () => {
+      let j: any = {};
+      try { j = JSON.parse(x.responseText); } catch { /* not JSON */ }
+      if (x.status >= 200 && x.status < 300) resolve(j as UploadRec);
+      else reject(new ApiError(x.status, j.detail || x.statusText));
+    };
+    x.onerror = () => reject(new ApiError(0, "The upload was interrupted. Check that VoltProof is still running."));
+    x.send(file);
+  });
+}
+
+export const uploads = {
+  datasets: () => plain<DatasetItem[]>("/api/datasets"),
+  list: () => plain<UploadRec[]>("/api/uploads"),
+  start: () => send<UploadRec>("POST", "/api/uploads"),
+  putFile,
+  preview: (id: string) => plain<UploadPreview>(`/api/uploads/${id}/preview`),
+  validate: (id: string, mapping: unknown) => send<UploadRec>("POST", `/api/uploads/${id}/validate`, { mapping }),
+  build: (id: string) => send<{ id: string; status: string }>("POST", `/api/uploads/${id}/build`),
+  status: (id: string) => plain<UploadRec>(`/api/uploads/${id}`),
+  remove: (id: string) => send<{ deleted: boolean }>("DELETE", `/api/uploads/${id}`),
 };
 
 export const fmtMin = (m: number | null | undefined) =>

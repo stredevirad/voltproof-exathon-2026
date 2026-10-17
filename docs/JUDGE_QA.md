@@ -228,3 +228,35 @@ We do not know, and we report the gap rather than tune it away (docs/VALIDATION.
   slightly (566 to 574 min/day), because months with less coverage have more outage.
 - What we cannot test from the publication: Prayas's exact location-months, how Figure 2 averages, and any
   verification or exclusion step applied to it.
+
+## Security
+
+**26. `npm audit` reports an ECharts advisory. Is the app exposed?**
+No. The advisory (ECharts before 6.1.0) is about text placed in a chart tooltip being shown as HTML. VoltProof
+puts only dates, numbers and its own fixed wording in tooltips, never a monitor name or anything from an
+uploaded file. Even so, every tooltip value goes through an escape function (`esc()` in
+`app/web/src/charts.tsx`), so text could never become markup. We kept ECharts 5.6 rather than upgrade to 6 a
+week before submission, because version 6 changes the default chart styling (DECISIONS D-036).
+
+## Your own data
+
+**27. Can someone analyse readings from their own monitor? Does that mix with Prayas's data?**
+Yes, on the **Upload your data** page or with `python -m pipeline.upload`. The file is checked by SQL and analysed
+by the same steps (`sql/020`–`sql/100`) in its own schema, `VP_USER_<id>`. That schema is created by a separate
+database user, `VP_UPLOADER`, which has no rights at all on the Prayas or SYNTHETIC schemas, so the database itself
+refuses any read or write outside the upload. Tests show the path gives the same answers as the command-line build:
+the SYNTHETIC demo files uploaded give the same 33 result tables, and the 2018 June–August ESMI file uploaded gives
+the same figures for every Uttar Pradesh location and district (DECISIONS D-037).
+
+**28. How do you know an uploaded file is genuine?**
+We don't, and the app says so. Every page and report of an upload says "Uploaded data — not verified by
+VoltProof"; reports get `VP-USER-` ids and a mark on every PDF page; the source shown is the file's own name, upload
+time and SHA-256, never Prayas's attribution. VoltProof refuses files that cannot be voltage records (not numbers,
+outside 0–500 V, not a 230 V supply, not one reading a minute, other time zones), but it cannot detect readings that
+were made up. The "How to use" page lists this among what VoltProof cannot tell you.
+
+**29. Does an uploaded file leave the computer?**
+No. The app listens only on 127.0.0.1 and checks the Host header; the file is kept in `data/uploads/<id>/`
+(gitignored) and analysed in the local database. Requests that change an upload need the page's own header and
+origin. **Delete** removes the schema, the file and any reports made from it. Names typed into the upload form are
+passed to the database as data, never as SQL text.
