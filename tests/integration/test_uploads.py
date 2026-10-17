@@ -6,8 +6,9 @@ Must-pass checks of the upload feature:
   4. the same readings in the one-reading-per-line layout give the same results;
   5. bad files fail with the right plain message;
   6. injection and path tricks in names are stored as plain text or refused;
-plus: the upload database user cannot read or change any other schema, one build at a time, and delete removes the
-schema and the files. (Check 2, one real ESMI file, is in tests/differential/test_upload_real.py.)
+plus: the upload database user cannot read or change any other schema, one build at a time, the upload limit and
+"no delete while building" give plain messages, and delete removes the schema and the files. (Check 2, one real ESMI
+file, is in tests/differential/test_upload_real.py.)
 """
 
 from __future__ import annotations
@@ -127,6 +128,38 @@ def test_one_build_at_a_time(tmp_path):
             upload.validate(up["id"], {"typed_locations": []})    # checking a file loads it: same lock
     assert buildlock.current() is None
     upload.delete(up["id"])
+
+
+def test_uploads_beyond_the_limit_get_a_plain_message(monkeypatch):
+    # The limit itself (10) is pinned by tests/unit/test_upload_names.py; here it is set to one more than the uploads
+    # already on disk, so the test does not have to create ten.
+    monkeypatch.setattr(upload, "MAX_UPLOADS", len(upload.list_uploads()) + 1)
+    first = upload.new_upload()
+    try:
+        with pytest.raises(UploadError, match=r"There are already \d+ uploads on this computer\. Delete one you no "
+                                              r"longer need, then upload again\."):
+            upload.new_upload()
+    finally:
+        upload.delete(first["id"])
+    again = upload.new_upload()  # deleting one frees its place
+    upload.delete(again["id"])
+
+
+def test_an_upload_being_built_cannot_be_deleted_until_the_build_ends():
+    rec = upload.new_upload()
+    folder = upload.UPLOAD_DIR / rec["id"]
+    with buildlock.build_lock(f"upload {rec['id']}"):
+        rec.update(status="building")
+        upload.save(rec)
+        with pytest.raises(UploadError, match="This upload is being built; delete it when the build has finished."):
+            upload.delete(rec["id"])
+        assert folder.exists()
+    # the building process is gone (here: the lock released without a finished build): the upload says so and can
+    # be deleted
+    after = upload.load(rec["id"])
+    assert after["status"] == "failed" and "interrupted" in after["error"]
+    upload.delete(rec["id"])
+    assert not folder.exists()
 
 
 def _write_long_from_demo(path: Path) -> int:
