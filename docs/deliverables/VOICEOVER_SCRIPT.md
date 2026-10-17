@@ -13,7 +13,7 @@ Generated from `docs/deliverables/video_timeline.json` by `python -m pipeline.vi
 
 Speech: 343 words. At about 140 words a minute that is 2:27; the limit is 2:50.
 
-## 0:01 — Start page (the new look), with the caption 'Illustrative example'
+## 0:00 — Start page (the new look), with the caption 'Illustrative example'
 
 Imagine a shopkeeper in a small town in Uttar Pradesh. The power fails every evening, and when she complains, her memory is all she has. Prayas, an independent research group, recorded the voltage every minute at homes and shops. VoltProof turns those readings into evidence anyone can check.
 
@@ -21,42 +21,42 @@ Imagine a shopkeeper in a small town in Uttar Pradesh. The power fails every eve
 
 *(pause)*
 
-## 0:27 — Start guided demo: the month view, lead tile 'Outage time (at least)' with its plain caption, then the calendar
+## 0:22 — Start guided demo: the month view, lead tile 'Outage time (at least)' with its plain caption, then the calendar
 
 The guided demo opens one real monitor, chosen by a fixed rule, not by hand: Huzurpur, in Bahraich, July 2018. The first number is the one that matters: at least 366 hours without supply that month. It is a minimum: a minute without a reading is never counted, and even if every unread minute next to a cut were a cut, it would be 367.
 
 *(pause)*
 
-## 0:53 — The demo day: the minute-by-minute voltage trace
+## 0:52 — The demo day: the minute-by-minute voltage trace
 
 This is the twenty-fifth of July, minute by minute. The grey line is the measured voltage. Orange blocks are outages, and hatching means there was no reading. At 6:27 in the evening, the voltage drops to zero.
 
 *(pause)*
 
-## 1:11 — The outage's evidence page: times, certainty, source lines and statement ids, and the panel of other monitors
+## 1:10 — The outage's evidence page: times, certainty, source lines and statement ids, and the panel of other monitors
 
 The evidence page gives the exact start and end, how certain each one is, and the lines of the source file, with the database statements that computed them. Sixteen other monitors in the district lost supply within two minutes. VoltProof calls this a potential shared supply event. Coincidence is not cause, and no cause or equipment is named.
 
 *(pause)*
 
-## 1:44 — Back to the month: Generate evidence report, the report links
+## 1:37 — Back to the month: Generate evidence report, the report links
 
 One click makes an evidence report: every outage with its bounds, data quality, checksums and statement ids. It ends with where a consumer can seek redress. It is not legal advice and states no amount owed.
 
 *(pause)*
 
-## 0:00 — Upload your data: the page that says the file stays on this computer
+## 1:54 — Upload your data: the page that says the file stays on this computer
 
 Anyone can also upload readings from their own monitor. The file stays on this computer and is analysed by the same steps, in its own space.
 
 *(pause)*
 
-## 2:02 — Data and sources: the two 2019 files
+## 2:07 — Data and sources: the two 2019 files
 
 Defects in the published data are shown, not hidden. One 2019 file lost its hour column, so it is excluded; another leaves out most zero-volt hours, so its figures are lower bounds.
 
 *(pause)*
 
-## 2:23 — Start page
+## 2:22 — Start page
 
 All of this runs as versioned SQL inside Exasol: about 103 million minutes of Uttar Pradesh data, rebuilt from the raw files in about three and a half minutes on this laptop. VoltProof. Data: Prayas Energy Group, Electricity Supply Monitoring Initiative.

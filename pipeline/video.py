@@ -64,9 +64,12 @@ def wav_duration(path: Path) -> float:
 
 
 def planned_starts(tl: dict) -> dict[str, float]:
-    """Actual starts from the last recording if present, otherwise cumulative holds."""
+    """Actual starts from the last recording if it has every segment of the timeline, otherwise cumulative holds (a
+    recording made before a segment was added no longer matches the timeline)."""
     if ACTUAL.exists():
-        return json.loads(ACTUAL.read_text(encoding="utf-8"))["segments"]
+        actual = json.loads(ACTUAL.read_text(encoding="utf-8"))["segments"]
+        if all(s["id"] in actual for s in tl["segments"]):
+            return actual
     t, out = 0.0, {}
     for s in tl["segments"]:
         out[s["id"]] = t
