@@ -160,10 +160,22 @@ def validate(upload_id: str, body: Mapping, request: Request):
 def _build_in_background(upload_id: str) -> None:
     try:
         upload.build(upload_id)
-    except (UploadError, buildlock.BuildBusy):
-        pass  # the record holds the plain message
+    except (UploadError, buildlock.BuildBusy) as e:
+        _record_refusal(upload_id, str(e))
     finally:
         datasets.forget()
+
+
+def _record_refusal(upload_id: str, message: str) -> None:
+    """A build that started records its own plain message. A refusal before it started (not enough free disk space;
+    another build started first) leaves the record as it was, and the page would wait without a word: record it."""
+    try:
+        rec = upload.load(upload_id)
+        if rec["status"] not in ("ready", "failed"):
+            rec.update(status="failed", error=message, progress=None)
+            upload.save(rec)
+    except (UploadError, OSError, ValueError):
+        pass
 
 
 @router.post("/{upload_id}/build", status_code=202)

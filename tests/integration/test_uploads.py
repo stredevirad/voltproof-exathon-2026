@@ -162,6 +162,32 @@ def test_an_upload_being_built_cannot_be_deleted_until_the_build_ends():
     assert not folder.exists()
 
 
+def test_a_refusal_before_the_build_starts_is_shown_on_the_page(monkeypatch):
+    # The web app builds in a background thread; the page shows the upload's status and error. A refusal raised before
+    # the build starts must still reach the record, or the page waits without a word.
+    from app.api import uploads as routes
+
+    readings, locations = _demo_files()
+    up = _upload(readings, locations)
+    low = "Not enough free disk space on C:\\ to build this upload safely (VoltProof keeps at least 10 GB free)."
+
+    def no_space(extra_bytes):
+        raise UploadError(low)
+    monkeypatch.setattr(upload, "check_disk", no_space)
+    routes._build_in_background(up["id"])
+    rec = upload.load(up["id"])
+    assert (rec["status"], rec["error"], rec.get("build")) == ("failed", low, None)
+
+    monkeypatch.undo()
+    rec.update(status="validated", error=None)
+    upload.save(rec)
+    with buildlock.build_lock("another build"):
+        routes._build_in_background(up["id"])
+    rec = upload.load(up["id"])
+    assert rec["status"] == "failed" and "Only one build can run at a time" in rec["error"]
+    upload.delete(up["id"])
+
+
 def _write_long_from_demo(path: Path) -> int:
     """The SYNTHETIC readings, one reading per line (monitor, timestamp, voltage). Empty cells are left out, so
     those minutes have no line at all; an hour that the demo file repeats with the same values is written once."""
