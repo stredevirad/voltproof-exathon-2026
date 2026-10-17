@@ -12,15 +12,15 @@
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ✅ passed 2026-10-12 | Prayas comparison (VALIDATION §3); 2019 defect handled (D-031); benchmarks 3 cold + 3 warm full-UP builds and query timings (BENCHMARKS.md); WHY_EXASOL; README; clean start from GitHub passed every README step (VALIDATION §4); TEST_REPORT 94/94 on 3889f1a. Tag `gate-6-validation` |
 | G7 Submission | 🟡 submission candidate 3 2026-10-15 (tag `gate-7-submission-candidate-3`, main `5f1a4d3`) | Problem statement, deck, clean warm benchmarks, warm-up + live-demo runbook, voice-over script, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 adds the October audit fixes (path traversal, Host allowlist, MIT licence detection, grievance wording, report footer). Left: the team's voice-over → final MP4 committed |
-| Rework (Oct 15–) | 🟡 on branch `rework-oct15` | Uploads of your own data (D-037), the new look with measured contrast (D-038), the beginner's guide and tour (D-039), the simpler deck (D-040), docs. Merged into main only if every test, the slow gate, the original-baseline comparison and the compliance check pass |
+| Rework (Oct 15–17) | ✅ merged 2026-10-17 (merge `2ba9f0a`, tag `gate-8-rework`) | Uploads of your own data (D-037), the new look with measured contrast (D-038), the beginner's guide and tour (D-039), the simpler deck (D-040), docs. Merged after every condition held: the full test suite (docs/TEST_REPORT.md), the slow gate GO, the original-baseline comparison (approved changes only), the compliance check (all pass except the video, still to be recorded), a full-history secret scan, CI green, an independent review. Candidate 3 stays tagged |
 
 ## Remaining risks (top 5, updated 2026-10-16)
 
 1. **RAM.** 15.6 GB total; the database's virtual machine grows during long test runs. Heavy test parts run under a
    free-memory guard and the database is restarted between steps when needed; other memory-heavy applications
    (browsers, chat apps) should be closed during builds and tests.
-2. **C: disk.** 28 GB free (16 Oct); Exasol's data lives in Podman's WSL disk on C:. Keep at least 10 GB free; uploads
-   check this before building.
+2. **C: disk.** 28 GB free (17 Oct); C: holds Podman's machine and image, the database volume is in the deployment
+   folder on the repository's drive. Keep at least 10 GB free on both; uploads check both before building.
 3. **Demo video.** The narrated MP4 waits for the team's one-take voice-over (script: `docs/deliverables/VOICEOVER_SCRIPT.md`).
 4. **Data download gate.** A Guestbook response is required per download. Mitigated: the README quick start uses the
    SYNTHETIC demo set (no download), and the scripted download (`get-data.ps1 -Download`, the user's own `.env`
@@ -184,7 +184,7 @@
 - **JUDGE_QA:** "Most consumers don't have a monitor. Who can use this today?" and "Is the demo data real?"
 - **Tests:** TEST_REPORT 108/108 on a150710 (clean tree; the differential suite run in parts).
 
-## 2026-10-15 to 2026-10-16 — October rework (branch `rework-oct15`)
+## 2026-10-15 to 2026-10-17 — October rework (branch `rework-oct15`, merged 17 Oct, tag `gate-8-rework`)
 
 - **Audit fixes, candidate 3 (15 Oct):** path traversal on the static routes closed and a Host allowlist added;
   standard MIT licence (GitHub detects it); grievance wording limited to the UPERC 2003 regulations and the 2010 PIB
@@ -201,9 +201,13 @@
   is only in `sql/ingest/` (uploads). The command-line build gained a build lock and a progress callback around
   the same statements.
 
-### Next (G7, after the voice-over)
-1. Merge the team's recording: `python -m pipeline.video merge --audio voice`; if a piece runs long, raise the
-   hold, re-record (`python -m pipeline.video record`) and merge again. The timeline now has eight screens,
-   including the upload page; run `python -m pipeline.video tts --update-holds` once before recording.
-2. After the team confirms, commit it as `docs/deliverables/VoltProof_demo.mp4` (the only file allowed over 5 MB,
-   up to 40 MB), update the README deliverables row, scan and push, and tag the final submission.
+### Next (G7, the team)
+1. Before recording (by Tue 20 Oct): someone who did not build the app uses it unaided (upload a file and delete it;
+   say what "Outage time (at least)" and "low data" mean), and the deck's disclosure wording is checked against the
+   old slides kept in its appendix. A blocker means main goes back to candidate 3.
+2. Dry run with the draft voice: `python -m pipeline.video tts --update-holds`, `record`, `merge --audio tts`,
+   `check` on the draft; the timeline now has eight screens, including the upload page.
+3. Merge the team's recording: `python -m pipeline.video merge --audio voice`; if a piece runs long, raise the
+   hold, re-record (`python -m pipeline.video record`) and merge again; `check` must say OK (3:00 at most).
+4. After the team confirms, commit it as `docs/deliverables/VoltProof_demo.mp4` (the only file allowed over 5 MB,
+   up to 40 MB), update the README deliverables row, scan and push.

@@ -252,7 +252,9 @@ the command line below):
 - **What is refused, with the reason:** Excel workbooks (save them as CSV first), values that are not numbers or lie
   outside 0–500 V, files that do not look like a 230 V supply, data that is not one reading per minute, a broken
   hour column, and time zones other than India time (+05:30). Limits: 150 MB per file, 10 uploads, 200 typed-in
-  monitor locations, at least 10 GB free on C:. Checking and analysing one 140 MB file took about a minute and a
+  monitor locations, and free disk space of at least 10 GB plus 15 times the file's size (about 12 GB for a 150 MB
+  file) on C: and on the drive that holds the database (`ExasolDeployments`); with less, the page says so and the
+  analysis does not start. Checking and analysing one 140 MB file took about a minute and a
   half on the build laptop (the full Uttar Pradesh build from the published files is a different measurement:
   210.4 s, see Performance).
 - **Same analysis, kept apart:** the file is stored unchanged, checked by SQL (`sql/ingest/`) and analysed by the

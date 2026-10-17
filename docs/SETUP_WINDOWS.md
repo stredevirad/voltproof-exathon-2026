@@ -136,8 +136,9 @@ running. **How to use** in the menu explains every colour and number in plain wo
 first visit.
 
 **Your own readings:** **Upload your data** in the menu (or `python -m pipeline.upload`, see the README section
-"Use your own data"). An upload needs at least 10 GB free on C: and is built while the app runs; only one build
-(upload or `load.ps1`) runs at a time.
+"Use your own data"). An upload needs free disk space of at least 10 GB plus 15 times the file's size on C: and on
+the drive that holds the database (`ExasolDeployments`), and is built while the app runs; only one build (upload or
+`load.ps1`) runs at a time.
 
 ## 9. Run the tests
 
