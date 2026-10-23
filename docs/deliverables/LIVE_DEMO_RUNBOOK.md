@@ -53,6 +53,25 @@ After any rebuild, run step 5 again.
 | The report button fails | Open the pre-rendered PDF from step 10 |
 | The laptop itself fails | The deck PDF and the screenshots in `docs\deliverables\screenshots\` are in the public repository |
 
+**Cut list and triggers (decide before, not during):**
+
+| When | Do |
+|---|---|
+| The live demo is still running at 8:30 | Skip **How to use** and **Methodology** |
+| Past 12:00 overall | Skip the upload page; say slides 9–10 in one sentence each |
+| The database is not `database_ready` 10 minutes before the start | Present from the committed video, or the deck; do not rebuild |
+
+**Spoken wording (the text checks read files, not speech; in rehearsal one teammate counts slips):**
+- Say "at least" with every outage figure, and give its unit: "at least 366.2 hours in July 2018, at one monitor,
+  out of 744".
+- Say "potential shared supply event", "may warrant review", "Illustrative" (the shopkeeper) and "monitor" (not the
+  utility's meter).
+- Never claim more certainty than the screen shows, never state an amount owed or a remedy, never name a cause or a
+  piece of equipment, and never give a scale beyond what was measured (176 monitors; 102,927,720 minute rows; 210.4 s).
+- When the pre-rendered report opens, say so first: "rendered earlier, same data and code".
+- At **Data & sources**, show the 2019 file that left out most 0 V hours: missing readings are never counted as
+  outages, so those months are lower bounds.
+
 ## 4. 15-minute presentation outline (reuses the deck)
 
 | Time | Deck / demo | Content |

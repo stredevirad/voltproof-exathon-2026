@@ -77,6 +77,9 @@ the 276 district-months of 2016–2018 with at least two monitors: 91,532 observ
 would beat all 20 shifted versions (ties count against us): about 13 of 276. Many others sit at chance
 (docs/HEADLINE_FIGURES.md, docs/VALIDATION.md §2). The baseline uses only comparable months, to avoid an anti-conservative bias (D-023). Its known
 conservative bias in 30-day months is disclosed.
+*Follow-up: "So the other 126 show nothing?"* No. For those district-months this test cannot tell the observed
+count apart from chance; that is not evidence that no potential shared supply event happened in them. In every
+month, coincidence is not cause.
 
 **9. Why ≤ 130 V as "no supply"? Isn't that arbitrary?**
 It is Prayas's published definition ("Voltage below 131 (i.e. 130 and less) is considered as no supply"),
