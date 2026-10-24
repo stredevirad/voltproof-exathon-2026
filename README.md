@@ -11,6 +11,31 @@ Team: Joshua Herbert Japheth, Rohith Mohandas, Dane John Padinjarekara — Rajag
 Technology, Kochi.
 This project was built with AI coding assistance (Claude Code).
 
+## For judges: start here
+
+> **VoltProof turns public minute-by-minute voltage records into a dated, checkable record of every power cut, with
+> its uncertainty stated.**
+>
+> **Watch first:** the [demo video](docs/deliverables/VoltProof_demo.mp4) (2:14) and the
+> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf).
+>
+> **What Exasol does here** ([WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md)):
+> - All analysis is versioned SQL inside Exasol Personal, over 102.8 million clean minute readings; the full Uttar
+>   Pradesh build takes 210.4 s on a 15.6 GB laptop.
+> - Finding every power cut went from 665 s to 35.6 s by rewriting the step as one `ROW_NUMBER` window.
+> - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
+>
+> **Why you can trust the numbers:** 208 automated tests, including an independent Python oracle that must equal the
+> SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
+>
+> **Try it** (no data download; Windows 10/11, about 16 GB RAM): the
+> [Quick start](#quick-start-windows-1011-amd64-no-data-download), with about 3 minutes of setup, about 2 minutes for a
+> first-time database install, and the demo data built in seconds.
+>
+> | One month (at least 366.2 h of outage) | One outage's evidence | The evidence report |
+> |---|---|---|
+> | <a href="docs/deliverables/screenshots/02_month_calendar.png"><img src="docs/deliverables/screenshots/02_month_calendar.png" width="260" alt="Location-month view: the outage lower bound first and the calendar of daily outage hours"></a> | <a href="docs/deliverables/screenshots/04_event_evidence.png"><img src="docs/deliverables/screenshots/04_event_evidence.png" width="260" alt="Event evidence: exact start and end, source lines, Exasol statement ids, and monitors that lost supply within 2 minutes"></a> | <a href="docs/deliverables/screenshots/05_report_ready.png"><img src="docs/deliverables/screenshots/05_report_ready.png" width="260" alt="The month page with its evidence report ready as PDF, HTML and JSON"></a> |
+
 ## Submission deliverables
 
 | Deliverable | Where |
@@ -37,8 +62,6 @@ this README state them precisely:
 - **The shopkeeper** is an **Illustrative** example, not a person in the data.
 
 The earlier written script is [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md).
-
-![Location-month view: the outage lower bound first, a plain caption under each number, and the calendar of daily outage hours](docs/deliverables/screenshots/02_month_calendar.png)
 
 ## The problem
 
