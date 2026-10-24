@@ -15,13 +15,28 @@ This project was built with AI coding assistance (Claude Code).
 
 | Deliverable | Where |
 |---|---|
-| Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README) |
+| Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README); how VoltProof approaches it: [APPROACH.md](docs/deliverables/APPROACH.md) |
 | Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
-| Demo video (narrated, under 3:00) | [docs/deliverables/VoltProof_demo.mp4](docs/deliverables/VoltProof_demo.mp4) (2:14, subtitles burned in), recorded live by the team; its narration differs from the earlier [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md). Demo notes: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| Demo video (narrated, under 3:00) | [docs/deliverables/VoltProof_demo.mp4](docs/deliverables/VoltProof_demo.mp4) (2:14, subtitles burned in), recorded live by the team; see [About the video](#about-the-video) below. Demo notes: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
 | Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md); manual steps for [macOS / Linux](#macos--linux-not-tested-by-the-team), not tested by the team |
 | Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
 | Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
+
+### About the video
+
+The team recorded the demo video live, in its own words. Four things in its narration are said loosely; the app and
+this README state them precisely:
+- **"366.2 hours of outage time"** is a minimum: the app shows **at least 366.2 h** (up to 367.2 h) for one monitor,
+  Huzurpur-Bahraich, in July 2018. Missing readings are never counted as outage.
+- **"We upload the data as a CSV file … from Harvard":** the guided demo uses the Prayas data already loaded from
+  Harvard Dataverse. Uploading your own file is a separate feature ([Use your own data](#use-your-own-data)).
+- **"KSEB … exactly where the outage errors were and exactly how to solve it":** the data is from Uttar Pradesh, not
+  Kerala; KSEB was named only as an example of a utility. VoltProof gives a dated record of when and for how long
+  supply failed. It names no cause and no fix.
+- **The shopkeeper** is an **Illustrative** example, not a person in the data.
+
+The earlier written script is [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md).
 
 ![Location-month view: the outage lower bound first, a plain caption under each number, and the calendar of daily outage hours](docs/deliverables/screenshots/02_month_calendar.png)
 

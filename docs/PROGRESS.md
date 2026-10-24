@@ -214,6 +214,11 @@
 - **Dates:** the rules page changed on 21 Oct (VERIFICATION_LOG C10): Top 5 Wed 4 Nov 6:00 pm, demo day and
   winners Fri 6 Nov 10:00 am IST, virtual. We keep the submit page's 25 Oct deadline.
 - **Live demo:** LIVE_DEMO_RUNBOOK gained a virtual demo day section and the fix for a stuck database start.
+- **Final review (an LLM council: five advisors, five peer reviews, a chairman):** the explanation under the
+  problem statement moved to `docs/deliverables/APPROACH.md`, so PROBLEM_STATEMENT.md names no technology (the
+  sentence itself is unchanged); the README's "About the video" states precisely what the narration says loosely;
+  the runbook gained spoken corrections, a 45-second switch rule, and marks the 1.5 GB memory floor as not yet
+  measured with a video call.
 - **Tests:** the full suite on the final commit (docs/TEST_REPORT.md). The slow gate was not re-run: no analysis code
   has changed since `77193d2`, where it last passed.
 

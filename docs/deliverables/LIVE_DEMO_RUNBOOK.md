@@ -17,7 +17,7 @@ path is the guided demo: Huzurpur-Bahraich, July 2018, the evening of 25 July.
 | 5 | Warm up and pre-render the demo report | `scripts\warmup.ps1` | about 4 s; the last line says the guided demo path is ready, and the report id is printed |
 | 6 | Start the app | `scripts\start.ps1` (leave this terminal open) | "VoltProof is starting at http://127.0.0.1:8000/" |
 | 7 | Health check | open http://127.0.0.1:8000/api/health | `"database":"ok"`, `"events":408223` |
-| 8 | Free memory | `[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1MB,1)` | at least 1.5 (GB) |
+| 8 | Free memory | `[math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1MB,1)` | at least 1.5 (GB). Not yet measured with a video call running: on 24 Oct the whole demo path ran with 4.0–5.1 GB free and no call. Measure once in a real test call with screen sharing and set the minimum from that |
 | 9 | Browser | window about 1366 × 860 or full screen, zoom 100%; open the start page once and press **Skip the tour** (the browser remembers it; to rehearse the tour later, open http://127.0.0.1:8000/?tour=1) | the start page shows no tour card |
 | 10 | Open the backups in other tabs or windows, ready to share | the committed video `docs\deliverables\VoltProof_demo.mp4`; the pre-rendered PDF `reports\evidence\<report id>.pdf` (id from step 5, also in `reports\warmup.json`); `docs\deliverables\VoltProof_deck.pdf` | – |
 | 11 | Pre-build one upload (so the demo never waits for a build) | in the app: **Upload your data**, download the two ESMI-layout sample files linked on the page (readings and location file), choose them, **Upload and preview**, **Check the file**, **Analyse this file**; wait for the **Open this dataset** button | the **Data** menu lists "Your upload: …"; switch back to the Prayas data before the demo starts (the start page's "historical records" line shows only on the Prayas data) |
@@ -57,6 +57,11 @@ After any rebuild, run step 5 again.
 | The report button fails | Open the pre-rendered PDF from step 10 |
 | The laptop itself fails | The deck PDF and the screenshots in `docs\deliverables\screenshots\` are in the public repository |
 
+**Switch rule:** if a page shows nothing new for **45 seconds** (a normal live upload takes about 20 s), move to the
+next step without apologising: first the database recovery (stop, Podman restart, start: about 16 s), then the
+pre-built upload and the pre-rendered PDF (both still the live app), and the video only as a last resort, since a
+recording may not count as the required live demo. If you play the video, say the corrections below first.
+
 **Cut list and triggers (decide before, not during):**
 
 | When | Do |
@@ -75,6 +80,10 @@ After any rebuild, run step 5 again.
 - When the pre-rendered report opens, say so first: "rendered earlier, same data and code".
 - At **Data & sources**, show the 2019 file that left out most 0 V hours: missing readings are never counted as
   outages, so those months are lower bounds.
+- The video says four things loosely (README "About the video"). If a judge raises them, or before playing the
+  video, say: "the 366.2 hours is at least 366.2 hours, at one monitor"; "the guided demo uses the Prayas data
+  already loaded; uploading is a separate feature"; "KSEB was only an example of a utility: this data is from Uttar
+  Pradesh, and VoltProof names no cause and no fix"; "the shopkeeper is an illustrative example".
 
 ## 4. Virtual demo day (video call)
 
@@ -84,7 +93,8 @@ After any rebuild, run step 5 again.
   (checklist step 8): at least 1.5 GB. If it is lower, close everything else; never restart the database during
   the call.
 - **Teammates join from their own devices** (their own laptops or phones), not from the demo laptop. One person
-  drives the demo laptop; the others present their blocks and answer questions.
+  drives the demo laptop; the others present their blocks and answer questions. Name one timekeeper. One teammate
+  keeps the deck PDF and the video open on their own device, ready to share if the demo laptop drops out of the call.
 - **Have a phone hotspot ready** if the Wi-Fi drops. The app and the database run on the laptop itself, so only
   the call needs the internet.
 - Join the call 15 minutes early from the demo laptop, test screen sharing on the browser window once, and keep
