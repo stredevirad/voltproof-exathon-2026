@@ -35,6 +35,7 @@ Legend: ✅ verified · ⚠️ verified with differences · ❌ contradicted · 
 | C7 | Stage 1 weights 25/25/20/15/10/5; Stage 2 40/30/20/10; 15 min + 5 min Q&A | ✅ |
 | C8 | Prizes ₹75k/40k/20k + ₹15k Biggest Impact Idea | ✅ |
 | C9 | Track 3 "Factories, Fleets & Supply Chains" includes energy | ✅ "Manufacturing, logistics, mobility, and energy. Work with operational data that is delayed, distributed, incomplete, or difficult to use." |
+| C10 | 2026-10-24 (owner's re-check; page last modified 21 Oct): the main page now says submission deadline Sat 31 Oct 2026 11:59 pm IST, Top 5 Wed 04 Nov 6:00 pm, demo day and winners Fri 06 Nov 10:00 am (virtual: 15 min presentation + 5 min jury questions over video; a pitch deck and a working live demo both required) | ⚠️ changed since C2–C3; the submit page still says 25 Oct 2026 11:59 pm IST, so 25 Oct stays binding. C1–C9 are the 11 Oct reading, kept as history |
 
 No differences from the prompt found.
 

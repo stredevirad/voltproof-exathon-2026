@@ -11,22 +11,26 @@
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ✅ passed 2026-10-12 | Prayas comparison (VALIDATION §3); 2019 defect handled (D-031); benchmarks 3 cold + 3 warm full-UP builds and query timings (BENCHMARKS.md); WHY_EXASOL; README; clean start from GitHub passed every README step (VALIDATION §4); TEST_REPORT 94/94 on 3889f1a. Tag `gate-6-validation` |
-| G7 Submission | 🟡 submission candidate 3 2026-10-15 (tag `gate-7-submission-candidate-3`, main `5f1a4d3`) | Problem statement, deck, clean warm benchmarks, warm-up + live-demo runbook, voice-over script, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 adds the October audit fixes (path traversal, Host allowlist, MIT licence detection, grievance wording, report footer). Left: the team's voice-over → final MP4 committed |
+| G7 Submission | ✅ ready to submit 2026-10-24 (tag `gate-9-submission`) | Problem statement, deck, the team's narrated demo video (2:14), clean warm benchmarks, warm-up + live-demo runbook, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 (`5f1a4d3`) and the rework (`gate-8-rework`) stay tagged. Left: the team submits on the submit page by Sun 25 Oct 11:59 pm IST |
 | Rework (Oct 15–17) | ✅ merged 2026-10-17 (merge `2ba9f0a`, tag `gate-8-rework`) | Uploads of your own data (D-037), the new look with measured contrast (D-038), the beginner's guide and tour (D-039), the simpler deck (D-040), docs. Merged after every condition held: the full test suite (docs/TEST_REPORT.md), the slow gate GO, the original-baseline comparison (approved changes only), the compliance check (all pass except the video, still to be recorded), a full-history secret scan, CI green, an independent review. Candidate 3 stays tagged |
 
-## Remaining risks (top 5, updated 2026-10-16)
+## Remaining risks (top 5, updated 2026-10-24)
 
 1. **RAM.** 15.6 GB total; the database's virtual machine grows during long test runs. Heavy test parts run under a
    free-memory guard and the database is restarted between steps when needed; other memory-heavy applications
    (browsers, chat apps) should be closed during builds and tests.
 2. **C: disk.** 28 GB free (17 Oct); C: holds Podman's machine and image, the database volume is in the deployment
    folder on the repository's drive. Keep at least 10 GB free on both; uploads check both before building.
-3. **Demo video.** The narrated MP4 waits for the team's one-take voice-over (script: `docs/deliverables/VOICEOVER_SCRIPT.md`).
+3. **Virtual demo day (Fri 6 Nov 2026, 10:00 am IST).** The video-call app needs memory next to the database and
+   the app, and the call needs the network: LIVE_DEMO_RUNBOOK §4 (share only the browser window, check free memory
+   with everything running, a phone hotspot ready). A deck without a working live demo is not scored.
 4. **Data download gate.** A Guestbook response is required per download. Mitigated: the README quick start uses the
    SYNTHETIC demo set (no download), and the scripted download (`get-data.ps1 -Download`, the user's own `.env`
    details) was tested end to end.
 5. **New platform path.** Windows local deployment is new in launcher 2.3.0 (released 2026-09-21); after a machine
-   restart Podman's machine may need `podman machine stop` / `start` before `scripts\exa.ps1 start`.
+   restart Podman's machine may need `podman machine stop` / `start` before `scripts\exa.ps1 start`. On 24 Oct a
+   start hung for 9 minutes and left the status at "Operation 'start' is currently in progress";
+   `scripts\exa.ps1 stop`, a Podman restart and `scripts\exa.ps1 start` fixed it (16 s).
 
 ---
 
@@ -201,13 +205,21 @@
   is only in `sql/ingest/` (uploads). The command-line build gained a build lock and a progress callback around
   the same statements.
 
-### Next (G7, the team)
-1. Before recording (by Tue 20 Oct): someone who did not build the app uses it unaided (upload a file and delete it;
-   say what "Outage time (at least)" and "low data" mean), and the deck's disclosure wording is checked against the
-   old slides kept in its appendix. A blocker means main goes back to candidate 3.
-2. Dry run with the draft voice: `python -m pipeline.video tts --update-holds`, `record`, `merge --audio tts`,
-   `check` on the draft; the timeline now has eight screens, including the upload page.
-3. Merge the team's recording: `python -m pipeline.video merge --audio voice`; if a piece runs long, raise the
-   hold, re-record (`python -m pipeline.video record`) and merge again; `check` must say OK (3:00 at most).
-4. After the team confirms, commit it as `docs/deliverables/VoltProof_demo.mp4` (the only file allowed over 5 MB,
-   up to 40 MB), update the README deliverables row, scan and push.
+## 2026-10-24 — Final submission (tag `gate-9-submission`)
+
+- **Demo video:** the team recorded it live (2:14, 7,800,241 bytes, H.264 + AAC, 1600 × 960, subtitles burned in) and it is
+  committed as `docs/deliverables/VoltProof_demo.mp4`; its narration differs from the voice-over script.
+  `python -m pipeline.video check` now judges the competition limits (3:00 at most, 40 MB at most, H.264 + AAC) and
+  only reports the frame size, which was fixed to the size of our own drafts.
+- **Dates:** the rules page changed on 21 Oct (VERIFICATION_LOG C10): Top 5 Wed 4 Nov 6:00 pm, demo day and
+  winners Fri 6 Nov 10:00 am IST, virtual. We keep the submit page's 25 Oct deadline.
+- **Live demo:** LIVE_DEMO_RUNBOOK gained a virtual demo day section and the fix for a stuck database start.
+- **Tests:** the full suite on the final commit (docs/TEST_REPORT.md). The slow gate was not re-run: no analysis code
+  has changed since `77193d2`, where it last passed.
+
+### Next (the team)
+1. Submit on the submit page by **Sun 25 Oct 2026, 11:59 pm IST**: the repository, the deck PDF, the video and the
+   problem statement.
+2. Top 5 announced **Wed 4 Nov, 6:00 pm IST**. Before demo day: one full rehearsal on the demo laptop with the
+   video-call app running (LIVE_DEMO_RUNBOOK §1 and §4).
+3. Demo day **Fri 6 Nov, 10:00 am IST** (virtual): 15 minutes presentation + 5 minutes jury questions.

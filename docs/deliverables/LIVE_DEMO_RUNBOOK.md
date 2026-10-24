@@ -1,5 +1,8 @@
 # Live demo runbook (Stage 2: 15 minutes + 5 minutes Q&A)
 
+**Demo day: Fri 6 Nov 2026, 10:00 am IST, virtual** (over a video call; the Top 5 are announced Wed 4 Nov,
+6:00 pm IST). The jury scores the live demo: a deck alone is not scored.
+
 All timings below were measured on the build laptop (docs/BENCHMARKS.md, "Interactive queries"). The demo
 path is the guided demo: Huzurpur-Bahraich, July 2018, the evening of 25 July.
 
@@ -7,10 +10,10 @@ path is the guided demo: Huzurpur-Bahraich, July 2018, the evening of 25 July.
 
 | # | Step | Command / check | Expected |
 |---|---|---|---|
-| 1 | Unrelated Oracle services stay stopped (Manual until after 4 Nov) | `Get-Service Oracle* \| Select Name, Status, StartType` | all Stopped, Manual or Disabled |
+| 1 | Unrelated Oracle services stay stopped (Manual until after 6 Nov) | `Get-Service Oracle* \| Select Name, Status, StartType` | all Stopped, Manual or Disabled |
 | 2 | Close Docker Desktop, other browsers' extra windows, chat and sync apps | Task Manager | only one browser window, with the VoltProof tab |
 | 3 | Terminal set-up | `cd D:\Projects\VoltProof`; `Set-ExecutionPolicy -Scope Process Bypass` | – |
-| 4 | Start the database | `scripts\exa.ps1 start`, then `scripts\exa.ps1 status` | `database_ready` (if it briefly says `database_connection_failed`, check again after 10 s) |
+| 4 | Start the database | `podman machine start` (red "already running" is fine), `scripts\exa.ps1 start`, then `scripts\exa.ps1 status` | `database_ready` (if it briefly says `database_connection_failed`, check again after 10 s) |
 | 5 | Warm up and pre-render the demo report | `scripts\warmup.ps1` | about 4 s; the last line says the guided demo path is ready, and the report id is printed |
 | 6 | Start the app | `scripts\start.ps1` (leave this terminal open) | "VoltProof is starting at http://127.0.0.1:8000/" |
 | 7 | Health check | open http://127.0.0.1:8000/api/health | `"database":"ok"`, `"events":408223` |
@@ -48,6 +51,7 @@ After any rebuild, run step 5 again.
 | Problem | Do this |
 |---|---|
 | `database_connection_failed` for more than 30 s | `scripts\exa.ps1 stop`, then `scripts\exa.ps1 start` (about 30 s), then `scripts\warmup.ps1`; meanwhile present deck slides 6–8 |
+| `scripts\exa.ps1 start` prints nothing new for 3 minutes, or `status` keeps saying "Operation 'start' is currently in progress" | Press Ctrl+C; `scripts\exa.ps1 stop` (this clears the stuck start), `podman machine stop`, `podman machine start`, `scripts\exa.ps1 start` (16 s on 24 Oct), then `scripts\warmup.ps1` |
 | A live upload is slow or refused | Switch to the pre-built upload (step 11) in the **Data** menu |
 | The app does not start or a page shows an error | Play the committed video `docs\deliverables\VoltProof_demo.mp4` (under 3 minutes) and narrate over it, or pause on each screen |
 | The report button fails | Open the pre-rendered PDF from step 10 |
@@ -72,7 +76,21 @@ After any rebuild, run step 5 again.
 - At **Data & sources**, show the 2019 file that left out most 0 V hours: missing readings are never counted as
   outages, so those months are lower bounds.
 
-## 4. 15-minute presentation outline (reuses the deck)
+## 4. Virtual demo day (video call)
+
+- **Share only the browser window** in the video-call app (not the whole screen), so terminals, notifications and
+  other windows stay private. Switch the shared window to the deck PDF or the video if a fallback is needed.
+- **The call app uses memory too.** With the database, the app and the call all running, check free memory again
+  (checklist step 8): at least 1.5 GB. If it is lower, close everything else; never restart the database during
+  the call.
+- **Teammates join from their own devices** (their own laptops or phones), not from the demo laptop. One person
+  drives the demo laptop; the others present their blocks and answer questions.
+- **Have a phone hotspot ready** if the Wi-Fi drops. The app and the database run on the laptop itself, so only
+  the call needs the internet.
+- Join the call 15 minutes early from the demo laptop, test screen sharing on the browser window once, and keep
+  notifications off (Do not disturb).
+
+## 5. 15-minute presentation outline (reuses the deck)
 
 | Time | Deck / demo | Content |
 |---|---|---|

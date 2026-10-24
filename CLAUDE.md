@@ -11,7 +11,11 @@ evidence of power cuts and poor supply. The analysis runs **inside Exasol Person
 
 ## Gates (status lives in docs/PROGRESS.md)
 G0 env · G1 data/licence · G2 Exasol · G3 correctness core · G4 coincidence · G5 product · G6 validation/hardening · G7 submission.
-Tag each passed gate (`gate-N-name`). Deadline: submit by Sat 24 Oct 2026 IST (hard deadline Sun 25 Oct 23:59 IST).
+Tag each passed gate (`gate-N-name`). Deadline: submit by Sun 25 Oct 2026 11:59 pm IST (the submit page's date; the
+main rules page, changed 21 Oct, says Sat 31 Oct, but we keep 25 Oct as binding). Top 5 announced Wed 4 Nov 6:00 pm
+IST; demo day and winners Fri 6 Nov 10:00 am IST, virtual (15 min presentation + 5 min jury questions over video; a
+deck and a working live demo are both required). Unrelated Oracle services on the build laptop stay stopped (Manual)
+until after 6 Nov.
 
 ## Stack
 - Python 3.12 (uv-managed, on D:), pyexasol, FastAPI, pytest + Hypothesis, Playwright (Python) for e2e + PDF.
