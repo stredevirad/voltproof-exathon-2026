@@ -17,7 +17,7 @@ This project was built with AI coding assistance (Claude Code).
 |---|---|
 | Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README) |
 | Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
-| Demo video (narrated, under 3:00) | `docs/deliverables/VoltProof_demo.mp4`, **pending the team's voice-over**. Script: [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md); how it is made: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| Demo video (narrated, under 3:00) | [docs/deliverables/VoltProof_demo.mp4](docs/deliverables/VoltProof_demo.mp4) (2:14, subtitles burned in), recorded live by the team; its narration differs from the earlier [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md). Demo notes: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
 | Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md); manual steps for [macOS / Linux](#macos--linux-not-tested-by-the-team), not tested by the team |
 | Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |

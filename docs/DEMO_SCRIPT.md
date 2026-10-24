@@ -1,4 +1,10 @@
-# Demo script (video ≤ 3:00, and the live demo on Demo Day)
+# Demo script (video ≤ 3:00, and the live demo on demo day, Fri 6 Nov 2026, 10:00 am IST, virtual)
+
+**The final video was recorded live by the team, and its narration differs from this script.** The committed
+`docs/deliverables/VoltProof_demo.mp4` (2:14, subtitles burned in) is the team's own recording, not a
+`pipeline.video merge` output; the tooling below is how the earlier drafts were made. It has no on-screen
+"Illustrative example" caption, so the live demo says it: the shopkeeper is an illustrative example, not a person in
+the data.
 
 **The submission video** is made from one timeline file, `docs/deliverables/video_timeline.json`. For each
 screen it holds the narration and how long the screen stays up. The narration to read aloud is
@@ -53,7 +59,7 @@ scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. 
 is not on screen or in those files. The shopkeeper is an illustrative example, not a real person in the
 data; the video must caption her as "Illustrative example".
 
-## Live demo (Stage 2, 15 minutes) and backup
+## Live demo (Stage 2, 15 minutes + 5 minutes questions, over a video call) and backup
 
 1. Before the call: database started, `scripts\start.ps1` running, browser open on the start page, a
    pre-generated report PDF open in a second tab.
