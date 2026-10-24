@@ -48,7 +48,9 @@ reports no invalid (blank) minute cells, so missing data normally appears as **a
 ## 4. Outage events
 
 - **R-7 Islands.** An outage event is a maximal run of consecutive OUTAGE minutes (gaps-and-islands:
-  LAG detects a state change; a running SUM numbers the islands).
+  within one location and state, the minute number minus `ROW_NUMBER()` is constant along consecutive
+  minutes, so it identifies the run; `sql/050_segments.sql`, D-028, which replaced an earlier LAG plus running
+  SUM formulation).
 - **R-8 Bridging** (off by default, `gap_bridge_max_minutes = 0`). If G > 0, an OUTAGE run, then a
   NO_DATA run of length ≤ G, then an OUTAGE run, form one event. Bridged minutes are stored and the
   event is flagged "contains unobserved minutes". Bridged minutes never count toward the lower bound.
