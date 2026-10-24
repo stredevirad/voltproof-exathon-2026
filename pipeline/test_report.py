@@ -77,7 +77,7 @@ def _one(p: Path) -> dict:
             "cases": cases}
 
 
-def render() -> str:
+def render(notes: list[str] | tuple[str, ...] = ()) -> str:
     meta = _meta()
     suites = {s: _suite(s) for s in SUITES}
     commit = meta.get("commit", "unknown")
@@ -91,6 +91,7 @@ def render() -> str:
          f"`{meta.get('schema', '?')}`; Hypothesis examples per test: {meta.get('hypothesis_examples', '?')}",
          *([f"- **Run in parts** (`scripts\\test.ps1 -Suite <suite> -Part <path>`, to keep each command under 10 "
             f"minutes): {', '.join(f'`{x}`' for x in meta['parts'])}"] if meta.get("parts") else []),
+         *[f"- **Note:** {n}" for n in notes],
          "", "| Suite | What it checks | Tests | Passed | Failed | Errors | Skipped | Time |",
          "|---|---|---:|---:|---:|---:|---:|---:|"]
     tot = defaultdict(float)
@@ -119,8 +120,12 @@ def render() -> str:
     return "\n".join(L)
 
 
-def main() -> None:
-    OUT.write_text(render(), encoding="utf-8", newline="\n")
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--note", action="append", default=[], help="a sentence printed under the run details")
+    OUT.write_text(render(ap.parse_args(argv).note), encoding="utf-8", newline="\n")
     print(OUT.read_text(encoding="utf-8")[:3000])
 
 
