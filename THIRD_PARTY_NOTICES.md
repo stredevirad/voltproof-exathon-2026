@@ -14,9 +14,10 @@ locally to encode the draft videos and to check the committed MP4, and never red
 built-in speech synthesiser (System.Speech) for the draft narration.
 
 Demo video (`docs/deliverables/VoltProof_demo.mp4`), made outside this repository's tooling: the intro's
-narration voice is **Piper TTS** (MIT, rhasspy/piper) with the voice **en_US-ryan-high**
-(rhasspy/piper-voices), trained on the RyanSpeech dataset, licence **CC BY-NC-SA 4.0**, used
-non-commercially, in the demo video only. The music bed is original, synthesized for this video.
+narration was generated with **Piper TTS** (piper-tts 1.8.0, OHF-Voice/piper1-gpl, **GPL-3.0-or-later**),
+used only to generate that narration audio, not distributed with or needed by VoltProof; the voice is
+**en_US-ryan-high** (rhasspy/piper-voices), trained on the RyanSpeech dataset, licence **CC BY-NC-SA 4.0**,
+used non-commercially, in the demo video only. The music bed is original, synthesized for this video.
 
 Data: ESMI minute-wise voltage data, Prayas (Energy Group), Harvard Dataverse doi:10.7910/DVN/CLLZZM, CC0 1.0
 plus Prayas's terms of use (docs/data/SOURCE_TERMS.md). The data is not part of this repository.
