@@ -13,9 +13,10 @@ NULL_MARK = "~"
 FILE_COLUMNS = {"FILE_ID", "SOURCE_FILE_ID", "FILE_NAME"}
 # Columns that pack the file id into a number (step 040: FILE_ID * 10^12 + LINE_NO): only the line part is compared.
 PACKED_FILE_COLUMNS = {"FIRST_SOURCE"}
-# Tables that describe the run or the delivered files rather than results: the run log (session ids, times),
-# the parameters (an upload adds its own dataset.* and upload.* rows) and the per-file load record (load time).
-NOT_RESULTS = {"RUN_LOG", "PARAMS", "SOURCE_FILE", "SOURCE_FILE_DECLARED"}
+# Tables that describe the run or the delivered files rather than results: the run log (session ids, times) and
+# Exasol's measured timings for it (RUN_STATS), the parameters (an upload adds its own dataset.* and upload.* rows)
+# and the per-file load record (load time).
+NOT_RESULTS = {"RUN_LOG", "RUN_STATS", "PARAMS", "SOURCE_FILE", "SOURCE_FILE_DECLARED"}
 
 
 def _session_formats(conn) -> None:
