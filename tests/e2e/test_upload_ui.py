@@ -176,6 +176,9 @@ def test_a_one_reading_per_line_file_with_typed_locations(page, base, tmp_path):
     pg.wait_for_url("**/?ds=VP_USER_*")
     ds = pg.url.split("ds=")[1]
     _check_upload_page(pg, "start page (long)")
+    # one monitor, so no potential shared supply event: the guided demo says so on the page instead of doing nothing
+    pg.get_by_test_id("guided-demo").click()
+    assert "no evening potential shared supply event" in pg.get_by_test_id("demo-unavailable").inner_text()
     rec = next(r for r in upload.list_uploads() if r["schema"] == ds)
     upload.delete(rec["id"])
 

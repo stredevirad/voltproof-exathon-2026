@@ -187,8 +187,9 @@ The UI labels it as one example selected by that rule, not a typical month.
 
 **23. Is the demo data real?**
 It depends on which demo:
-- **The recorded video and the live demo: real.** They use ESMI measurements: a monitor in Bahraich in
-  July 2018, chosen by the rule in #22.
+- **The demo video and the live demo: real.** They use ESMI measurements: a monitor in Bahraich in
+  July 2018, chosen by the rule in #22. In the video's animated intro only the shopkeeper is Illustrative; its
+  figures come from the same data and the benchmarks.
 - **The no-download quick start (`scripts\load.ps1 -Set demo`): SYNTHETIC.** It has 20 invented monitors
   in three invented districts in January 2030, written by `pipeline/synthetic.py` with a fixed seed in the
   ESMI file format. It lets a judge run the whole app without a download. The numbers it shows describe no

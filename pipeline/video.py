@@ -95,7 +95,8 @@ def cmd_script(_a) -> int:
     words = sum(len(s["text"].split()) for s in segs)
     L = ["# Voice-over script (demo video, under 2:50 of speech)", "",
          "Generated from `docs/deliverables/video_timeline.json` by `python -m pipeline.video script`; do not edit by hand.",
-         "", "**The final video was recorded live by the team, and its narration differs from this script.**",
+         "", "**The final video (an animated intro, then the team's live walkthrough) was made outside this pipeline, "
+         "and its narration differs from this script.**",
          "", "**How to record (one take, on a phone):**",
          "- **Pace:** read each block at a calm pace. The times show when each screen appears in the video.",
          "- **Pauses:** pause for **about 2 seconds** wherever it says *(pause)*. The pauses are where the recording is",
@@ -286,7 +287,7 @@ def cmd_check(a) -> int:
     size_mb = int(info["format"]["size"]) / 2**20
     v = next(s for s in info["streams"] if s["codec_type"] == "video")
     au = [s for s in info["streams"] if s["codec_type"] == "audio"]
-    # The frame size is reported, not required: the final video is the team's own recording, not a merge output.
+    # The frame size is reported, not required: the final video is made outside this pipeline, not a merge output.
     ok = dur <= MAX_VIDEO_S and size_mb <= MAX_VIDEO_MB and v["codec_name"] == "h264" and au \
         and au[0]["codec_name"] == "aac"
     print(f"{f.name}: {_mmss(dur)} ({dur:.1f} s), {size_mb:.1f} MB, {v['codec_name']} {v['width']}x{v['height']}, "

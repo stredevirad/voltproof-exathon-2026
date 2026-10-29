@@ -11,7 +11,7 @@
 | G4 Coincidence | ✅ passed 2026-10-11 | `sql/100_coincidence.sql`; F13/F14 hand expectations pass; SQL = oracle on all fixtures and on 2 real districts (20,127 pairs); sanity check of Bahraich 2018-07 documented in `docs/VALIDATION.md` §2. Tag `gate-4-coincidence` |
 | G5 Product | ✅ passed 2026-10-11 | Guided demo works end to end on real data via `scripts\start.ps1`; Playwright e2e 3/3; report numbers = independent SQL (test_report.py) + rendered values; forbidden-phrase scan on every page and report. Tag `gate-5-product` |
 | G6 Validation & hardening | ✅ passed 2026-10-12 | Prayas comparison (VALIDATION §3); 2019 defect handled (D-031); benchmarks 3 cold + 3 warm full-UP builds and query timings (BENCHMARKS.md); WHY_EXASOL; README; clean start from GitHub passed every README step (VALIDATION §4); TEST_REPORT 94/94 on 3889f1a. Tag `gate-6-validation` |
-| G7 Submission | ✅ ready to submit 2026-10-24 (tag `gate-9-submission`) | Problem statement, deck, the team's narrated demo video (2:14), clean warm benchmarks, warm-up + live-demo runbook, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 (`5f1a4d3`) and the rework (`gate-8-rework`) stay tagged. Left: the team submits on the submit page by Sun 25 Oct 11:59 pm IST |
+| G7 Submission | ✅ ready to submit 2026-10-24 (tag `gate-9-submission`); updated 2026-10-29 (tags `gate-10-final`, `gate-11-video`) | Problem statement, deck, the demo video (2:51 since 29 Oct: an animated intro, then the team's live walkthrough; the first submission had the team's 2:14 recording), playable in the browser on GitHub Pages, clean warm benchmarks, warm-up + live-demo runbook, README deliverables. No-download quick start with the SYNTHETIC demo set (D-033). GitHub Actions CI (ruff + unit) green. Candidate 3 (`5f1a4d3`) and the rework (`gate-8-rework`) stay tagged. Left: the team submits on the submit page by Sun 25 Oct 11:59 pm IST |
 | Rework (Oct 15–17) | ✅ merged 2026-10-17 (merge `2ba9f0a`, tag `gate-8-rework`) | Uploads of your own data (D-037), the new look with measured contrast (D-038), the beginner's guide and tour (D-039), the simpler deck (D-040), docs. Merged after every condition held: the full test suite (docs/TEST_REPORT.md), the slow gate GO, the original-baseline comparison (approved changes only), the compliance check (all pass except the video, still to be recorded), a full-history secret scan, CI green, an independent review. Candidate 3 stays tagged |
 
 ## Remaining risks (top 5, updated 2026-10-24)
@@ -207,8 +207,9 @@
 
 ## 2026-10-24 — Final submission (tag `gate-9-submission`)
 
-- **Demo video:** the team recorded it live (2:14, 7,800,241 bytes, H.264 + AAC, 1600 × 960, subtitles burned in) and it is
-  committed as `docs/deliverables/VoltProof_demo.mp4`; its narration differs from the voice-over script.
+- **Demo video (replaced on 29 Oct, see below):** the team recorded it live (2:14, 7,800,241 bytes, H.264 + AAC,
+  1600 × 960, subtitles burned in) and it was committed as `docs/deliverables/VoltProof_demo.mp4`; its narration
+  differs from the voice-over script.
   `python -m pipeline.video check` now judges the competition limits (3:00 at most, 40 MB at most, H.264 + AAC) and
   only reports the frame size, which was fixed to the size of our own drafts.
 - **Dates:** the rules page changed on 21 Oct (VERIFICATION_LOG C10): Top 5 Wed 4 Nov 6:00 pm, demo day and
@@ -228,3 +229,16 @@
 2. Top 5 announced **Wed 4 Nov, 6:00 pm IST**. Before demo day: one full rehearsal on the demo laptop with the
    video-call app running (LIVE_DEMO_RUNBOOK §1 and §4).
 3. Demo day **Fri 6 Nov, 10:00 am IST** (virtual): 15 minutes presentation + 5 minutes jury questions.
+
+## 2026-10-29 (evening) — New demo video (branch `video-oct30`, tag `gate-11-video`)
+
+- **Demo video:** `docs/deliverables/VoltProof_demo.mp4` replaced (same path): 2:51 (170.8 s), 24,414,517 bytes,
+  1920 × 1080, 60 fps, H.264 + AAC, subtitles burned in. An animated intro of about 1:00 (synthetic Piper TTS
+  narration, original synthesized music, the shopkeeper captioned "Illustrative"), then the team's live walkthrough
+  of the app on the real data. Made outside the repository's video pipeline; `python -m pipeline.video check` passes.
+- **Text and captions:** `VoltProof_demo.srt` (the full subtitles, a verbatim record of what is said) and
+  `VoltProof_demo.vtt` (generated from it, same cues) next to the video; README "About the video" rewritten from the
+  SRT, with the walkthrough's loose lines stated precisely.
+- **Browser player:** `site/index.html` deployed to GitHub Pages by `.github/workflows/pages.yml`, which copies the
+  video, captions, poster and deck in at build time (nothing stored twice in git).
+- **README:** the macOS / Linux section says what CI checks on Linux and what is still untested.

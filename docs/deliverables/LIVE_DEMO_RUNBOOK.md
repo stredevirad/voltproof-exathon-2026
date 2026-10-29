@@ -80,10 +80,13 @@ recording may not count as the required live demo. If you play the video, say th
 - When the pre-rendered report opens, say so first: "rendered earlier, same data and code".
 - At **Data & sources**, show the 2019 file that left out most 0 V hours: missing readings are never counted as
   outages, so those months are lower bounds.
-- The video says four things loosely (README "About the video"). If a judge raises them, or before playing the
-  video, say: "the 366.2 hours is at least 366.2 hours, at one monitor"; "the guided demo uses the Prayas data
-  already loaded; uploading is a separate feature"; "KSEB was only an example of a utility: this data is from Uttar
-  Pradesh, and VoltProof names no cause and no fix"; "the shopkeeper is an illustrative example".
+- The video's walkthrough says some things loosely (README "About the video"). If a judge raises them, or before
+  playing the video, say: "the 366.2 hours is at least 366.2 hours, at one monitor"; "the guided demo uses the
+  Prayas data the pipeline loads from Harvard Dataverse; uploading is a separate feature"; "the time and memory
+  under 'How was this computed?' are copied from Exasol's own audit log, not measured by our code"; "VoltProof gives
+  a dated record of when and for how long supply failed; it names no cause and no fix"; "the walkthrough opens the
+  08:34 outage (4 other monitors); the intro's 17 monitors are the 18:27 outage (this one and 16 others)". The
+  intro already captions the shopkeeper as "Illustrative".
 
 ## 4. Virtual demo day (video call)
 

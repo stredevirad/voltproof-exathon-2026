@@ -1,12 +1,13 @@
 # Demo script (video ≤ 3:00, and the live demo on demo day, Fri 6 Nov 2026, 10:00 am IST, virtual)
 
-**The final video was recorded live by the team, and its narration differs from this script.** The committed
-`docs/deliverables/VoltProof_demo.mp4` (2:14, subtitles burned in) is the team's own recording, not a
-`pipeline.video merge` output; the tooling below is how the earlier drafts were made. It has no on-screen
-"Illustrative example" caption, so the live demo says it: the shopkeeper is an illustrative example, not a person in
-the data.
+**The committed video was made outside this repository's video pipeline, and its narration differs from this
+script.** `docs/deliverables/VoltProof_demo.mp4` (2:51, subtitles burned in) is an animated intro of about 1:00
+(synthetic Piper TTS narration, original synthesized music; the shopkeeper is captioned "Illustrative"), then the
+team's live walkthrough of the app on the real Prayas data, in a teammate's own voice. Its full text is
+`docs/deliverables/VoltProof_demo.srt`; README "About the video" states precisely what the walkthrough says loosely.
+It is not a `pipeline.video merge` output: the tooling below is how the earlier drafts were made.
 
-**The submission video** is made from one timeline file, `docs/deliverables/video_timeline.json`. For each
+**The draft videos** were made from one timeline file, `docs/deliverables/video_timeline.json`. For each
 screen it holds the narration and how long the screen stays up. The narration to read aloud is
 `docs/deliverables/VOICEOVER_SCRIPT.md` (generated from the timeline).
 
@@ -21,7 +22,7 @@ scripts\get-ffmpeg.ps1                                   # once: pinned, SHA-256
 Each narration piece starts at its screen's actual start in the recording. If a piece is longer than its
 screen, the tool says which hold to raise. Then re-record; the audio is never sped up. The silent take and
 the drafts stay in the gitignored `reports\video-run\`. Only the final narrated MP4 is committed, as
-`docs/deliverables/VoltProof_demo.mp4`, once the team confirms it.
+`docs/deliverables/VoltProof_demo.mp4` (now the team's video described above).
 
 **Live demo:** see docs/deliverables/LIVE_DEMO_RUNBOOK.md.
 
@@ -41,7 +42,7 @@ It is one example selected by a rule, not a typical month. The UI says so in a b
 On the SYNTHETIC demo set (`scripts\load.ps1 -Set demo`, no download), the same rule runs over January 2030.
 It lands on the shared interruption the generator was designed to contain: Synthpur (SYNTHETIC),
 17 January 2030 at 18:42, nine invented monitors. Every page then carries the SYNTHETIC DEMO DATA banner.
-This script and the recorded video use the real data.
+This script and the committed video use the real data.
 
 ## Script
 
@@ -57,7 +58,7 @@ scale and build time come from docs/HEADLINE_FIGURES.md and docs/BENCHMARKS.md. 
 367 hours; about 103 million minutes (102,845,781 clean minute readings); about three and a half minutes (the
 210.4 s full build). At 18:27 on 25 July the recorded voltage is 0 V (all 67 minutes of that cut read exactly 0 V). Never quote a number that
 is not on screen or in those files. The shopkeeper is an illustrative example, not a real person in the
-data; the video must caption her as "Illustrative example".
+data; the committed video captions her as "Illustrative".
 
 ## Live demo (Stage 2, 15 minutes + 5 minutes questions, over a video call) and backup
 
@@ -65,5 +66,5 @@ data; the video must caption her as "Illustrative example".
    pre-generated report PDF open in a second tab.
 2. Walk the same flow as the video (about 6 minutes, including a pre-built upload), then spend time on Q&A
    material (docs/JUDGE_QA.md).
-3. **Backup if the database misbehaves:** the recorded video, plus the screenshots in
+3. **Backup if the database misbehaves:** the committed video, plus the screenshots in
    `docs/deliverables/screenshots/` and the pre-generated PDF.
