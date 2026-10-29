@@ -45,7 +45,8 @@ export type EventData = Ev & {
   zero_minutes: number; before: Segment | null; after: Segment | null;
   source_lines: { ts: string; voltage: number; file_id: number; line_no: number; file_name: string }[];
   provenance: { step: string; stmt_index: number; sql_file_sha256: string; stmt_sha256: string;
-                exa_session_id: number; exa_stmt_id: number; run_id: string }[];
+                exa_session_id: number; exa_stmt_id: number; run_id: string;
+                exa_duration_s: number | null; exa_temp_db_ram_peak_mib: number | null }[];
   group: GroupData | null; baseline: Baseline | null; data_warning: string | null;
 };
 export type Demo = { location_id: number; month: string; day: string; event_key: string; group_key: string; rule: string;

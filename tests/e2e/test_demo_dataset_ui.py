@@ -89,6 +89,10 @@ def test_every_page_of_the_guided_demo_is_labelled_synthetic(page, demo_server):
     panel.wait_for()
     assert "8 other monitors lost supply within 2 minutes" in panel.inner_text()
     _check(pg, "event")
+    pg.get_by_test_id("provenance").locator("summary").click()  # "How was this computed?"
+    assert "measured by Exasol" in pg.get_by_test_id("measured-by-exasol").inner_text()
+    times = pg.get_by_test_id("provenance").locator("tbody tr td:nth-child(5)").all_inner_texts()
+    assert times and all(float(t) >= 0 for t in times), times  # every statement has Exasol's measured duration
     for route in ("/sources", "/methodology"):
         pg.goto(demo_server + route)
         pg.get_by_role("heading").first.wait_for()

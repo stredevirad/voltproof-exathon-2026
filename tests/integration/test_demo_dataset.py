@@ -94,6 +94,24 @@ def test_demo_report_is_labelled_synthetic_and_quotes_no_real_figure(built):
     assert not [t for t in REAL_TOKENS if t in html]
 
 
+def test_build_keeps_exasol_measured_timings_for_every_statement(built):
+    """RUN_STATS (pipeline/run_stats.py) has a row for every RUN_LOG statement, and every statement of the build that
+    just ran carries Exasol's own DURATION from the audit log. (Older builds of this test schema stay in RUN_LOG; a
+    statement no longer in the audit log keeps NULLs, never an invented value.)"""
+    latest = f"r.RUN_ID = (SELECT MAX(RUN_ID) FROM {built}.RUN_LOG x WHERE x.STEP = r.STEP)"
+    with connect() as c:
+        n_log = c.execute(f"SELECT COUNT(*) FROM {built}.RUN_LOG").fetchval()
+        n_stats = c.execute(f"SELECT COUNT(*) FROM {built}.RUN_STATS").fetchval()
+        n, n_measured, ram_max = c.execute(
+            f"""SELECT COUNT(*), COUNT(s.EXA_DURATION_S), MAX(s.EXA_TEMP_DB_RAM_PEAK_MIB)
+                FROM {built}.RUN_LOG r JOIN {built}.RUN_STATS s
+                  ON s.EXA_SESSION_ID = r.EXA_SESSION_ID AND s.EXA_STMT_ID = r.EXA_STMT_ID
+                WHERE {latest}""").fetchone()
+    assert int(n_stats) == int(n_log) > 0
+    assert int(n) > 0 and int(n_measured) == int(n), "every statement of this build has Exasol's measured duration"
+    assert ram_max is not None
+
+
 def test_sql_equals_oracle_on_the_whole_synthetic_set(built):
     manifest = json.loads((synthetic.OUT_DIR / "manifest.json").read_text(encoding="utf-8"))
     readings = [f for f in manifest["files"] if f["kind"] == "readings"]

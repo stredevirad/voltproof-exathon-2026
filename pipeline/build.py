@@ -14,7 +14,7 @@ from pathlib import Path
 
 import yaml
 
-from pipeline import load_raw, synthetic
+from pipeline import load_raw, run_stats, synthetic
 from pipeline.buildlock import BuildBusy, build_lock
 from pipeline.db import DEFAULT_SCHEMA, REAL_SCHEMA, connect, schema_dataset
 from pipeline.run_sql import flatten_params, resolve_steps, run_steps
@@ -73,6 +73,7 @@ def _build(args, schema: str) -> int:
                        (SELECT COUNT(*) FROM {schema}.EVENT), (SELECT COUNT(*) FROM {schema}.DAILY),
                        (SELECT COUNT(*) FROM {schema}.MONTHLY),
                        (SELECT COUNT(*) FROM {schema}.MONTHLY WHERE IS_COMPARABLE)""").fetchone()
+    stats = run_stats.record(schema)  # Exasol's measured duration and memory peak per statement (RUN_STATS)
     problems = []
     print("\nper-file quality:")
     for name, kind, loaded, q_rows, q_vals, in_scope in files:
@@ -87,7 +88,8 @@ def _build(args, schema: str) -> int:
     print(f"\nscope: {locs} locations | {minutes:,} clean minutes | {events:,} outage events | {days:,} "
           f"location-days | {months:,} location-months ({comparable:,} comparable)")
     total = sum(r["wall_seconds"] for r in res)
-    print(f"SQL steps: {len(res)} statements in {total:.1f}s; build wall time {time.perf_counter() - t0:.1f}s")
+    print(f"SQL steps: {len(res)} statements in {total:.1f}s; build wall time {time.perf_counter() - t0:.1f}s; "
+          f"{stats} statement timings measured by Exasol in {schema}.RUN_STATS")
     (REPO_ROOT / "reports").mkdir(exist_ok=True)
     (REPO_ROOT / "reports" / "build_summary.json").write_text(json.dumps({
         "schema": schema, "locations": locs, "clean_minutes": minutes, "events": events, "days": days,

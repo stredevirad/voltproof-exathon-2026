@@ -81,12 +81,16 @@ export default function EventView() {
             <ul className="small">{e.source_lines.map((s) => (
               <li key={s.ts}>{fmtTs(s.ts)}: {s.voltage} V, <span className="mono">{s.file_name}</span>, line {s.line_no}</li>))}</ul>
             <table className="data small">
-              <thead><tr><th className="l">SQL step</th><th>#</th><th className="l">File SHA-256</th><th className="l">Exasol session / statement</th></tr></thead>
+              <thead><tr><th className="l">SQL step</th><th>#</th><th className="l">File SHA-256</th><th className="l">Exasol session / statement</th>
+                <th>Time, s</th><th>Memory peak, MiB</th></tr></thead>
               <tbody>{e.provenance.map((p) => (
                 <tr key={`${p.step}-${p.stmt_index}`}><td className="l">sql/{p.step}</td><td>{p.stmt_index}</td>
-                  <td className="l mono">{p.sql_file_sha256.slice(0, 16)}…</td><td className="l mono">{p.exa_session_id} / {p.exa_stmt_id}</td></tr>))}</tbody>
+                  <td className="l mono">{p.sql_file_sha256.slice(0, 16)}…</td><td className="l mono">{p.exa_session_id} / {p.exa_stmt_id}</td>
+                  <td>{p.exa_duration_s ?? "–"}</td><td>{p.exa_temp_db_ram_peak_mib ?? "–"}</td></tr>))}</tbody>
             </table>
             <p className="small muted">Each session/statement pair can be looked up in Exasol's audit table, where the SQL text matches these hashes.</p>
+            <p className="small muted" data-testid="measured-by-exasol">Time and memory peak: measured by Exasol (its audit log,
+              EXA_DBA_AUDIT_SQL: DURATION and TEMP_DB_RAM_PEAK) for each statement of the build.</p>
           </details>
         </div>
         <div>

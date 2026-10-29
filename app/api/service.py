@@ -328,13 +328,20 @@ def group(group_key: str) -> dict | None:
 
 
 def provenance(steps: list[str]) -> list[dict]:
-    """Latest run's statements for the given SQL steps: file hash, statement hash, Exasol session/statement ids."""
-    return query(f"""SELECT STEP, STMT_INDEX, SQL_FILE_SHA256, STMT_SHA256, PARAMS_SHA256, EXA_SESSION_ID, EXA_STMT_ID,
-                            FINISHED_AT, APP_GIT_COMMIT, DATA_MANIFEST_SHA256, RUN_ID
-                     FROM {S}.RUN_LOG r
-                     WHERE STEP IN ({{steps}})
-                       AND RUN_ID = (SELECT MAX(RUN_ID) FROM {S}.RUN_LOG x WHERE x.STEP = r.STEP)
-                     ORDER BY STEP, STMT_INDEX""", {"steps": steps})
+    """Latest run's statements for the given SQL steps: file hash, statement hash, Exasol session/statement ids, and
+    (when the schema has RUN_STATS, pipeline/run_stats.py) the duration and temporary-memory peak measured by Exasol."""
+    has_stats = query_one(f"SELECT COUNT(*) AS N FROM EXA_ALL_TABLES WHERE TABLE_SCHEMA = '{S}' "
+                          "AND TABLE_NAME = 'RUN_STATS'")["n"]
+    stats = (f"""LEFT JOIN {S}.RUN_STATS m ON m.EXA_SESSION_ID = r.EXA_SESSION_ID AND m.EXA_STMT_ID = r.EXA_STMT_ID"""
+             if has_stats else "")
+    measured = ("m.EXA_DURATION_S, m.EXA_TEMP_DB_RAM_PEAK_MIB" if has_stats
+                else "CAST(NULL AS DECIMAL(12,3)) AS EXA_DURATION_S, CAST(NULL AS DECIMAL(10,1)) AS EXA_TEMP_DB_RAM_PEAK_MIB")
+    return query(f"""SELECT r.STEP, r.STMT_INDEX, r.SQL_FILE_SHA256, r.STMT_SHA256, r.PARAMS_SHA256, r.EXA_SESSION_ID,
+                            r.EXA_STMT_ID, r.FINISHED_AT, r.APP_GIT_COMMIT, r.DATA_MANIFEST_SHA256, r.RUN_ID, {measured}
+                     FROM {S}.RUN_LOG r {stats}
+                     WHERE r.STEP IN ({{steps}})
+                       AND r.RUN_ID = (SELECT MAX(RUN_ID) FROM {S}.RUN_LOG x WHERE x.STEP = r.STEP)
+                     ORDER BY r.STEP, r.STMT_INDEX""", {"steps": steps})
 
 
 def demo() -> dict | None:

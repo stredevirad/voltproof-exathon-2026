@@ -218,13 +218,17 @@ A month is comparable when more than 90% of its minutes were read (Prayas's Utta
 <p class="mono">Data manifest SHA-256: {{ d.provenance.data_manifest_sha256 }} &middot; pipeline run: {{ d.provenance.run_id }} &middot; pipeline commit: {{ d.provenance.pipeline_commit }}</p>
 <h3>SQL executed inside Exasol (file hash, statement hash, Exasol session / statement id)</h3>
 <table>
-  <tr><th class="l">Step</th><th>#</th><th class="l">SQL file SHA-256</th><th class="l">Statement SHA-256</th><th class="l">Session</th><th>Stmt</th></tr>
+  <tr><th class="l">Step</th><th>#</th><th class="l">SQL file SHA-256</th><th class="l">Statement SHA-256</th><th class="l">Session</th><th>Stmt</th>
+    <th>Time, s</th><th>Memory peak, MiB</th></tr>
   {% for p in d.provenance.statements %}<tr><td class="l">sql/{{ p.step }}</td><td>{{ p.stmt_index }}</td>
     <td class="l mono">{{ p.sql_file_sha256[:16] }}&hellip;</td><td class="l mono">{{ p.stmt_sha256[:16] }}&hellip;</td>
-    <td class="l mono">{{ p.exa_session_id }}</td><td>{{ p.exa_stmt_id }}</td></tr>{% endfor %}
+    <td class="l mono">{{ p.exa_session_id }}</td><td>{{ p.exa_stmt_id }}</td>
+    <td>{{ p.exa_duration_s if p.exa_duration_s is not none else "–" }}</td>
+    <td>{{ p.exa_temp_db_ram_peak_mib if p.exa_temp_db_ram_peak_mib is not none else "–" }}</td></tr>{% endfor %}
 </table>
 <p class="muted">Each (session, statement) pair can be looked up in Exasol's audit table EXA_DBA_AUDIT_SQL, whose SQL text
-matches the statement hash above (checked by pipeline/check_provenance.py). Regenerate: <span class="mono">{{ d.provenance.regenerate }}</span></p>
+matches the statement hash above (checked by pipeline/check_provenance.py). Time and memory peak: measured by Exasol
+(DURATION and TEMP_DB_RAM_PEAK in that audit table, copied to RUN_STATS by pipeline/run_stats.py). Regenerate: <span class="mono">{{ d.provenance.regenerate }}</span></p>
 
 <footer>{% if d.synthetic %}<strong>SYNTHETIC DEMO DATA.</strong> {% endif %}{% if d.upload %}<strong>UPLOADED DATA &mdash; not verified by VoltProof.</strong> {% endif %}{{ d.disclaimer }} {{ d.provenance.attribution }}</footer>
 </body>

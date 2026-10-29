@@ -54,6 +54,9 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
   each table in the database's own log.
 - **Benchmarks.** They use the same audit statistics: duration, CPU and temporary-memory peak per statement
   ([BENCHMARKS.md](BENCHMARKS.md)).
+- **Measured by Exasol, shown to the user.** Every build copies each statement's `DURATION` and `TEMP_DB_RAM_PEAK`
+  from the audit log into the table `RUN_STATS` (`pipeline/run_stats.py`); "How was this computed?" in the app and
+  the PDF reproducibility appendix show them next to the statement ids. Uploads get the same in their own schema.
 
 ## 6. One local database that a judge can start
 
