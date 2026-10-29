@@ -6,6 +6,10 @@ Connection details come from the launcher's deployment directory:
 
 The local deployment uses a self-signed certificate and the launcher itself instructs clients to skip
 validation. We do that only for loopback hosts; any other host requires normal certificate validation.
+
+Optional override, used only when VOLTPROOF_EXA_DSN is set (CI runs Exasol's exasol/nano image, which has no
+launcher deployment directory): VOLTPROOF_EXA_DSN=host:port, VOLTPROOF_EXA_USER (default sys) and
+VOLTPROOF_EXA_PASSWORD_FILE (a file holding the password; read at runtime, never logged). Unset, nothing changes.
 """
 
 from __future__ import annotations
@@ -39,7 +43,27 @@ def deployment_dir() -> Path:
     return Path(os.environ.get("EXASOL_DEPLOYMENT_DIR", DEFAULT_DEPLOYMENT_DIR))
 
 
+ENV_DSN, ENV_USER, ENV_PASSWORD_FILE = "VOLTPROOF_EXA_DSN", "VOLTPROOF_EXA_USER", "VOLTPROOF_EXA_PASSWORD_FILE"
+
+
+def _env_override() -> ConnInfo | None:
+    dsn = os.environ.get(ENV_DSN, "").strip()
+    if not dsn:
+        return None
+    host, sep, port = dsn.rpartition(":")
+    if not sep or not host or not port.isdigit():
+        raise RuntimeError(f"{ENV_DSN} must be host:port, got {dsn!r}.")
+    if not os.environ.get(ENV_PASSWORD_FILE):
+        raise RuntimeError(f"{ENV_DSN} is set, so {ENV_PASSWORD_FILE} must name the file that holds the password.")
+    # same certificate rule as the launcher deployment: skip validation of the self-signed certificate on loopback only
+    return ConnInfo(host=host, port=int(port), user=os.environ.get(ENV_USER) or "sys",
+                    skip_cert_validation=host in LOOPBACK)
+
+
 def conn_info(ddir: Path | None = None) -> ConnInfo:
+    override = _env_override()
+    if override:
+        return override
     ddir = ddir or deployment_dir()
     dep = json.loads((ddir / "deployment.json").read_text(encoding="utf-8"))
     c = dep["connection"]
@@ -52,6 +76,8 @@ def conn_info(ddir: Path | None = None) -> ConnInfo:
 
 
 def _password(ddir: Path) -> str:
+    if _env_override():
+        return Path(os.environ[ENV_PASSWORD_FILE]).read_text(encoding="utf-8").strip()
     return json.loads((ddir / "secrets.json").read_text(encoding="utf-8"))["dbPassword"]
 
 
