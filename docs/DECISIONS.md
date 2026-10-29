@@ -493,3 +493,24 @@ real-data oracle tests are re-run on the new formulations.
   unchanged; every number on a slide also appears in the README or docs (checked by the deck build).
 - **No speed comparison** with other engines is made (as in `docs/WHY_EXASOL.md`); the only before/after timings are
   VoltProof's own SQL fixes, timed from Exasol's audit log.
+
+## D-041 · 2026-10-29 · After the first submission: Exasol in CI, measured timings, a read-only user, deck v2
+
+- **CI on Exasol's own image.** A second CI job starts `exasol/nano` (pinned tag and digest), builds the SYNTHETIC set
+  with the same SQL, runs the fixture, synthetic-set and read-only-user tests (SQL equals the oracle) and a browser
+  smoke test, and runs the provenance check because auditing is on in nano. `pipeline/db.py` reads
+  `VOLTPROOF_EXA_DSN` / `_USER` / `_PASSWORD_FILE` only when set; local behaviour is unchanged.
+- **Measured by Exasol.** `pipeline/run_stats.py` copies each recorded statement's `DURATION` and
+  `TEMP_DB_RAM_PEAK` from `EXA_DBA_AUDIT_SQL` into a new table `RUN_STATS` after every build and upload build. It is
+  additive: `RUN_LOG` and every result table are unchanged; for VOLTPROOF and VOLTPROOF_DEMO it was created from the
+  existing run log without a rebuild. The app and the PDF appendix show the values next to the statement ids.
+- **Ask VoltProof.** A read-only user `VP_READER` with `CREATE SESSION` and `SELECT` on `VOLTPROOF_ASK` only: seven
+  views, every view and column commented (Exasol takes view comments only inside `CREATE VIEW`). An AI client can
+  query them through Exasol's open-source MCP server (read queries only, telemetry off). VoltProof itself still calls
+  no language model, and the app and reports contain no generated text ([ASK_VOLTPROOF](ASK_VOLTPROOF.md)).
+- **UDFs stay unused by choice.** They work on Exasol Personal after `exasol slc install python3` (launcher 2.2 and
+  later); plain SQL keeps every rule readable in one file and every result tied to an audited statement.
+- **Deck v2 (15 main slides).** New: "Why this matters" (two sourced figures; smart meters only as a possible future
+  source), "How we use Exasol" (the README table) and "Ask VoltProof"; "Who could use it next" replaces "If VoltProof
+  is adopted" and keeps its sentences. The old Exasol diagram slide moves word for word to appendix A6. Every
+  disclosure stays on the slide where it was; the team slide is unchanged apart from its page number.

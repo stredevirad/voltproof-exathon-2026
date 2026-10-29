@@ -16,8 +16,19 @@ This project was built with AI coding assistance (Claude Code).
 > **VoltProof turns public minute-by-minute voltage records into a dated, checkable record of every power cut, with
 > its uncertainty stated.**
 >
+> **Real public data, not synthetic: about 103 million readings** (102,845,781 clean minutes from 176 monitors in
+> Uttar Pradesh, January 2016 to June 2019), published by Prayas (Energy Group), Electricity Supply Monitoring
+> Initiative (ESMI). The video, the deck and the live demo use it; the no-download quick start builds a small,
+> labelled SYNTHETIC set instead.
+>
 > **Watch first:** the [demo video](docs/deliverables/VoltProof_demo.mp4) (2:14) and the
-> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf).
+> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf). **Judges:** a 3-minute brief is in [JUDGES.md](JUDGES.md).
+>
+> <img src="docs/deliverables/tour.gif" width="800" alt="Animated tour of the app on the real data, about 20 seconds: the guided demo month, the day of 25 July 2018, the evidence page of the 18:27 outage with the time and memory measured by Exasol, the evidence report, then the upload page">
+>
+> *A 20-second tour on the real data: guided demo, 25 July 2018, the 18:27 outage's evidence, the report, the upload
+> page (recorded by `python -m pipeline.tour_gif`). Data: Prayas (Energy Group), Electricity Supply Monitoring
+> Initiative (ESMI).*
 >
 > **What Exasol does here** ([WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md)):
 > - All analysis is versioned SQL inside Exasol Personal, over 102.8 million clean minute readings; the full Uttar
@@ -26,7 +37,7 @@ This project was built with AI coding assistance (Claude Code).
 > - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
 > - The full list, with files and evidence: [How VoltProof uses Exasol](#how-voltproof-uses-exasol).
 >
-> **Why you can trust the numbers:** 208 automated tests, including an independent Python oracle that must equal the
+> **Why you can trust the numbers:** 223 automated tests, including an independent Python oracle that must equal the
 > SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
 >
 > **Try it** (no data download; Windows 10/11, about 16 GB RAM): the
@@ -36,6 +47,13 @@ This project was built with AI coding assistance (Claude Code).
 > | One month (at least 366.2 h of outage) | One outage's evidence | The evidence report |
 > |---|---|---|
 > | <a href="docs/deliverables/screenshots/02_month_calendar.png"><img src="docs/deliverables/screenshots/02_month_calendar.png" width="260" alt="Location-month view: the outage lower bound first and the calendar of daily outage hours"></a> | <a href="docs/deliverables/screenshots/04_event_evidence.png"><img src="docs/deliverables/screenshots/04_event_evidence.png" width="260" alt="Event evidence: exact start and end, source lines, Exasol statement ids, and monitors that lost supply within 2 minutes"></a> | <a href="docs/deliverables/screenshots/05_report_ready.png"><img src="docs/deliverables/screenshots/05_report_ready.png" width="260" alt="The month page with its evidence report ready as PDF, HTML and JSON"></a> |
+
+> **Why this matters.** Uttar Pradesh alone has 2.74 crore domestic electricity consumers, as the then UPPCL chairman
+> said on 27 January 2023 ([Drishti IAS, 28 January 2023](https://www.drishtiias.com/state-pcs-current-affairs/uttar-pradesh-became-the-state-with-maximum-electricity-connections-in-the-country)).
+> Most households have no monitor like ESMI's, so today VoltProof is a method, not a service. A possible future data
+> source, not used today: 7.24 crore smart meters (consumer, distribution transformer and feeder meters) installed in
+> India as of 30 June 2026, and 20.33 crore sanctioned under the Revamped Distribution Sector Scheme (written reply in
+> Parliament by the Minister of State for Power, [T&D India, 6 August 2026](https://www.tndindia.com/indias-smart-meter-population-at-7-24-crore-parliament/)).
 
 ## Submission deliverables
 
@@ -71,6 +89,18 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
   oracle, checks provenance against the audit log and runs a browser smoke test ([ci.yml](.github/workflows/ci.yml)).
 - **29 Oct:** new table [How VoltProof uses Exasol](#how-voltproof-uses-exasol); [WHY_EXASOL](docs/WHY_EXASOL.md)
   corrected: UDFs do run on Exasol Personal once a script-language container is installed; we chose plain SQL.
+- **29 Oct:** each statement's duration and temporary-memory peak, **measured by Exasol** (its audit log), are kept
+  in a new table `RUN_STATS` and shown under "How was this computed?" and in the PDF reproducibility appendix;
+  uploads get the same in their own schema ([pipeline/run_stats.py](pipeline/run_stats.py)).
+- **29 Oct:** [Ask VoltProof](docs/ASK_VOLTPROOF.md): a read-only database user `VP_READER` that sees only seven
+  commented result views, and instructions to query them from an AI client through Exasol's open-source MCP server;
+  six example questions with their exact SQL and rows. The app and reports contain no generated text.
+- **29 Oct:** [JUDGES.md](JUDGES.md), a 3-minute brief per judging criterion; on this first screen, the real-data
+  line, a 20-second animated tour and a sourced "Why this matters" box.
+- **29 Oct:** deck v2 ([VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf), 15 main slides): new "Why this
+  matters", "How we use Exasol" and "Ask VoltProof" slides; "Who could use it next" replaces "If VoltProof is
+  adopted"; every disclosure kept ([D-041](docs/DECISIONS.md)).
+- **29 Oct:** full test run on the improved code: 223 of 223 passed ([TEST_REPORT](docs/TEST_REPORT.md)).
 
 ## The problem
 
@@ -186,11 +216,12 @@ scripts\test.ps1
 The tests that need the real files skip cleanly on a demo-only machine. The synthetic set is also checked
 against the independent oracle in full.
 
-GitHub Actions ([ci.yml](.github/workflows/ci.yml)) runs ruff and the unit tests on every push and pull
-request. The integration, differential and end-to-end suites are not in CI: they need a running Exasol
-Personal database (Podman/WSL 2 and about 9 GB of RAM for the database), which hosted runners don't
-provide. They run locally with `scripts\test.ps1`, and [docs/TEST_REPORT.md](docs/TEST_REPORT.md) records
-the latest full run. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+GitHub Actions ([ci.yml](.github/workflows/ci.yml)) runs two jobs on every push and pull request: ruff and the
+unit tests on Windows, and a job on Exasol's own `exasol/nano` image that builds the SYNTHETIC set, runs the
+fixture and synthetic-set tests (SQL equals the oracle), checks provenance against the audit log and runs a
+browser smoke test. The real-data, differential and full end-to-end suites need the real files and the local
+Exasol Personal deployment, so they run locally with `scripts\test.ps1`; [docs/TEST_REPORT.md](docs/TEST_REPORT.md)
+records the latest full run. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## macOS / Linux (not tested by the team)
 
@@ -360,8 +391,10 @@ Timings are warm medians of the full Uttar Pradesh build on the build laptop ([B
 | `CONNECT BY LEVEL` row generators | Generators instead of helper tables: the 60 minutes of an hour, every calendar day of a monitor's window, the chance baseline's shifted copies | `sql/030_unpivot.sql`, `sql/080_daily.sql`, `sql/100_coincidence.sql` | SQL equals the Python oracle on the 18 hand-written fixtures ([TEST_REPORT](docs/TEST_REPORT.md)) |
 | Equality joins on time buckets | Pairs interruptions in a district that start at most 2 minutes apart: a band join written as two equality joins on a time bucket, which Exasol runs as hash joins | `sql/100_coincidence.sql` | 184,299 pairs in 0.4 s; chance baseline in 3.9 s, where the earlier band join took 348 s on a three-month sample ([D-021](docs/DECISIONS.md)) |
 | Audit log `EXA_DBA_AUDIT_SQL` | Records each statement's session and statement id in `RUN_LOG`, then compares the SHA-256 of its exact SQL text with the audit log | `pipeline/run_sql.py`, `pipeline/check_provenance.py` | 0 different, 0 missing on every recorded build ([WHY_EXASOL §5](docs/WHY_EXASOL.md)) |
+| Audit statistics as data | Copies each statement's `DURATION` and `TEMP_DB_RAM_PEAK` from the audit log into `RUN_STATS`; the app's "How was this computed?" and the PDF appendix show them as measured by Exasol | `pipeline/run_stats.py` | `tests/integration/test_demo_dataset.py`, `tests/e2e/test_demo_dataset_ui.py` |
+| Views, comments and a read-only user | `VP_READER` can read only seven commented views (`VOLTPROOF_ASK`); Exasol's open-source MCP server lets an AI client ask questions as that user | `sql/ask/reader_views.sql`, `pipeline/ask.py`, `pipeline/ask_mcp.py` | `tests/integration/test_ask_reader.py`; six questions with their SQL and rows in [ASK_VOLTPROOF](docs/ASK_VOLTPROOF.md) |
 | Schemas and database users | Each upload is analysed in its own schema `VP_USER_<id>`, owned by a separate user `VP_UPLOADER` that has no rights on the Prayas or SYNTHETIC schemas | `pipeline/upload.py`, `sql/ingest/` | `tests/integration/test_uploads.py` ([D-037](docs/DECISIONS.md)) |
-| Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 64 database tests and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
+| Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 69 database tests passed (1 skipped: it checks the local read-only user, which CI does not create) and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
 
 We kept the method in plain SQL on purpose, so every result comes from SQL statements that Exasol's audit log
 records. UDFs were an option and are not used: see [WHY_EXASOL](docs/WHY_EXASOL.md#what-we-did-not-use-and-what-we-did-not-claim).

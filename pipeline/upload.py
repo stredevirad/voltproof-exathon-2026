@@ -42,7 +42,7 @@ from pathlib import Path
 
 import yaml
 
-from pipeline import buildlock
+from pipeline import buildlock, run_stats
 from pipeline.check_provenance import verify as verify_provenance
 from pipeline.db import connect, deployment_dir
 from pipeline.load_raw import LOCATIONS_HEADER, READINGS_HEADER, is_transient_import_error
@@ -911,6 +911,7 @@ def build(upload_id: str, progress=None) -> dict:
             if prov["different"] or prov["missing"]:
                 raise UploadError("The provenance check failed (a build statement does not match Exasol's audit "
                                   "log), so the results are not shown.")
+            run_stats.record(rec["schema"])  # Exasol's measured timings, in the upload's own schema
             if not int(counts.get("locations") or 0):
                 raise UploadError("Nothing could be analysed: no monitor has readings with a known district and "
                                   "state.")

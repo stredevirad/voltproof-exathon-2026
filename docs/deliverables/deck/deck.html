@@ -108,7 +108,27 @@
   <div class="footer"><span>VoltProof</span><span>2</span></div>
 </section>
 
-<!-- 3. Someone was measuring -->
+<!-- 3. Why this matters (29 Oct; the same figures and sources as the README "Why this matters" box) -->
+<section class="slide">
+  <p class="kicker">Why this matters</p>
+  <h2>Many consumers, and a possible future source of readings</h2>
+  <div class="grid g2" style="align-items: start;">
+    <div class="card" style="padding: 26px 30px;">
+      <div class="stat">2.74 crore</div>
+      <div class="stat-label">domestic electricity consumers in Uttar Pradesh alone, as the then UPPCL chairman said on 27 January 2023</div>
+      <p class="small muted" style="margin-top: 14px;">We do not claim that every one of them has outages or would use VoltProof. Most households have no monitor like ESMI's, so today VoltProof is a method, not a service.</p>
+    </div>
+    <div class="card" style="padding: 26px 30px;">
+      <div class="stat">7.24 crore</div>
+      <div class="stat-label">smart meters (consumer, distribution transformer and feeder meters) installed in India as of 30 June 2026; 20.33 crore sanctioned under the Revamped Distribution Sector Scheme</div>
+      <p class="small muted" style="margin-top: 14px;">A possible future data source for the same method. VoltProof does not use, or have access to, smart-meter data today.</p>
+    </div>
+  </div>
+  <p class="xs muted" style="margin-top: 22px;">Sources. Left: Drishti IAS, 28 January 2023 (drishtiias.com, “Uttar Pradesh became the state with maximum electricity connections in the country”). Right: a written reply in Parliament by the Minister of State for Power, reported by T&amp;D India, 6 August 2026 (tndindia.com). Links in the README.</p>
+  <div class="footer"><span>VoltProof · Sources: Drishti IAS; T&amp;D India</span><span>3</span></div>
+</section>
+
+<!-- 4. Someone was measuring -->
 <section class="slide">
   <p class="kicker">The record already exists</p>
   <h2>Independent monitors recorded the voltage every minute</h2>
@@ -128,10 +148,10 @@
       <p class="xs muted">the published files: one row per hour, holding that hour's 60 minutes</p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI, CC0 1.0</span><span>3</span></div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI, CC0 1.0</span><span>4</span></div>
 </section>
 
-<!-- 4. What VoltProof gives him -->
+<!-- 5. What VoltProof gives him -->
 <section class="slide">
   <p class="kicker">What VoltProof gives him</p>
   <h2>Every cut, dated to the minute, with its certainty stated</h2>
@@ -151,10 +171,10 @@
         verified”.</li>
     </ul>
   </div>
-  <div class="footer"><span>VoltProof · Huzurpur-Bahraich, July 2018 · Data: Prayas (Energy Group), ESMI</span><span>4</span></div>
+  <div class="footer"><span>VoltProof · Huzurpur-Bahraich, July 2018 · Data: Prayas (Energy Group), ESMI</span><span>5</span></div>
 </section>
 
-<!-- 5. Demo moment -->
+<!-- 6. Demo moment -->
 <section class="slide">
   <p class="kicker">Demo moment · Bahraich, 25 July 2018, 18:27</p>
   <h2>One evening in Bahraich: 17 monitors lost supply within 2 minutes</h2>
@@ -178,10 +198,10 @@
       <p style="font-weight: 700;">Coincidence is not cause.</p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>5</span></div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>6</span></div>
 </section>
 
-<!-- 6. How it works -->
+<!-- 7. How it works -->
 <section class="slide">
   <p class="kicker">How it works, in plain words</p>
   <h2>Four steps, from published files to a report</h2>
@@ -198,48 +218,53 @@
     <p>The voltage classes are Prayas's published ones: no supply at 130 V or less, low 131–204 V, high above 270 V.
       A month is compared only when more than 90% of its minutes were read.</p>
   </div>
-  <div class="footer"><span>VoltProof</span><span>6</span></div>
-</section>
-
-<!-- 7. Exasol -->
-<section class="slide">
-  <p class="kicker">How we use Exasol Personal</p>
-  <h2>The whole analysis runs inside Exasol, on a laptop</h2>
-  <div class="dia">
-    <div class="box"><b>1 · Check</b>Published CSV and .tab files (or a file the user uploads). Each checksum must
-      match: the file is exactly the published one.</div>
-    <div class="arrow">→</div>
-    <div class="exa">
-      <div class="head">Inside Exasol Personal: versioned SQL, one step after another</div>
-      <div class="row">
-        <div class="st"><b>2 · Load</b>IMPORT raw rows, each with its file and line</div><span class="to">→</span>
-        <div class="st"><b>3 · Analyse</b>one hourly row of 60 minutes becomes 60 rows</div><span class="to">→</span>
-        <div class="st"><b>3 · Analyse</b>classify each minute's voltage</div><span class="to">→</span>
-        <div class="st"><b>3 · Analyse</b>find each cut (one window function)</div><span class="to">→</span>
-        <div class="st"><b>3 · Analyse</b>days, months, other monitors, chance</div>
-      </div>
-      <div class="audit">Exasol's audit log records every statement: 0 different, 0 missing against the SQL files in
-        every benchmark build. Uploads run the same SQL in their own schema, under a separate database user.</div>
-    </div>
-    <div class="arrow">→</div>
-    <div class="box"><b>4 · Show</b>The app and the PDF report read the result tables; they compute nothing
-      themselves.</div>
-  </div>
-  <div class="grid" style="grid-template-columns: 300px 1fr; margin-top: 22px; align-items: start;">
-    <div><div class="stat">210.4 s</div><div class="stat-label">full build of the Uttar Pradesh data (39 SQL
-      statements), on a 15.6 GB laptop</div></div>
-    <div>
-      <p style="margin: 0 0 8px;">In Exasol: 102,927,720 minute rows built in 11.0 s; every cut found in 35.6 s
-        (665 s before our own fix, both timed from Exasol's audit log).</p>
-      <p class="small muted" style="margin: 0;">The published files hold all states; all are loaded, and only the
-        Uttar Pradesh rows become minutes. Python only checks files, starts the SQL steps and shows results. More
-        timings: appendix A1.</p>
-    </div>
-  </div>
   <div class="footer"><span>VoltProof</span><span>7</span></div>
 </section>
 
-<!-- 8. Trust -->
+<!-- 8. How we use Exasol (29 Oct: the README table "How VoltProof uses Exasol"; the old diagram is appendix A6) -->
+<section class="slide">
+  <p class="kicker">How we use Exasol Personal</p>
+  <h2 style="margin-bottom: 12px;">The whole analysis runs inside Exasol, on a laptop</h2>
+  <table style="font-size: 15px;">
+    <tr><th style="width: 23%;">Exasol feature</th><th style="width: 45%;">What we do</th><th>Measured or tested</th></tr>
+    <tr><td><b>Native IMPORT</b></td><td>Loads the raw 63-column rows unchanged, each with its file id and line number</td><td>7,367,581 raw rows in 30.3 s</td></tr>
+    <tr><td><b>Unpivot with CONNECT BY</b></td><td>A 60-row generator turns each hourly row into 60 minute rows</td><td>102,927,720 minute rows in 11.0 s</td></tr>
+    <tr><td><b>One window function</b></td><td>Finds every run of one voltage class with a single ROW_NUMBER window</td><td>665 s before our rewrite, 35.6 s after</td></tr>
+    <tr><td><b>Bucketed equality joins</b></td><td>Pairs interruptions in a district that start within 2 minutes, as hash joins on a time bucket</td><td>184,299 pairs in 0.4 s; chance baseline in 3.9 s</td></tr>
+    <tr><td><b>Audit log</b></td><td>Matches every recorded statement by its exact SQL text; shows each one's time and memory peak, measured by Exasol, in the app and the PDF</td><td>0 different, 0 missing in every benchmark build</td></tr>
+    <tr><td><b>Users and schemas</b></td><td>Each upload in its own schema under a restricted user; a read-only user sees only seven commented views</td><td>Tests: neither can read anything else</td></tr>
+    <tr><td><b>exasol/nano in CI</b></td><td>Every push starts Exasol's own image, builds the SYNTHETIC set with the same SQL and checks it against the oracle</td><td>Fixtures, synthetic set, provenance, browser smoke test</td></tr>
+  </table>
+  <p class="small" style="margin: 12px 0 0;"><b>210.4 s</b> for the full build of the Uttar Pradesh data (39 SQL statements) on a 15.6 GB laptop. Python only checks files, starts the SQL steps and shows results.</p>
+  <div class="footer"><span>VoltProof · Warm medians, timed from Exasol's audit log; no comparison with other engines. More: appendix A1, A6</span><span>8</span></div>
+</section>
+
+<!-- 9. Ask VoltProof (29 Oct; docs/ASK_VOLTPROOF.md) -->
+<section class="slide">
+  <p class="kicker">Ask VoltProof</p>
+  <h2>An AI client can ask the results, read-only</h2>
+  <div class="chain">
+    <div class="c"><b>An AI client</b>asks a question in plain words</div><div class="to">→</div>
+    <div class="c"><b>Exasol's MCP server</b>open source; read queries only</div><div class="to">→</div>
+    <div class="c"><b>VP_READER</b>a database user that may only read</div><div class="to">→</div>
+    <div class="c"><b>Seven views</b>months, events, shared events, days, quality, provenance, rules</div>
+  </div>
+  <div class="grid g2" style="align-items: start;">
+    <ul>
+      <li>Every view and column carries a comment, so the client knows what each number means.</li>
+      <li>It cannot read a table, an upload or another schema, and cannot write: tested.</li>
+      <li><b>The agent's sentences are its own.</b> VoltProof claims only what the views show; the app and the reports contain no generated text.</li>
+    </ul>
+    <div class="card">
+      <p class="small" style="margin: 0 0 6px;"><b>Asked through the server, 29 Oct:</b> which monitors lost supply with Huzurpur-Bahraich on the evening of 25 July 2018?</p>
+      <p class="small" style="margin: 0 0 6px;">Answer from the view: the group <b>Bahraich | 2018-07-25 18:27</b>, 17 monitors.</p>
+      <p class="small muted" style="margin: 0;">A DELETE was refused by the server; reading a table was refused by the database.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI · Details: docs/ASK_VOLTPROOF.md</span><span>9</span></div>
+</section>
+
+<!-- 10. Trust -->
 <section class="slide">
   <p class="kicker">Why you can trust the numbers</p>
   <h2>Every number can be checked, not just believed</h2>
@@ -253,12 +278,12 @@
     <li>A separate Python check, written independently from the same rules, gives identical results on every test.
       It is a test, not the product.</li>
     <li>Hand-written test cases, random test data and real slices of the data are all checked the same way.</li>
-    <li>Results are compared with Prayas's own published figures, including where they differ (slide 10).</li>
+    <li>Results are compared with Prayas's own published figures, including where they differ (slide 12).</li>
   </ul>
-  <div class="footer"><span>VoltProof</span><span>8</span></div>
+  <div class="footer"><span>VoltProof</span><span>10</span></div>
 </section>
 
-<!-- 9. Data defects -->
+<!-- 11. Data defects -->
 <section class="slide">
   <p class="kicker">Honest about the data</p>
   <h2>Defects in the published files: found and labelled, never hidden</h2>
@@ -275,10 +300,10 @@
   </div>
   <p class="small muted" style="margin-top: 22px;">Found by checking the data against Prayas's own single-monitor
     charts. Details and counts: appendix A4.</p>
-  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>9</span></div>
+  <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>11</span></div>
 </section>
 
-<!-- 10. Where we differ -->
+<!-- 12. Where we differ -->
 <section class="slide">
   <p class="kicker">Checked against Prayas's published figures</p>
   <h2>Single monitors agree; our daily averages are higher</h2>
@@ -296,10 +321,10 @@
       <p class="small muted">The full comparison table is in appendix A3.</p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof</span><span>10</span></div>
+  <div class="footer"><span>VoltProof</span><span>12</span></div>
 </section>
 
-<!-- 11. Limits -->
+<!-- 13. Limits -->
 <section class="slide">
   <p class="kicker">Limits and legal framing</p>
   <h2>What VoltProof does not claim</h2>
@@ -317,31 +342,33 @@
       <p class="xs muted">UPERC CGRF and Ombudsman Regulations, 2003; PIB, Ministry of Power, 30 Dec 2010.</p>
     </div>
   </div>
-  <div class="footer"><span>VoltProof</span><span>11</span></div>
+  <div class="footer"><span>VoltProof</span><span>13</span></div>
 </section>
 
-<!-- 12. If adopted -->
+<!-- 14. Who could use it next (29 Oct; replaces "If VoltProof is adopted" and keeps its "Next", maps and one-line sentences) -->
 <section class="slide">
-  <p class="kicker">If VoltProof is adopted</p>
-  <h2>What changes</h2>
+  <p class="kicker">Who could use it next</p>
+  <h2>Who could use it, and what comes next</h2>
   <div class="grid g3">
-    <div class="card"><h3>For a shopkeeper or a consumer group</h3><p>A dated record of every cut, with its certainty,
-      instead of a memory. Anyone can also upload readings from their own monitor today; the app labels them “not
-      verified”.</p></div>
-    <div class="card"><h3>For a grievance forum or a regulator</h3><p>Each number traces to a file line and an Exasol
+    <div class="card"><h3>Households and small shops</h3><p>A dated record of every cut, with its certainty,
+      instead of a memory, to take to their utility or grievance forum. Anyone can also upload readings from their own
+      monitor today; the app labels them “not verified”.</p></div>
+    <div class="card"><h3>Consumer groups, researchers, journalists</h3><p>Event-level evidence and a report per
+      location-month, instead of raw minute files. Today that means the ESMI records.</p></div>
+    <div class="card"><h3>A grievance forum or a regulator</h3><p>Each number traces to a file line and an Exasol
       statement, so it can be checked rather than trusted.</p></div>
-    <div class="card"><h3>Next (not claimed today)</h3><p>New monitors or smart-meter data through the same SQL; each
-      state's standards of performance, from the primary regulation, to show which events may warrant review through
-      the grievance forum.</p></div>
   </div>
-  <p class="small muted" style="margin-top: 18px;">More states and maps: the ESMI files cover many states; a map needs
-    coordinates the source does not have.</p>
-  <p style="margin-top: 18px; font-size: 24px;"><b>In one line:</b> 102.8 million minutes of independent readings,
+  <p class="small" style="margin-top: 18px;"><b>Next (not claimed today):</b> New monitors or smart-meter data through the same SQL; each
+      state's standards of performance, from the primary regulation, to show which events may warrant review through
+      the grievance forum.</p>
+  <p class="small muted" style="margin: 0;">More states and maps: the ESMI files cover many states; a map needs
+    coordinates the source does not have. For a household without a monitor, VoltProof is a method today, not a service.</p>
+  <p style="margin-top: 16px; font-size: 24px;"><b>In one line:</b> 102.8 million minutes of independent readings,
     analysed inside Exasol, every number traced to its SQL step and source line.</p>
-  <div class="footer"><span>VoltProof</span><span>12</span></div>
+  <div class="footer"><span>VoltProof</span><span>14</span></div>
 </section>
 
-<!-- 13. Team -->
+<!-- 15. Team -->
 <section class="slide">
   <p class="kicker">Team</p>
   <h2>Rajagiri School of Engineering &amp; Technology, Kochi</h2>
@@ -351,7 +378,7 @@
     <div class="card"><h3>Dane John Padinjarekara</h3></div>
   </div>
   <p class="muted" style="margin-top:28px">With thanks to Prayas (Energy Group) and the ESMI volunteers who collected and published these readings.</p>
-  <div class="footer"><span>VoltProof</span><span>13</span></div>
+  <div class="footer"><span>VoltProof</span><span>15</span></div>
 </section>
 
 <!-- A1. Exasol benchmarks -->
@@ -447,6 +474,44 @@
     </div>
   </div>
   <div class="footer"><span>VoltProof · Data: Prayas (Energy Group), ESMI</span><span>A5</span></div>
+</section>
+
+<!-- A6. The Exasol diagram (main slide 7 until 29 Oct, word for word) -->
+<section class="slide appendix">
+  <p class="kicker">Appendix A6 · How we use Exasol Personal · the pipeline</p>
+  <h2>The whole analysis runs inside Exasol, on a laptop</h2>
+  <div class="dia">
+    <div class="box"><b>1 · Check</b>Published CSV and .tab files (or a file the user uploads). Each checksum must
+      match: the file is exactly the published one.</div>
+    <div class="arrow">→</div>
+    <div class="exa">
+      <div class="head">Inside Exasol Personal: versioned SQL, one step after another</div>
+      <div class="row">
+        <div class="st"><b>2 · Load</b>IMPORT raw rows, each with its file and line</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>one hourly row of 60 minutes becomes 60 rows</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>classify each minute's voltage</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>find each cut (one window function)</div><span class="to">→</span>
+        <div class="st"><b>3 · Analyse</b>days, months, other monitors, chance</div>
+      </div>
+      <div class="audit">Exasol's audit log records every statement: 0 different, 0 missing against the SQL files in
+        every benchmark build. Uploads run the same SQL in their own schema, under a separate database user.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="box"><b>4 · Show</b>The app and the PDF report read the result tables; they compute nothing
+      themselves.</div>
+  </div>
+  <div class="grid" style="grid-template-columns: 300px 1fr; margin-top: 22px; align-items: start;">
+    <div><div class="stat">210.4 s</div><div class="stat-label">full build of the Uttar Pradesh data (39 SQL
+      statements), on a 15.6 GB laptop</div></div>
+    <div>
+      <p style="margin: 0 0 8px;">In Exasol: 102,927,720 minute rows built in 11.0 s; every cut found in 35.6 s
+        (665 s before our own fix, both timed from Exasol's audit log).</p>
+      <p class="small muted" style="margin: 0;">The published files hold all states; all are loaded, and only the
+        Uttar Pradesh rows become minutes. Python only checks files, starts the SQL steps and shows results. More
+        timings: appendix A1.</p>
+    </div>
+  </div>
+  <div class="footer"><span>VoltProof</span><span>A6</span></div>
 </section>
 
 </body>
