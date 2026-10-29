@@ -20,8 +20,9 @@ WHAT = {
             "download checks, loader edge cases, SYNTHETIC demo generator (deterministic, labelled), licence, "
             "grievance wording, report footer, upload name and choice rules, docs labels match the app",
     "integration": "Hand-written fixtures through the real SQL in Exasol, oracle equality, harness sensitivity, "
-                   "evidence-report consistency, SYNTHETIC demo set (separation guards, oracle equality), static-route "
-                   "safety, uploads (same results as the command-line build, inputs, refusals, API guards, delete)",
+                   "evidence-report consistency, SYNTHETIC demo set (separation guards, oracle equality, Exasol-measured "
+                   "timings), static-route safety, uploads (same results as the command-line build, inputs, refusals, "
+                   "API guards, delete), the read-only user (reads only its views, cannot write)",
     "differential": "Independent oracle vs SQL on random Hypothesis batches and on real Uttar Pradesh slices; a real "
                     "ESMI file uploaded gives the same figures as its command-line build",
     "e2e": "Playwright drives the guided demo in Chromium against a real server; wording scan on every page; "

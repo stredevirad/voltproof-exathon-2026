@@ -37,7 +37,7 @@ This project was built with AI coding assistance (Claude Code).
 > - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
 > - The full list, with files and evidence: [How VoltProof uses Exasol](#how-voltproof-uses-exasol).
 >
-> **Why you can trust the numbers:** 208 automated tests, including an independent Python oracle that must equal the
+> **Why you can trust the numbers:** 223 automated tests, including an independent Python oracle that must equal the
 > SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
 >
 > **Try it** (no data download; Windows 10/11, about 16 GB RAM): the
@@ -100,6 +100,7 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
 - **29 Oct:** deck v2 ([VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf), 15 main slides): new "Why this
   matters", "How we use Exasol" and "Ask VoltProof" slides; "Who could use it next" replaces "If VoltProof is
   adopted"; every disclosure kept ([D-041](docs/DECISIONS.md)).
+- **29 Oct:** full test run on the improved code: 223 of 223 passed ([TEST_REPORT](docs/TEST_REPORT.md)).
 
 ## The problem
 
@@ -393,7 +394,7 @@ Timings are warm medians of the full Uttar Pradesh build on the build laptop ([B
 | Audit statistics as data | Copies each statement's `DURATION` and `TEMP_DB_RAM_PEAK` from the audit log into `RUN_STATS`; the app's "How was this computed?" and the PDF appendix show them as measured by Exasol | `pipeline/run_stats.py` | `tests/integration/test_demo_dataset.py`, `tests/e2e/test_demo_dataset_ui.py` |
 | Views, comments and a read-only user | `VP_READER` can read only seven commented views (`VOLTPROOF_ASK`); Exasol's open-source MCP server lets an AI client ask questions as that user | `sql/ask/reader_views.sql`, `pipeline/ask.py`, `pipeline/ask_mcp.py` | `tests/integration/test_ask_reader.py`; six questions with their SQL and rows in [ASK_VOLTPROOF](docs/ASK_VOLTPROOF.md) |
 | Schemas and database users | Each upload is analysed in its own schema `VP_USER_<id>`, owned by a separate user `VP_UPLOADER` that has no rights on the Prayas or SYNTHETIC schemas | `pipeline/upload.py`, `sql/ingest/` | `tests/integration/test_uploads.py` ([D-037](docs/DECISIONS.md)) |
-| Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 64 database tests and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
+| Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 69 database tests passed (1 skipped: it checks the local read-only user, which CI does not create) and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
 
 We kept the method in plain SQL on purpose, so every result comes from SQL statements that Exasol's audit log
 records. UDFs were an option and are not used: see [WHY_EXASOL](docs/WHY_EXASOL.md#what-we-did-not-use-and-what-we-did-not-claim).

@@ -33,8 +33,8 @@ Evidence: [WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md), [s
 
 ### Technical excellence (20%)
 The SQL must equal an independent Python oracle exactly: 18 hand-written fixtures, 40 random Hypothesis batches and
-real Uttar Pradesh slices. The latest full run is in TEST_REPORT; every push also runs the fixtures and the synthetic
-set on `exasol/nano` in CI.
+real Uttar Pradesh slices. The latest full run (29 Oct): 223 of 223 tests passed; every push also runs the fixtures,
+the synthetic set and the read-only-user tests on `exasol/nano` in CI.
 
 Evidence: [TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md), [tests/](tests/)
 
