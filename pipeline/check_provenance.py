@@ -4,6 +4,7 @@ For each RUN_LOG row, find EXA_DBA_AUDIT_SQL by (SESSION_ID, STMT_ID) and compar
 whitespace-normalised SQL text with RUN_LOG.STMT_SHA256 (computed by the runner on the exact text it sent).
 
     .venv\\Scripts\\python.exe -m pipeline.check_provenance VOLTPROOF
+    python -m pipeline.check_provenance VOLTPROOF_DEMO --skip-if-no-audit   (CI: say so and skip if auditing is off)
 """
 
 from __future__ import annotations
@@ -33,7 +34,19 @@ def verify(schema: str) -> dict:
     return out
 
 
-def main(schema: str) -> int:
+def auditing_on() -> bool:
+    """True if the database writes EXA_DBA_AUDIT_SQL: this session's own probe statement must appear there."""
+    with connect() as c:
+        c.execute("SELECT 'voltproof audit probe' FROM DUAL")
+        c.execute("FLUSH STATISTICS")
+        return int(c.execute("SELECT COUNT(*) FROM EXA_DBA_AUDIT_SQL WHERE SESSION_ID = CURRENT_SESSION").fetchval()) > 0
+
+
+def main(schema: str, skip_if_no_audit: bool = False) -> int:
+    if skip_if_no_audit and not auditing_on():
+        print("SKIPPED: auditing is off in this database (EXA_DBA_AUDIT_SQL records nothing), so the provenance "
+              "check cannot run here. Nothing was checked.")
+        return 0
     ok = bad = missing = 0
     with connect() as c:
         c.execute("FLUSH STATISTICS")
@@ -58,4 +71,5 @@ def main(schema: str) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SCHEMA))
+    args = [a for a in sys.argv[1:] if a != "--skip-if-no-audit"]
+    sys.exit(main(args[0] if args else DEFAULT_SCHEMA, skip_if_no_audit="--skip-if-no-audit" in sys.argv[1:]))

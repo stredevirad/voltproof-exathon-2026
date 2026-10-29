@@ -1,7 +1,11 @@
-# Lint and unit tests on every push and pull request. These need no database.
-# The integration, differential and end-to-end suites need a running Exasol Personal deployment
-# (Podman/WSL 2 and about 9 GB of RAM for the database), which a hosted runner does not provide. Run them
-# locally with scripts\test.ps1; docs/TEST_REPORT.md records the latest full run.
+# Two jobs on every push and pull request:
+# - unit: lint and unit tests on Windows (the target platform); no database.
+# - exasol: Exasol's own exasol/nano image on Linux. It builds the SYNTHETIC demo set into VOLTPROOF_DEMO with the
+#   same SQL steps as a local build, then runs the hand-written fixtures and the synthetic set, where the SQL output
+#   must equal the independent Python oracle, checks provenance against Exasol's audit log, and runs a browser
+#   smoke test of the app on the synthetic set. Real ESMI data is never downloaded in CI.
+# The real-data, differential and end-to-end suites need the local Exasol Personal deployment; run them with
+# scripts\test.ps1. docs/TEST_REPORT.md records the latest full run.
 name: CI
 
 on:
@@ -33,3 +37,63 @@ jobs:
         run: uv run --frozen ruff check .
       - name: Unit tests
         run: uv run --frozen pytest tests/unit -q -p no:cacheprovider
+
+  exasol:
+    name: Exasol nano - synthetic build, SQL equals the oracle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Pinned tag and digest (Docker Hub, checked 29 Oct 2026)
+      NANO_IMAGE: docker.io/exasol/nano:2026.2.0-nano.7-amd64@sha256:2747c2f3374a99c13e2208ecf016ea5e0a43e539e55bc61646a003711cdc946d
+      VOLTPROOF_EXA_DSN: "127.0.0.1:8563"  # read by pipeline/db.py only when set
+      VOLTPROOF_EXA_USER: sys
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884  # v10.3.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Start Exasol nano with a random SYS password
+        run: |
+          # The password is made here, lives only in the runner's temp folder and is masked in the log.
+          pw_file="$RUNNER_TEMP/sys_password"
+          openssl rand -hex 24 > "$pw_file"
+          echo "::add-mask::$(cat "$pw_file")"
+          chmod 644 "$pw_file"  # readable by the database inside the container; the runner is single-use
+          echo "VOLTPROOF_EXA_PASSWORD_FILE=$pw_file" >> "$GITHUB_ENV"
+          docker run -d --name exanano --shm-size=512mb --pids-limit=-1 -p 127.0.0.1:8563:8563 \
+            -v "$pw_file:/run/secrets/sys_password:ro" \
+            "$NANO_IMAGE" init sys_password_file=/run/secrets/sys_password
+      - name: Install locked dependencies
+        run: uv sync --frozen
+      - name: Wait for "Database is now up and running!"
+        run: |
+          for i in $(seq 1 120); do
+            if docker logs exanano 2>&1 | grep -q "Database is now up and running!"; then
+              echo "Exasol nano is up (checked $i times, 5 s apart)"; exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' exanano)" != "true" ]; then
+              echo "The container stopped:"; docker logs exanano 2>&1 | tail -n 60; exit 1
+            fi
+            sleep 5
+          done
+          echo "Not up after 10 minutes:"; docker logs exanano 2>&1 | tail -n 60; exit 1
+      - name: Build the SYNTHETIC demo set into VOLTPROOF_DEMO (all SQL steps run inside Exasol)
+        run: uv run --frozen python -m pipeline.build --schema VOLTPROOF_DEMO --demo
+      - name: Fixtures and the synthetic set - SQL output equals the Python oracle
+        run: uv run --frozen pytest tests/integration/test_fixtures.py tests/integration/test_demo_dataset.py -q -p no:cacheprovider
+      - name: Provenance (RUN_LOG statements against EXA_DBA_AUDIT_SQL), only if auditing is on
+        run: uv run --frozen python -m pipeline.check_provenance VOLTPROOF_DEMO --skip-if-no-audit
+      - name: Build the web app (the runner's preinstalled Node)
+        run: |
+          node --version
+          npm ci --prefix app/web --no-audit --no-fund
+          npm run build --prefix app/web
+      - name: Browser smoke test on the synthetic set (Playwright Chromium)
+        run: |
+          uv run --frozen playwright install --with-deps chromium
+          uv run --frozen pytest tests/e2e/test_demo_dataset_ui.py -q -p no:cacheprovider
+      - name: Database log on failure
+        if: failure()
+        run: docker logs exanano 2>&1 | tail -n 100
