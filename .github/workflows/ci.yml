@@ -2,7 +2,8 @@
 # - unit: lint and unit tests on Windows (the target platform); no database.
 # - exasol: Exasol's own exasol/nano image on Linux. It builds the SYNTHETIC demo set into VOLTPROOF_DEMO with the
 #   same SQL steps as a local build, then runs the hand-written fixtures and the synthetic set, where the SQL output
-#   must equal the independent Python oracle. Real ESMI data is never downloaded in CI.
+#   must equal the independent Python oracle, checks provenance against Exasol's audit log, and runs a browser
+#   smoke test of the app on the synthetic set. Real ESMI data is never downloaded in CI.
 # The real-data, differential and end-to-end suites need the local Exasol Personal deployment; run them with
 # scripts\test.ps1. docs/TEST_REPORT.md records the latest full run.
 name: CI
@@ -84,6 +85,15 @@ jobs:
         run: uv run --frozen pytest tests/integration/test_fixtures.py tests/integration/test_demo_dataset.py -q -p no:cacheprovider
       - name: Provenance (RUN_LOG statements against EXA_DBA_AUDIT_SQL), only if auditing is on
         run: uv run --frozen python -m pipeline.check_provenance VOLTPROOF_DEMO --skip-if-no-audit
+      - name: Build the web app (the runner's preinstalled Node)
+        run: |
+          node --version
+          npm ci --prefix app/web --no-audit --no-fund
+          npm run build --prefix app/web
+      - name: Browser smoke test on the synthetic set (Playwright Chromium)
+        run: |
+          uv run --frozen playwright install --with-deps chromium
+          uv run --frozen pytest tests/e2e/test_demo_dataset_ui.py -q -p no:cacheprovider
       - name: Database log on failure
         if: failure()
         run: docker logs exanano 2>&1 | tail -n 100
