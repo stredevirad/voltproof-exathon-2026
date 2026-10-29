@@ -1,5 +1,5 @@
 """`python -m pipeline.video check` judges the competition limits (3:00 at most, 40 MB at most, H.264 video with AAC
-audio) and only reports the frame size: the final video is the team's own recording, not a merge output."""
+audio) and only reports the frame size: the final video is made outside the pipeline, not a merge output."""
 
 from __future__ import annotations
 
@@ -23,7 +23,8 @@ def _probe(monkeypatch, duration: float, size: int, width: int, audio: str | Non
 
 
 @pytest.mark.parametrize(("duration", "size", "width", "audio", "expected"), [
-    (134.056, 7_800_241, 1600, "aac", 0),     # the committed video (the team's recording)
+    (170.783, 24_414_517, 1920, "aac", 0),    # the committed video (29 Oct: animated intro + live walkthrough)
+    (134.056, 7_800_241, 1600, "aac", 0),     # the first submission's video (the team's recording)
     (134.056, 7_800_241, 1366, "aac", 0),     # a merge output
     (180.5, 7_800_241, 1600, "aac", 1),       # over 3:00
     (134.056, 41 * 2**20, 1600, "aac", 1),    # over 40 MB

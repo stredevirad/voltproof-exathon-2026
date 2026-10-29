@@ -2,7 +2,7 @@
 
 Generated from `docs/deliverables/video_timeline.json` by `python -m pipeline.video script`; do not edit by hand.
 
-**The final video was recorded live by the team, and its narration differs from this script.**
+**The final video (an animated intro, then the team's live walkthrough) was made outside this pipeline, and its narration differs from this script.**
 
 **How to record (one take, on a phone):**
 - **Pace:** read each block at a calm pace. The times show when each screen appears in the video.

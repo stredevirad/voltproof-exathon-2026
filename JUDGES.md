@@ -1,8 +1,11 @@
 # VoltProof for judges: a 3-minute brief
 
+▶ [Watch the demo video in the browser (2:51)](https://stredevirad.github.io/voltproof-exathon-2026/) · [download the MP4](docs/deliverables/VoltProof_demo.mp4?raw=true) · [subtitles (SRT)](docs/deliverables/VoltProof_demo.srt)
+
 VoltProof turns public minute-by-minute voltage records into a dated, checkable record of every power cut, with its
-uncertainty stated, analysed in SQL inside Exasol Personal. Watch the [demo video](docs/deliverables/VoltProof_demo.mp4)
-(2:14) and the [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf).
+uncertainty stated, analysed in SQL inside Exasol Personal. The video is an animated intro, then a live walkthrough
+of the app on the real data ([About the video](README.md#about-the-video)); then the
+[pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf).
 
 **Real public data, not synthetic: about 103 million readings** (102,845,781 clean minutes from 176 monitors in Uttar
 Pradesh), from Prayas (Energy Group), Electricity Supply Monitoring Initiative (ESMI). Synthetic data appears only in
@@ -33,7 +36,7 @@ Evidence: [WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md), [s
 
 ### Technical excellence (20%)
 The SQL must equal an independent Python oracle exactly: 18 hand-written fixtures, 40 random Hypothesis batches and
-real Uttar Pradesh slices. The latest full run (29 Oct): 223 of 223 tests passed; every push also runs the fixtures,
+real Uttar Pradesh slices. The latest full run (29 Oct): 224 of 224 tests passed; every push also runs the fixtures,
 the synthetic set and the read-only-user tests on `exasol/nano` in CI.
 
 Evidence: [TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md), [tests/](tests/)
@@ -78,8 +81,8 @@ state's standards of performance.
 Evidence: [JUDGE_QA](docs/JUDGE_QA.md), [Use your own data](README.md#use-your-own-data)
 
 ### Communication (10%)
-A one-sentence problem statement, a video recorded live by the team, and a plain-words deck that shows every data
-defect and the gap to Prayas's figures.
+A one-sentence problem statement, a demo video (an animated intro, then a live walkthrough narrated by the team), and
+a plain-words deck that shows every data defect and the gap to Prayas's figures.
 
 Evidence: [About the video](README.md#about-the-video)
 

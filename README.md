@@ -21,8 +21,15 @@ This project was built with AI coding assistance (Claude Code).
 > Initiative (ESMI). The video, the deck and the live demo use it; the no-download quick start builds a small,
 > labelled SYNTHETIC set instead.
 >
-> **Watch first:** the [demo video](docs/deliverables/VoltProof_demo.mp4) (2:14) and the
-> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf). **Judges:** a 3-minute brief is in [JUDGES.md](JUDGES.md).
+> **Watch first:** the demo video (2:51): an animated intro, then a live walkthrough of the app on the real data.
+>
+> <a href="https://stredevirad.github.io/voltproof-exathon-2026/"><img src="docs/deliverables/video_poster.jpg" width="640" alt="Play the VoltProof demo video (2:51) in the browser"></a>
+>
+> <!-- INLINE-PLAYER: a GitHub video attachment link goes on its own line here -->
+>
+> ▶ [Watch in the browser (2:51)](https://stredevirad.github.io/voltproof-exathon-2026/) · [download the MP4](docs/deliverables/VoltProof_demo.mp4?raw=true) · [subtitles (SRT)](docs/deliverables/VoltProof_demo.srt)
+>
+> Then the [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf). **Judges:** a 3-minute brief is in [JUDGES.md](JUDGES.md).
 >
 > <img src="docs/deliverables/tour.gif" width="800" alt="Animated tour of the app on the real data, about 20 seconds: the guided demo month, the day of 25 July 2018, the evidence page of the 18:27 outage with the time and memory measured by Exasol, the evidence report, then the upload page">
 >
@@ -37,7 +44,7 @@ This project was built with AI coding assistance (Claude Code).
 > - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
 > - The full list, with files and evidence: [How VoltProof uses Exasol](#how-voltproof-uses-exasol).
 >
-> **Why you can trust the numbers:** 223 automated tests, including an independent Python oracle that must equal the
+> **Why you can trust the numbers:** 224 automated tests, including an independent Python oracle that must equal the
 > SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
 >
 > **Try it** (no data download; Windows 10/11, about 16 GB RAM): the
@@ -61,26 +68,39 @@ This project was built with AI coding assistance (Claude Code).
 |---|---|
 | Problem statement | [docs/deliverables/PROBLEM_STATEMENT.md](docs/deliverables/PROBLEM_STATEMENT.md) (the one-sentence statement is also the first line of this README); how VoltProof approaches it: [APPROACH.md](docs/deliverables/APPROACH.md) |
 | Pitch deck (PDF) | [docs/deliverables/VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf). The source is `docs/deliverables/deck/deck.html`, rendered and checked by `python -m pipeline.deck` |
-| Demo video (narrated, under 3:00) | [docs/deliverables/VoltProof_demo.mp4](docs/deliverables/VoltProof_demo.mp4) (2:14, subtitles burned in), recorded live by the team; see [About the video](#about-the-video) below. Demo notes: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
-| Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md); manual steps for [macOS / Linux](#macos--linux-not-tested-by-the-team), not tested by the team |
+| Demo video (narrated, under 3:00) | [Watch in the browser](https://stredevirad.github.io/voltproof-exathon-2026/) (2:51, subtitles burned in); the file is [docs/deliverables/VoltProof_demo.mp4](docs/deliverables/VoltProof_demo.mp4) and its full text [VoltProof_demo.srt](docs/deliverables/VoltProof_demo.srt). An animated intro, then a live walkthrough narrated by the team; see [About the video](#about-the-video) below. Demo notes: [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) |
+| Run guide | [Quick start](#quick-start-windows-1011-amd64-no-data-download) below (no download needed), [Real data](#real-data-esmi-harvard-dataverse), and [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md); manual steps for [macOS / Linux](#macos--linux-partly-checked-on-linux-in-ci-macos-not-tested): CI checks steps 2–4 on Linux (with Exasol nano), macOS is not tested |
 | Licence | MIT, [LICENSE](LICENSE); third-party notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 | Live demo runbook | [docs/deliverables/LIVE_DEMO_RUNBOOK.md](docs/deliverables/LIVE_DEMO_RUNBOOK.md) |
 | Evidence behind the claims | [VALIDATION](docs/VALIDATION.md), [BENCHMARKS](docs/BENCHMARKS.md), [TEST_REPORT](docs/TEST_REPORT.md), [JUDGE_QA](docs/JUDGE_QA.md), [METHODOLOGY](docs/METHODOLOGY.md), [DECISIONS](docs/DECISIONS.md) |
 
 ### About the video
 
-The team recorded the demo video live, in its own words. Four things in its narration are said loosely; the app and
-this README state them precisely:
-- **"366.2 hours of outage time"** is a minimum: the app shows **at least 366.2 h** (up to 367.2 h) for one monitor,
-  Huzurpur-Bahraich, in July 2018. Missing readings are never counted as outage.
-- **"We upload the data as a CSV file … from Harvard":** the guided demo uses the Prayas data already loaded from
-  Harvard Dataverse. Uploading your own file is a separate feature ([Use your own data](#use-your-own-data)).
-- **"KSEB … exactly where the outage errors were and exactly how to solve it":** the data is from Uttar Pradesh, not
-  Kerala; KSEB was named only as an example of a utility. VoltProof gives a dated record of when and for how long
-  supply failed. It names no cause and no fix.
-- **The shopkeeper** is an **Illustrative** example, not a person in the data.
+The demo video ([watch in the browser](https://stredevirad.github.io/voltproof-exathon-2026/), 2:51) has two parts:
+- **An animated intro (about 1:00)** that states the problem, the data and how Exasol is used, and what VoltProof
+  found. Its narration is synthetic (Piper TTS, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). The
+  shopkeeper in it is captioned **Illustrative**: an example, not a person in the data.
+- **A live walkthrough of the app on the real Prayas data**, narrated by the team in its own voice.
 
-The earlier written script is [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md).
+Subtitles are burned in. The full text of both parts is
+[VoltProof_demo.srt](docs/deliverables/VoltProof_demo.srt) (the browser player also has it as
+[captions](docs/deliverables/VoltProof_demo.vtt), off by default).
+
+The walkthrough says some things loosely; the app and this README state them precisely:
+- **"an outage of 366.2 hours":** at least 366.2 h (up to 367.2 h), at one monitor, Huzurpur-Bahraich, July 2018.
+  Missing readings are never counted as outage.
+- **"we have already uploaded a Harvard-given CSV file from Prayas":** the guided demo uses the Prayas ESMI data that
+  the pipeline loads from Harvard Dataverse. Uploading your own file is a separate feature
+  ([Use your own data](#use-your-own-data)).
+- **"Exasol … calculates the time on its own":** the time and memory under "How was this computed?" are copied from
+  Exasol's own audit log (`EXA_DBA_AUDIT_SQL`), not measured by our code.
+- **"the utility company can take this as a reference to make better adjustments":** VoltProof gives a dated record
+  of when and for how long supply failed. It names no cause and no fix.
+- **Two different outages on 25 July 2018:** the walkthrough opens the 08:34 outage (4 other monitors lost supply
+  within 2 minutes); the intro's "17 monitors" is the 18:27 outage on the same day (this monitor and 16 others).
+
+The earlier written script, for a draft video and not used in this one, is
+[VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md).
 
 ## Changes after the first submission (24 Oct)
 
@@ -101,6 +121,11 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
   matters", "How we use Exasol" and "Ask VoltProof" slides; "Who could use it next" replaces "If VoltProof is
   adopted"; every disclosure kept ([D-041](docs/DECISIONS.md)).
 - **29 Oct:** full test run on the improved code: 223 of 223 passed ([TEST_REPORT](docs/TEST_REPORT.md)).
+- **29 Oct (evening):** a new demo video (2:51): an animated intro, then the team's live walkthrough on the real data,
+  [playable in the browser](https://stredevirad.github.io/voltproof-exathon-2026/) (GitHub Pages,
+  [pages.yml](.github/workflows/pages.yml)), with its full text as [subtitles](docs/deliverables/VoltProof_demo.srt);
+  [About the video](#about-the-video) rewritten from those subtitles; the macOS / Linux section now says what CI
+  checks on Linux; full test run on that commit: 224 of 224 passed ([TEST_REPORT](docs/TEST_REPORT.md)).
 
 ## The problem
 
@@ -223,11 +248,21 @@ browser smoke test. The real-data, differential and full end-to-end suites need 
 Exasol Personal deployment, so they run locally with `scripts\test.ps1`; [docs/TEST_REPORT.md](docs/TEST_REPORT.md)
 records the latest full run. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## macOS / Linux (not tested by the team)
+## macOS / Linux (partly checked on Linux in CI; macOS not tested)
 
-The scripts in `scripts\` are PowerShell scripts for Windows, and we have only run VoltProof on Windows 10/11.
-The steps below are the same commands the scripts run, written out by hand for macOS and Linux. **The team has
-not tested them.** You need Git, [uv](https://docs.astral.sh/uv/), Node.js 20 or newer and about 16 GB RAM.
+The scripts in `scripts\` are PowerShell scripts for Windows, and the team has run VoltProof by hand only on
+Windows 10/11. The steps below are the same commands the scripts run, written out for macOS and Linux. You need
+Git, [uv](https://docs.astral.sh/uv/), Node.js 20 or newer and about 16 GB RAM.
+
+- **What CI checks on Linux** (GitHub's `ubuntu-latest`, on every push; [ci.yml](.github/workflows/ci.yml)): step 2
+  (`uv sync --frozen`, Playwright Chromium, `npm ci` and the web build); step 3 (the SYNTHETIC build and its
+  provenance check against the audit log), followed by the fixture, synthetic-set and read-only-user tests; and a
+  browser smoke test of the app served by `uvicorn` as in step 4. The database there is Exasol's `exasol/nano`
+  image, reached through the `VOLTPROOF_EXA_DSN`, `VOLTPROOF_EXA_USER` and `VOLTPROOF_EXA_PASSWORD_FILE` settings,
+  not an Exasol Personal deployment.
+- **Still not tested:** step 1 (installing Exasol Personal with the launcher on Linux or macOS, and VoltProof
+  reading `deployment.json` and `secrets.json` from `EXASOL_DEPLOYMENT_DIR`); anything on macOS; the real data,
+  uploads and the full test suites on Linux.
 
 **1. Exasol Personal.** Download the launcher for your system from the
 [v2.3.0 release](https://github.com/exasol/exasol-personal/releases/tag/v2.3.0) (Linux and macOS builds are

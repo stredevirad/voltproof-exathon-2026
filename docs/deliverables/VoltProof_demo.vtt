@@ -1,0 +1,177 @@
+WEBVTT
+
+1
+00:00:00.770 --> 00:00:04.570
+A shopkeeper in Uttar Pradesh loses power almost every evening.
+
+2
+00:00:04.590 --> 00:00:07.518
+When she complains, her memory is all she has.
+
+3
+00:00:07.938 --> 00:00:11.218
+But independent monitors, run by Prayas (Energy Group),
+
+4
+00:00:11.238 --> 00:00:13.218
+recorded the voltage every minute.
+
+5
+00:00:13.238 --> 00:00:16.601
+About 103 million real readings.
+
+6
+00:00:17.021 --> 00:00:22.541
+That is where VoltProof comes in. It analyses them entirely inside Exasol Personal.
+
+7
+00:00:22.561 --> 00:00:25.161
+The files are loaded exactly as published,
+
+8
+00:00:25.181 --> 00:00:27.641
+every minute is classified in SQL,
+
+9
+00:00:27.661 --> 00:00:30.747
+and every power cut is found by one window function.
+
+10
+00:00:31.167 --> 00:00:35.247
+Finding every cut used to take 665 s.
+
+11
+00:00:35.267 --> 00:00:37.427
+Now it takes 35.6 s.
+
+12
+00:00:37.447 --> 00:00:41.498
+And every statement is matched against Exasol's own audit log.
+
+13
+00:00:41.918 --> 00:00:48.758
+Here is what it found: at least 366.2 hours without supply in one month, at one monitor.
+
+14
+00:00:48.778 --> 00:00:52.818
+And 17 monitors losing supply within the same two minutes.
+
+15
+00:00:52.838 --> 00:00:56.474
+Coincidence is not cause, but it is a lead worth checking.
+
+16
+00:00:57.194 --> 00:00:59.810
+Now, let's see how VoltProof works.
+
+17
+00:01:00.550 --> 00:01:04.300
+First, we have to upload the CSV file here, but for the demo,
+
+18
+00:01:04.360 --> 00:01:08.600
+we have already uploaded a Harvard-given CSV file from Prayas (Energy Group).
+
+19
+00:01:08.660 --> 00:01:10.050
+So, let's start.
+
+20
+00:01:10.700 --> 00:01:14.940
+This is a place in Uttar Pradesh, and this month alone, this particular month,
+
+21
+00:01:15.000 --> 00:01:19.340
+there has been an outage of 366.2 hours.
+
+22
+00:01:19.400 --> 00:01:24.080
+And if you scroll down, we see how much outage time there was this month,
+
+23
+00:01:24.140 --> 00:01:25.960
+and on the exact dates too.
+
+24
+00:01:26.020 --> 00:01:28.970
+So now, let's take the 25th as an example.
+
+25
+00:01:29.420 --> 00:01:34.390
+We can see that at this time there was power, and here, there was no power.
+
+26
+00:01:35.060 --> 00:01:39.680
+If we scroll down, we can see exactly at which time there was no power.
+
+27
+00:01:39.740 --> 00:01:43.230
+There were power outages at exactly… let's just take this time.
+
+28
+00:01:43.320 --> 00:01:46.590
+And this is the evidence that shows exactly what happened.
+
+29
+00:01:46.760 --> 00:01:50.180
+Here, it is seen that within two minutes,
+
+30
+00:01:50.240 --> 00:01:54.170
+there were other power outages in other places, not just here.
+
+31
+00:01:54.400 --> 00:01:55.900
+Now, how was this computed?
+
+32
+00:01:55.960 --> 00:01:57.740
+This was computed through Exasol.
+
+33
+00:01:57.800 --> 00:02:04.250
+What it does is that Exasol takes the statements from SQL and calculates the time on its own.
+
+34
+00:02:04.720 --> 00:02:06.370
+Now, we get back.
+
+35
+00:02:06.720 --> 00:02:11.500
+We can see that we can generate the evidence report here,
+
+36
+00:02:11.560 --> 00:02:15.960
+and the evidence report is in three types: PDF, HTML and JSON.
+
+37
+00:02:16.020 --> 00:02:17.810
+So, let's check PDF.
+
+38
+00:02:19.340 --> 00:02:21.160
+This is a report,
+
+39
+00:02:21.220 --> 00:02:27.240
+and this can be used by both the utility company and the shopkeeper
+
+40
+00:02:27.300 --> 00:02:33.680
+to get the exact evidence and to show where the issues were.
+
+41
+00:02:33.740 --> 00:02:40.940
+At the same time, the utility company can take this as a reference
+
+42
+00:02:41.000 --> 00:02:45.350
+to make better adjustments.
+
+43
+00:02:45.970 --> 00:02:49.020
+Now, this is the methodology that we use.
+
+44
+00:02:49.590 --> 00:02:50.690
+Thank you.
