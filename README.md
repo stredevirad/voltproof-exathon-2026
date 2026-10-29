@@ -74,6 +74,9 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
 - **29 Oct:** each statement's duration and temporary-memory peak, **measured by Exasol** (its audit log), are kept
   in a new table `RUN_STATS` and shown under "How was this computed?" and in the PDF reproducibility appendix;
   uploads get the same in their own schema ([pipeline/run_stats.py](pipeline/run_stats.py)).
+- **29 Oct:** [Ask VoltProof](docs/ASK_VOLTPROOF.md): a read-only database user `VP_READER` that sees only seven
+  commented result views, and instructions to query them from an AI client through Exasol's open-source MCP server;
+  six example questions with their exact SQL and rows. The app and reports contain no generated text.
 
 ## The problem
 
@@ -365,6 +368,7 @@ Timings are warm medians of the full Uttar Pradesh build on the build laptop ([B
 | Equality joins on time buckets | Pairs interruptions in a district that start at most 2 minutes apart: a band join written as two equality joins on a time bucket, which Exasol runs as hash joins | `sql/100_coincidence.sql` | 184,299 pairs in 0.4 s; chance baseline in 3.9 s, where the earlier band join took 348 s on a three-month sample ([D-021](docs/DECISIONS.md)) |
 | Audit log `EXA_DBA_AUDIT_SQL` | Records each statement's session and statement id in `RUN_LOG`, then compares the SHA-256 of its exact SQL text with the audit log | `pipeline/run_sql.py`, `pipeline/check_provenance.py` | 0 different, 0 missing on every recorded build ([WHY_EXASOL §5](docs/WHY_EXASOL.md)) |
 | Audit statistics as data | Copies each statement's `DURATION` and `TEMP_DB_RAM_PEAK` from the audit log into `RUN_STATS`; the app's "How was this computed?" and the PDF appendix show them as measured by Exasol | `pipeline/run_stats.py` | `tests/integration/test_demo_dataset.py`, `tests/e2e/test_demo_dataset_ui.py` |
+| Views, comments and a read-only user | `VP_READER` can read only seven commented views (`VOLTPROOF_ASK`); Exasol's open-source MCP server lets an AI client ask questions as that user | `sql/ask/reader_views.sql`, `pipeline/ask.py`, `pipeline/ask_mcp.py` | `tests/integration/test_ask_reader.py`; six questions with their SQL and rows in [ASK_VOLTPROOF](docs/ASK_VOLTPROOF.md) |
 | Schemas and database users | Each upload is analysed in its own schema `VP_USER_<id>`, owned by a separate user `VP_UPLOADER` that has no rights on the Prayas or SYNTHETIC schemas | `pipeline/upload.py`, `sql/ingest/` | `tests/integration/test_uploads.py` ([D-037](docs/DECISIONS.md)) |
 | Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 64 database tests and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
 
