@@ -24,6 +24,12 @@ This project was built with AI coding assistance (Claude Code).
 > **Watch first:** the [demo video](docs/deliverables/VoltProof_demo.mp4) (2:14) and the
 > [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf). **Judges:** a 3-minute brief is in [JUDGES.md](JUDGES.md).
 >
+> <img src="docs/deliverables/tour.gif" width="800" alt="Animated tour of the app on the real data, about 20 seconds: the guided demo month, the day of 25 July 2018, the evidence page of the 18:27 outage with the time and memory measured by Exasol, the evidence report, then the upload page">
+>
+> *A 20-second tour on the real data: guided demo, 25 July 2018, the 18:27 outage's evidence, the report, the upload
+> page (recorded by `python -m pipeline.tour_gif`). Data: Prayas (Energy Group), Electricity Supply Monitoring
+> Initiative (ESMI).*
+>
 > **What Exasol does here** ([WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md)):
 > - All analysis is versioned SQL inside Exasol Personal, over 102.8 million clean minute readings; the full Uttar
 >   Pradesh build takes 210.4 s on a 15.6 GB laptop.
@@ -90,7 +96,10 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
   commented result views, and instructions to query them from an AI client through Exasol's open-source MCP server;
   six example questions with their exact SQL and rows. The app and reports contain no generated text.
 - **29 Oct:** [JUDGES.md](JUDGES.md), a 3-minute brief per judging criterion; on this first screen, the real-data
-  line and a sourced "Why this matters" box.
+  line, a 20-second animated tour and a sourced "Why this matters" box.
+- **29 Oct:** deck v2 ([VoltProof_deck.pdf](docs/deliverables/VoltProof_deck.pdf), 15 main slides): new "Why this
+  matters", "How we use Exasol" and "Ask VoltProof" slides; "Who could use it next" replaces "If VoltProof is
+  adopted"; every disclosure kept ([D-041](docs/DECISIONS.md)).
 
 ## The problem
 
