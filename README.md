@@ -24,6 +24,7 @@ This project was built with AI coding assistance (Claude Code).
 >   Pradesh build takes 210.4 s on a 15.6 GB laptop.
 > - Finding every power cut went from 665 s to 35.6 s by rewriting the step as one `ROW_NUMBER` window.
 > - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
+> - The full list, with files and evidence: [How VoltProof uses Exasol](#how-voltproof-uses-exasol).
 >
 > **Why you can trust the numbers:** 208 automated tests, including an independent Python oracle that must equal the
 > SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
@@ -62,6 +63,14 @@ this README state them precisely:
 - **The shopkeeper** is an **Illustrative** example, not a person in the data.
 
 The earlier written script is [VOICEOVER_SCRIPT.md](docs/deliverables/VOICEOVER_SCRIPT.md).
+
+## Changes after the first submission (24 Oct)
+
+The first submission is tagged `gate-9-submission`. Changes since then, one line each:
+- **29 Oct:** CI also runs Exasol's `exasol/nano` image: it builds the SYNTHETIC set, checks that the SQL equals the
+  oracle, checks provenance against the audit log and runs a browser smoke test ([ci.yml](.github/workflows/ci.yml)).
+- **29 Oct:** new table [How VoltProof uses Exasol](#how-voltproof-uses-exasol); [WHY_EXASOL](docs/WHY_EXASOL.md)
+  corrected: UDFs do run on Exasol Personal once a script-language container is installed; we chose plain SQL.
 
 ## The problem
 
@@ -337,6 +346,25 @@ Your upload ──staged unchanged (sql/ingest/u10)──▶ checked in SQL (u20
 
 The rules are in [docs/METHODOLOGY.md](docs/METHODOLOGY.md), and every choice is recorded in
 [docs/DECISIONS.md](docs/DECISIONS.md). Exasol's specific role is in [docs/WHY_EXASOL.md](docs/WHY_EXASOL.md).
+
+## How VoltProof uses Exasol
+
+Each row is something the code does today, with the file that does it and where it was measured or tested.
+Timings are warm medians of the full Uttar Pradesh build on the build laptop ([BENCHMARKS](docs/BENCHMARKS.md)).
+
+| Exasol feature | What we do | File | Evidence |
+|---|---|---|---|
+| Native `IMPORT` over the HTTP transport | Loads the raw 63-column ESMI rows unchanged, each prefixed with its file id and physical line number, so a report can cite the source line | `pipeline/load_raw.py` | 7,367,581 raw rows in 30.3 s |
+| Unpivot inside the database | Turns the 60 minute columns of each hourly row into one row per minute; bad rows and values are quarantined with reason codes in the same SQL | `sql/030_unpivot.sql` | 102,927,720 minute rows in 11.0 s |
+| Window functions (gaps-and-islands) | Finds every run of one voltage class with a single `ROW_NUMBER` window | `sql/050_segments.sql` | 665 s with LAG plus a running SUM, 35.6 s after the rewrite ([D-028](docs/DECISIONS.md)) |
+| `CONNECT BY LEVEL` row generators | Generators instead of helper tables: the 60 minutes of an hour, every calendar day of a monitor's window, the chance baseline's shifted copies | `sql/030_unpivot.sql`, `sql/080_daily.sql`, `sql/100_coincidence.sql` | SQL equals the Python oracle on the 18 hand-written fixtures ([TEST_REPORT](docs/TEST_REPORT.md)) |
+| Equality joins on time buckets | Pairs interruptions in a district that start at most 2 minutes apart: a band join written as two equality joins on a time bucket, which Exasol runs as hash joins | `sql/100_coincidence.sql` | 184,299 pairs in 0.4 s; chance baseline in 3.9 s, where the earlier band join took 348 s on a three-month sample ([D-021](docs/DECISIONS.md)) |
+| Audit log `EXA_DBA_AUDIT_SQL` | Records each statement's session and statement id in `RUN_LOG`, then compares the SHA-256 of its exact SQL text with the audit log | `pipeline/run_sql.py`, `pipeline/check_provenance.py` | 0 different, 0 missing on every recorded build ([WHY_EXASOL §5](docs/WHY_EXASOL.md)) |
+| Schemas and database users | Each upload is analysed in its own schema `VP_USER_<id>`, owned by a separate user `VP_UPLOADER` that has no rights on the Prayas or SYNTHETIC schemas | `pipeline/upload.py`, `sql/ingest/` | `tests/integration/test_uploads.py` ([D-037](docs/DECISIONS.md)) |
+| Exasol's `exasol/nano` image in CI | Every push starts Exasol nano on GitHub Actions, builds the SYNTHETIC set with the same SQL, checks SQL equals the oracle on the fixtures and the synthetic set, checks provenance against the audit log, and runs a browser smoke test | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | [CI runs](https://github.com/stredevirad/voltproof-exathon-2026/actions/workflows/ci.yml); 29 Oct: 64 database tests and 3 browser tests passed; 45 statements matched the audit log, 0 different, 0 missing |
+
+We kept the method in plain SQL on purpose, so every result comes from SQL statements that Exasol's audit log
+records. UDFs were an option and are not used: see [WHY_EXASOL](docs/WHY_EXASOL.md#what-we-did-not-use-and-what-we-did-not-claim).
 
 ## Headline figures (Uttar Pradesh)
 

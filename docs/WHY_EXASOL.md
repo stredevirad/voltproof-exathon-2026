@@ -60,13 +60,20 @@ the files, serves the app and hosts the independent test oracle. Numbers below c
 - **Install.** Exasol Personal installed in about 2 minutes through the launcher (VERIFICATION_LOG X19). It
   runs as a single node in a Podman machine on WSL 2, with 8.9 GiB of DB RAM on a 15.6 GB laptop (X29).
 - **Storage.** The data volume is bind-mounted on the repository drive, not C: (X21, X22).
+- **The same SQL on Exasol's own image in CI.** Every push starts Exasol's `exasol/nano` container on GitHub
+  Actions, builds the SYNTHETIC set with the same steps, checks that the SQL equals the oracle on the fixtures and
+  the synthetic set, and checks provenance against the audit log ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
 
 ## What we did not use, and what we did not claim
 
-- **Lua.** Lua scripts and Lua UDFs work on Exasol Personal without a script-language container
-  (VERIFICATION_LOG X10). VoltProof does not need them: its steps are plain SQL files run in order.
-- **Python UDFs** would need a script-language container. Python stays outside the database, as the
-  orchestrator and the independent oracle.
+- **UDFs: available, not used on purpose.** A local Exasol Personal deployment runs Python 3, Java and R UDFs
+  once an official script-language container is installed, for example `exasol slc install python3` (launcher
+  2.2 and later; [Exasol community, 7 Aug 2026](https://community.exasol.com/t/exasol-personal-2-2-is-here/303)).
+  Our launcher, 2.3.0, lists those three containers and also offers a `rust` alias for the exasol-labs Rust
+  container. Lua scripts and Lua UDFs need no container at all (VERIFICATION_LOG X10).
+- **Why plain SQL.** We kept the method in plain SQL on purpose: each rule is readable in one SQL file, and every
+  result comes from SQL statements that Exasol's audit log records and `check_provenance` matches (§5). Python
+  stays outside the database, as the orchestrator and the independent oracle.
 - **No speed comparison with other engines.** We did not benchmark DuckDB, Excel or anything else on the
   same data, so we make no "faster than" claim.
 - **Costs on this laptop, recorded honestly:**
