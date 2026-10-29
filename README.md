@@ -25,7 +25,7 @@ This project was built with AI coding assistance (Claude Code).
 >
 > <a href="https://stredevirad.github.io/voltproof-exathon-2026/"><img src="docs/deliverables/video_poster.jpg" width="640" alt="Play the VoltProof demo video (2:51) in the browser"></a>
 >
-> <!-- INLINE-PLAYER: a GitHub video attachment link goes on its own line here -->
+> https://github.com/user-attachments/assets/4931e69d-68fa-4781-bfc9-9c000d7d025d
 >
 > ▶ [Watch in the browser (2:51)](https://stredevirad.github.io/voltproof-exathon-2026/) · [download the MP4](docs/deliverables/VoltProof_demo.mp4?raw=true) · [subtitles (SRT)](docs/deliverables/VoltProof_demo.srt)
 >
