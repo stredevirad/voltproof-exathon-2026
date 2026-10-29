@@ -44,7 +44,7 @@ This project was built with AI coding assistance (Claude Code).
 > - Every SQL statement is matched against Exasol's own audit log (`EXA_DBA_AUDIT_SQL`): 0 different, 0 missing.
 > - The full list, with files and evidence: [How VoltProof uses Exasol](#how-voltproof-uses-exasol).
 >
-> **Why you can trust the numbers:** 223 automated tests, including an independent Python oracle that must equal the
+> **Why you can trust the numbers:** 224 automated tests, including an independent Python oracle that must equal the
 > SQL exactly ([TEST_REPORT](docs/TEST_REPORT.md), [VALIDATION](docs/VALIDATION.md)).
 >
 > **Try it** (no data download; Windows 10/11, about 16 GB RAM): the
@@ -125,7 +125,7 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
   [playable in the browser](https://stredevirad.github.io/voltproof-exathon-2026/) (GitHub Pages,
   [pages.yml](.github/workflows/pages.yml)), with its full text as [subtitles](docs/deliverables/VoltProof_demo.srt);
   [About the video](#about-the-video) rewritten from those subtitles; the macOS / Linux section now says what CI
-  checks on Linux.
+  checks on Linux; full test run on that commit: 224 of 224 passed ([TEST_REPORT](docs/TEST_REPORT.md)).
 
 ## The problem
 
