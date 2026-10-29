@@ -16,8 +16,13 @@ This project was built with AI coding assistance (Claude Code).
 > **VoltProof turns public minute-by-minute voltage records into a dated, checkable record of every power cut, with
 > its uncertainty stated.**
 >
+> **Real public data, not synthetic: about 103 million readings** (102,845,781 clean minutes from 176 monitors in
+> Uttar Pradesh, January 2016 to June 2019), published by Prayas (Energy Group), Electricity Supply Monitoring
+> Initiative (ESMI). The video, the deck and the live demo use it; the no-download quick start builds a small,
+> labelled SYNTHETIC set instead.
+>
 > **Watch first:** the [demo video](docs/deliverables/VoltProof_demo.mp4) (2:14) and the
-> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf).
+> [pitch deck (PDF)](docs/deliverables/VoltProof_deck.pdf). **Judges:** a 3-minute brief is in [JUDGES.md](JUDGES.md).
 >
 > **What Exasol does here** ([WHY_EXASOL](docs/WHY_EXASOL.md), [BENCHMARKS](docs/BENCHMARKS.md)):
 > - All analysis is versioned SQL inside Exasol Personal, over 102.8 million clean minute readings; the full Uttar
@@ -36,6 +41,13 @@ This project was built with AI coding assistance (Claude Code).
 > | One month (at least 366.2 h of outage) | One outage's evidence | The evidence report |
 > |---|---|---|
 > | <a href="docs/deliverables/screenshots/02_month_calendar.png"><img src="docs/deliverables/screenshots/02_month_calendar.png" width="260" alt="Location-month view: the outage lower bound first and the calendar of daily outage hours"></a> | <a href="docs/deliverables/screenshots/04_event_evidence.png"><img src="docs/deliverables/screenshots/04_event_evidence.png" width="260" alt="Event evidence: exact start and end, source lines, Exasol statement ids, and monitors that lost supply within 2 minutes"></a> | <a href="docs/deliverables/screenshots/05_report_ready.png"><img src="docs/deliverables/screenshots/05_report_ready.png" width="260" alt="The month page with its evidence report ready as PDF, HTML and JSON"></a> |
+
+> **Why this matters.** Uttar Pradesh alone has 2.74 crore domestic electricity consumers, as the then UPPCL chairman
+> said on 27 January 2023 ([Drishti IAS, 28 January 2023](https://www.drishtiias.com/state-pcs-current-affairs/uttar-pradesh-became-the-state-with-maximum-electricity-connections-in-the-country)).
+> Most households have no monitor like ESMI's, so today VoltProof is a method, not a service. A possible future data
+> source, not used today: 7.24 crore smart meters (consumer, distribution transformer and feeder meters) installed in
+> India as of 30 June 2026, and 20.33 crore sanctioned under the Revamped Distribution Sector Scheme (written reply in
+> Parliament by the Minister of State for Power, [T&D India, 6 August 2026](https://www.tndindia.com/indias-smart-meter-population-at-7-24-crore-parliament/)).
 
 ## Submission deliverables
 
@@ -77,6 +89,8 @@ The first submission is tagged `gate-9-submission`. Changes since then, one line
 - **29 Oct:** [Ask VoltProof](docs/ASK_VOLTPROOF.md): a read-only database user `VP_READER` that sees only seven
   commented result views, and instructions to query them from an AI client through Exasol's open-source MCP server;
   six example questions with their exact SQL and rows. The app and reports contain no generated text.
+- **29 Oct:** [JUDGES.md](JUDGES.md), a 3-minute brief per judging criterion; on this first screen, the real-data
+  line and a sourced "Why this matters" box.
 
 ## The problem
 

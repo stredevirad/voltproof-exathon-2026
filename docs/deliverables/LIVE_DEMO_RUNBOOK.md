@@ -50,7 +50,7 @@ After any rebuild, run step 5 again.
 
 | Problem | Do this |
 |---|---|
-| `database_connection_failed` for more than 30 s | `scripts\exa.ps1 stop`, then `scripts\exa.ps1 start` (about 30 s), then `scripts\warmup.ps1`; meanwhile present deck slides 6–8 |
+| `database_connection_failed` for more than 30 s | `scripts\exa.ps1 stop`, then `scripts\exa.ps1 start` (about 30 s), then `scripts\warmup.ps1`; meanwhile present deck slides 7–10 |
 | `scripts\exa.ps1 start` prints nothing new for 3 minutes, or `status` keeps saying "Operation 'start' is currently in progress" | Press Ctrl+C; `scripts\exa.ps1 stop` (this clears the stuck start), `podman machine stop`, `podman machine start`, `scripts\exa.ps1 start` (16 s on 24 Oct), then `scripts\warmup.ps1` |
 | A live upload is slow or refused | Switch to the pre-built upload (step 11) in the **Data** menu |
 | The app does not start or a page shows an error | Play the committed video `docs\deliverables\VoltProof_demo.mp4` (under 3 minutes) and narrate over it, or pause on each screen |
@@ -67,7 +67,7 @@ recording may not count as the required live demo. If you play the video, say th
 | When | Do |
 |---|---|
 | The live demo is still running at 8:30 | Skip **How to use** and **Methodology** |
-| Past 12:00 overall | Skip the upload page; say slides 9–10 in one sentence each |
+| Past 12:00 overall | Skip the upload page; say slides 11–12 in one sentence each |
 | The database is not `database_ready` 10 minutes before the start | Present from the committed video, or the deck; do not rebuild |
 
 **Spoken wording (the text checks read files, not speech; in rehearsal one teammate counts slips):**
@@ -104,14 +104,14 @@ recording may not count as the required live demo. If you play the video, say th
 
 | Time | Deck / demo | Content |
 |---|---|---|
-| 0:00–1:30 | Slides 1–3 | The one-sentence problem; the shopkeeper (illustrative); Prayas's monitors already recorded every minute. |
-| 1:30–2:00 | Slide 4 | What VoltProof gives him: every cut, dated, with its certainty; the headline is a minimum. |
-| 2:00–8:30 | **Live demo** (section 2; slide 5 is its still version) | Guided demo, from calendar to minute trace to evidence to report to sources, then the upload |
-| 8:30–10:00 | Slides 6–7 | How it works in four steps, and how Exasol Personal does steps 2 and 3: full build 210.4 s warm, unpivot 11.0 s, every cut found in 35.6 s (665 s before our fix); the audit-log match |
-| 10:00–11:00 | Slide 8 | Why the numbers can be checked: number, SQL step, Exasol statement, source line; the independent test check |
-| 11:00–12:30 | Slides 9–10 | The data defects found; where we differ from Prayas, in honest wording |
-| 12:30–13:30 | Slide 11 | Limits and legal framing: monitor not meter, historical data, coincidence is not cause, grievance route |
-| 13:30–15:00 | Slides 12–13 | What changes if adopted; team. Appendix A1–A5 stays ready for questions. |
+| 0:00–1:45 | Slides 1–4 | The one-sentence problem; the shopkeeper (illustrative); why this matters (2.74 crore consumers in Uttar Pradesh; smart meters only as a possible future source, not used today); Prayas's monitors already recorded every minute. |
+| 1:45–2:15 | Slide 5 | What VoltProof gives him: every cut, dated, with its certainty; the headline is a minimum. |
+| 2:15–8:30 | **Live demo** (section 2; slide 6 is its still version) | Guided demo, from calendar to minute trace to evidence (open "How was this computed?": time and memory measured by Exasol) to report to sources, then the upload |
+| 8:30–10:00 | Slides 7–9 | How it works in four steps; how Exasol Personal does steps 2 and 3 (the table: full build 210.4 s warm, unpivot 11.0 s, every cut found in 35.6 s, 665 s before our fix; the audit-log match; CI on exasol/nano); Ask VoltProof: a read-only user, Exasol's MCP server, "the agent's sentences are its own" |
+| 10:00–11:00 | Slide 10 | Why the numbers can be checked: number, SQL step, Exasol statement, source line; the independent test check |
+| 11:00–12:30 | Slides 11–12 | The data defects found; where we differ from Prayas, in honest wording |
+| 12:30–13:30 | Slide 13 | Limits and legal framing: monitor not meter, historical data, coincidence is not cause, grievance route |
+| 13:30–15:00 | Slides 14–15 | Who could use it next; team. Appendix A1–A6 stays ready for questions. |
 | 15:00–20:00 | Q&A | Have docs/JUDGE_QA.md open. Likely questions: #8 (is coincidence just chance?), #12 (tuning to Prayas?), #25 (why higher than Prayas's Figure 2?), #5 (what Prayas already publishes), #15 (why Exasol?), #24 (can a judge reproduce this?), #23 (is the demo data real?), #27–#29 (uploads and unverified data) |
 
 Decide in advance who presents which block, and who drives the laptop during the demo.
